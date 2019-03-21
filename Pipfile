@@ -4,10 +4,14 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-pytest = "*"
+bcrascraper = {path = ".",editable = true}
 coverage = "*"
+pytest = "*"
 
 [packages]
+click = "*"
+selenium = "*"
+bs4 = "*"
 
 [requires]
 python_version = "3.7"
