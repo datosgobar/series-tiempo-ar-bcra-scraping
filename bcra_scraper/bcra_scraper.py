@@ -1,19 +1,18 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""One liner
+from datetime import date
 
-Description....
-"""
+import click
 
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import with_statement
-import os
+from bcra_scraper.scraper import Scraper
 
 
+@click.command()
 def main():
-    pass
+    scraper = Scraper()
+    parsed = scraper.run()
+    click.echo(parsed)
 
 if __name__ == '__main__':
     main()
