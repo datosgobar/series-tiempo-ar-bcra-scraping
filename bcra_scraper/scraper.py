@@ -30,17 +30,18 @@ class Scraper:
         return content
 
     def parse(self, contents):
-        parsed = []
-
+        parsed_contents = []
         for content in contents:
-            parsed.append(self.parse_day_content(content))
+            parsed = self.parse_day_content(content)
 
-        return parsed
+            if parsed:
+                parsed_contents.append(parsed)
+
+        return parsed_contents
 
     def parse_day_content(self, contents):
         soup = BeautifulSoup(contents, "html.parser")
         parsed = {}
-
         table = soup.find('table')
         head = table.find('thead')
         body = table.find('tbody')
@@ -52,6 +53,7 @@ class Scraper:
 
         parsed['indice_tiempo'] = head.findAll('th')[0].text[14:].strip()
 
+        # TODO: validate keys
         for row in rows:
             cols = row.find_all('td')
             parsed[cols[0].text] = cols[1].text
