@@ -23,10 +23,29 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         assert date(2019, 3, 18) == get_most_recent_previous_business_day(date(2019, 3, 19))
         assert date(2019, 3, 22) == get_most_recent_previous_business_day(date(2019, 3, 24))
 
+    def test_fetch_content_with_valid_dates(self):
+        scraper = Scraper()
+        start_day = date(2019, 3, 4)
+        end_day = date(2019, 3, 10)
+
+        contents = scraper.fetch_content(start_day, end_day)
+
+        assert len(contents) == 7
+
+    def test_fetch_content_with_invalid_dates(self):
+        scraper = Scraper()
+        start_day = date(2019, 3, 10)
+        end_day = date(2019, 3, 4)
+
+        contents = scraper.fetch_content(start_day, end_day)
+
+        assert contents == []
+
+    # TODO: rename test name
     def test_get_content_for_a_non_business_day(self):
         scraper = Scraper()
         content_date = date.today()
-        content = scraper.fetch_content(content_date)
+        content = scraper.fetch_day_content(content_date)
 
         soup = BeautifulSoup(content, "html.parser")
 
@@ -38,12 +57,13 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         assert head is not None
         assert body is None
 
+    # TODO: rename test name
     def test_get_content_for_a_business_day(self):
         scraper = Scraper()
         content_date = get_most_recent_previous_business_day(
             date.today() - timedelta(days=1)
             )
-        content = scraper.fetch_content(content_date)
+        content = scraper.fetch_day_content(content_date)
 
         soup = BeautifulSoup(content, "html.parser")
 
@@ -55,6 +75,30 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         assert head is not None
         assert body is not None
 
+    def test_parse_for_empty_contents(self):
+        scraper = Scraper()
+        contents = []
+        parsed = scraper.parse(contents)
+
+        assert parsed == []
+
+    def test_parse_for_non_empty_contents(self):
+        scraper = Scraper()
+        
+        empty_table_content = '''
+        <table class="table table-BCRA table-bordered table-hover table-responsive">
+            <thead>
+                <tr><th>No existen registros</th></tr>
+            </thead>
+        </table>
+        '''
+
+        contents = [empty_table_content]
+
+        parsed = scraper.parse(contents)
+
+        assert parsed == []
+
     def test_scraper_with_empty_table(self):
         content = '''
         <table class="table table-BCRA table-bordered table-hover table-responsive">
@@ -65,7 +109,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         '''
         scraper = Scraper()
 
-        result = scraper.parse(content)
+        result = scraper.parse_day_content(content)
 
         assert result == {}
 
@@ -107,7 +151,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         '''
         scraper = Scraper()
 
-        result = scraper.parse(content)
+        result = scraper.parse_day_content(content)
 
         assert result.get('indice_tiempo') == '15/03/2019'
         assert result.get('30') == '2,481750'
@@ -116,24 +160,24 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         assert result.get('180') == '2,671750'
         assert result.get('360') == '2,840500'
 
-    # def test_scraper_last_business_day(self):
+    def test_run_with_valid_dates(self):
+        scraper = Scraper()
+        
+        start_date = date(2019, 3, 4)
 
-    #     scraper = Parser()
+        end_date = date(2019, 3, 6)
 
-    #     last_date = get_most_recent_previous_business_day(business_date=date.today()).strftime("%d/%m/%y")
+        parsed = scraper.run(start_date, end_date)
 
-    #     result = scraper.parse()
+        assert len(parsed) == 3
 
-    #     assert result.get('indice_tiempo') == str(last_date)
-    #     assert result.get('30') == '2,487750'
-    #     assert result.get('60') == '2,564750'
-    #     assert result.get('90') == '2,632630'
-    #     assert result.get('180') == '2,670630'
-    #     assert result.get('360') == '2,817630'
+    def test_run_with_non_valid_dates(self):
+        scraper = Scraper()
+        
+        start_date = date(2019, 3, 10)
 
-    #     # assert result.get('indice_tiempo') == '18/03/2019'
-    #     # assert result.get('30') == result['30']
-    #     # assert result.get('60') == result['60']
-    #     # assert result.get('90') == result['90']
-    #     # assert result.get('180') == result['180']
-    #     # assert result.get('360') == result['360']
+        end_date = date(2019, 3, 9)
+
+        parsed = scraper.run(start_date, end_date)
+
+        assert parsed == []
