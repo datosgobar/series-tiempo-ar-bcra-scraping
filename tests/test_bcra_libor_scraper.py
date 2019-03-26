@@ -9,11 +9,13 @@ from __future__ import with_statement
 
 from datetime import date, timedelta
 import unittest
+from unittest import mock
 
 from bs4 import BeautifulSoup
 
 from bcra_scraper.scraper import Scraper
 from bcra_scraper.utils import get_most_recent_previous_business_day
+from bcra_scraper.bcra_scraper import write_tasas_libor
 
 
 class BcraLiborScraperTestCase(unittest.TestCase):
