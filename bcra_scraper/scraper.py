@@ -1,5 +1,7 @@
 from datetime import date, timedelta
 
+import json
+
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -9,7 +11,13 @@ from .utils import get_most_recent_previous_business_day
 
 class Scraper:
 
-    url = 'http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp'
+    # url = 'http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp'
+
+    def __init__(self, url, rates, *args, **kwargs):
+        self.url = url
+        self.rates = rates
+
+        super(Scraper, self).__init__(*args, **kwargs)
 
     def fetch_content(self, start_date, end_date):
         contents = []

@@ -25,6 +25,10 @@ def get_default_end_date():
 
     return f'{today.day}/{today.month}/{today.year}'
 
+def read_config(file_path):
+    with open(file_path) as config_data:
+        return json.load(config_data)
+
 
 # TODO: validar q no se ingrese solo end_date
 # TODO: validar q end_date >= start_date
@@ -33,18 +37,21 @@ def get_default_end_date():
     '--start-date',
     default=get_default_start_date,
     type=click.DateTime(formats=['%d/%m/%Y']),
-    # callback=arg1_validator
     )
 @click.option(
     '--end-date',
     default=get_default_end_date,
     type=click.DateTime(formats=['%d/%m/%Y']),
-    # callback=arg_validator
     )
-def main(start_date, end_date):
+@click.option('--url', default='')
+@click_config_file.configuration_option(provider=myprovider)
+def main(start_date, end_date, url):
     start_date = date(start_date.year, start_date.month, start_date.day)
-    end_date = date(end_date.year, end_date.month, end_date.day) 
-    scraper = Scraper()
+    end_date = date(end_date.year, end_date.month, end_date.day)
+
+    config = read_config()
+
+    scraper = Scraper(url=config.get('url'), rates=config.get('rates'))
 
     parsed = scraper.run(start_date, end_date)
 
