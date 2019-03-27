@@ -30,6 +30,10 @@ setup(
                  'bcra_scraper'},
     include_package_data=True,
     install_requires=requirements,
+    entry_points='''
+        [console_scripts]
+        bcra_scraper=bcra_scraper.bcra_scraper:main
+    ''',
     license="MIT license",
     zip_safe=False,
     keywords='bcra_scraper',
