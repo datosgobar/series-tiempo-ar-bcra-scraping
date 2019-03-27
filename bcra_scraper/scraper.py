@@ -12,10 +12,17 @@ from .utils import get_most_recent_previous_business_day
 class Scraper:
 
     def __init__(self, url, rates, *args, **kwargs):
+        self.browser_driver = None
         self.url = url
         self.rates = rates
 
         super(Scraper, self).__init__(*args, **kwargs)
+
+    def get_browser_driver(self):
+        if not self.browser_driver:
+            self.browser_driver = webdriver.Chrome()
+
+        return self.browser_driver
 
     def fetch_content(self, start_date, end_date):
         contents = []
@@ -27,11 +34,11 @@ class Scraper:
         return contents
 
     def fetch_day_content(self, single_date):
-        browser = webdriver.Chrome()
-        browser.get(self.url)
-        elem = browser.find_element_by_name('fecha')
+        browser_driver = self.get_browser_driver()
+        browser_driver.get(self.url)
+        elem = browser_driver.find_element_by_name('fecha')
         elem.send_keys(single_date.strftime("%d/%m/%Y") + Keys.RETURN)
-        content = browser.page_source
+        content = browser_driver.page_source
 
         return content
 
