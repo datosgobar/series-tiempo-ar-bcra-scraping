@@ -1,0 +1,10 @@
+{
+    "url": "http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp",
+    "rates": {
+        "30": "30",
+        "60": "60",
+        "90": "90",
+        "180": "180",
+        "360": "360"
+    }
+}
