@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+from decimal import Decimal
 
 import json
 
@@ -80,6 +81,23 @@ class Scraper:
             parsed[cols[0].text] = cols[1].text
 
         return parsed
+
+    def preprocess_rows(self, rates, rows):
+        preprocessed_rows = []
+
+        for row in rows:
+            preprocessed_row = {}
+            for rate in rates:
+                preprocessed_row[rate] = Decimal((row[rate]).replace(',', '.'))/100
+
+            row_date = row['indice_tiempo'].split('/')
+            preprocessed_row['indice_tiempo'] = date(
+                int(row_date[2]), int(row_date[1]), int(row_date[0])
+                )
+
+            preprocessed_rows.append(preprocessed_row)
+
+        return preprocessed_rows
 
     def run(self, start_date, end_date):
         contents = self.fetch_content(start_date, end_date)
