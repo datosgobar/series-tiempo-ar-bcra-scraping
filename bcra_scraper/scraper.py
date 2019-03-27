@@ -18,9 +18,17 @@ class Scraper:
 
         super(Scraper, self).__init__(*args, **kwargs)
 
+    def _create_browser_driver(self):
+        options = webdriver.ChromeOptions()
+        options.headless = True
+
+        browser_driver = webdriver.Chrome(options=options)
+
+        return browser_driver
+
     def get_browser_driver(self):
         if not self.browser_driver:
-            self.browser_driver = webdriver.Chrome()
+            self.browser_driver = self._create_browser_driver()
 
         return self.browser_driver
 
