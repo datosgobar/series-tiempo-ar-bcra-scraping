@@ -88,7 +88,7 @@ class Scraper:
         for row in rows:
             preprocessed_row = {}
             for rate in rates:
-                preprocessed_row[rate] = Decimal((row[rate]).replace(',', '.'))/100
+                preprocessed_row[rates[rate]] = Decimal((row[rate]).replace(',', '.'))/100
 
             row_date = row['indice_tiempo'].split('/')
             preprocessed_row['indice_tiempo'] = date(
@@ -98,6 +98,16 @@ class Scraper:
             preprocessed_rows.append(preprocessed_row)
 
         return preprocessed_rows
+
+    def preprocess_header(self, rates, header):
+        preprocessed_header = []
+
+        preprocessed_header.append('indice_tiempo')
+
+        for key, value in rates.items():
+            preprocessed_header.append(value)
+
+        return preprocessed_header
 
     def run(self, start_date, end_date):
         contents = self.fetch_content(start_date, end_date)

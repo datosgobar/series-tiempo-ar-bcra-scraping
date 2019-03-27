@@ -61,9 +61,11 @@ def main(start_date, end_date, config):
 
     if parsed:
         csv_name = 'tasas-libor.csv'
+
         csv_header = ['indice_tiempo', '30', '60', '90', '180', '360']
+        processed_header = scraper.preprocess_header(scraper.rates, csv_header)
         processed_parsed = scraper.preprocess_rows(scraper.rates, parsed)
 
-        write_tasas_libor(csv_name, csv_header, processed_parsed)
+        write_tasas_libor(csv_name, processed_header, processed_parsed)
     else:
         click.echo("No se encontraron resultados")
