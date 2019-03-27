@@ -11,8 +11,6 @@ from .utils import get_most_recent_previous_business_day
 
 class Scraper:
 
-    # url = 'http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp'
-
     def __init__(self, url, rates, *args, **kwargs):
         self.url = url
         self.rates = rates

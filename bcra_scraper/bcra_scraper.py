@@ -3,6 +3,7 @@
 
 from csv import DictWriter
 from datetime import date
+import json
 
 import click
 
@@ -43,13 +44,16 @@ def read_config(file_path):
     default=get_default_end_date,
     type=click.DateTime(formats=['%d/%m/%Y']),
     )
-@click.option('--url', default='')
-@click_config_file.configuration_option(provider=myprovider)
-def main(start_date, end_date, url):
+@click.option(
+    '--config',
+    default='config.json',
+    type=click.Path(exists=True),
+    )
+def main(start_date, end_date, config):
     start_date = date(start_date.year, start_date.month, start_date.day)
     end_date = date(end_date.year, end_date.month, end_date.day)
 
-    config = read_config()
+    config = read_config(file_path=config)
 
     scraper = Scraper(url=config.get('url'), rates=config.get('rates'))
 
