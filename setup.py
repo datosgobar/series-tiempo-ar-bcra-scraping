@@ -32,7 +32,7 @@ setup(
     install_requires=requirements,
     entry_points='''
         [console_scripts]
-        bcra_scraper=bcra_scraper.bcra_scraper:main
+        bcra_scraper=bcra_scraper.bcra_scraper:cli
     ''',
     license="MIT license",
     zip_safe=False,
