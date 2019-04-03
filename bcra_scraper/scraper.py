@@ -10,14 +10,14 @@ from selenium.webdriver.common.keys import Keys
 from .utils import get_most_recent_previous_business_day
 
 
-class Scraper:
+class Libor_scraper:
 
     def __init__(self, url, rates, *args, **kwargs):
         self.browser_driver = None
         self.url = url
         self.rates = rates
 
-        super(Scraper, self).__init__(*args, **kwargs)
+        super(Libor_scraper, self).__init__(*args, **kwargs)
 
     def _create_browser_driver(self):
         options = webdriver.ChromeOptions()
