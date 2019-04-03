@@ -13,7 +13,7 @@ from unittest import mock
 
 from bs4 import BeautifulSoup
 
-from bcra_scraper.scraper import Scraper
+from bcra_scraper.scraper import LiborScraper
 from bcra_scraper.utils import get_most_recent_previous_business_day
 from bcra_scraper.bcra_scraper import write_tasas_libor
 
@@ -26,7 +26,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         assert date(2019, 3, 22) == get_most_recent_previous_business_day(date(2019, 3, 24))
 
     def test_fetch_content_with_valid_dates(self):
-        scraper = Scraper()
+        scraper = LiborScraper()
         start_day = date(2019, 3, 4)
         end_day = date(2019, 3, 10)
 
@@ -35,7 +35,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         assert len(contents) == 7
 
     def test_fetch_content_with_invalid_dates(self):
-        scraper = Scraper()
+        scraper = LiborScraper()
         start_day = date(2019, 3, 10)
         end_day = date(2019, 3, 4)
 
@@ -45,7 +45,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
 
     # TODO: rename test name
     def test_get_content_for_a_non_business_day(self):
-        scraper = Scraper()
+        scraper = LiborScraper()
         content_date = date.today()
         content = scraper.fetch_day_content(content_date)
 
@@ -61,7 +61,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
 
     # TODO: rename test name
     def test_get_content_for_a_business_day(self):
-        scraper = Scraper()
+        scraper = LiborScraper()
         content_date = get_most_recent_previous_business_day(
             date.today() - timedelta(days=1)
             )
@@ -78,14 +78,14 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         assert body is not None
 
     def test_parse_for_empty_contents(self):
-        scraper = Scraper()
+        scraper = LiborScraper()
         contents = []
         parsed = scraper.parse(contents)
 
         assert parsed == []
 
     def test_parse_for_non_empty_contents(self):
-        scraper = Scraper()
+        scraper = LiborScraper()
         
         empty_table_content = '''
         <table class="table table-BCRA table-bordered table-hover table-responsive">
@@ -109,7 +109,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             </thead>
         </table>
         '''
-        scraper = Scraper()
+        scraper = LiborScraper()
 
         result = scraper.parse_day_content(content)
 
@@ -151,7 +151,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
 		</tbody>
 	</table>
         '''
-        scraper = Scraper()
+        scraper = LiborScraper()
 
         result = scraper.parse_day_content(content)
 
@@ -163,7 +163,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         assert result.get('360') == '2,840500'
 
     def test_run_with_valid_dates(self):
-        scraper = Scraper()
+        scraper = LiborScraper()
         
         start_date = date(2019, 3, 4)
 
@@ -174,7 +174,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         assert len(parsed) == 3
 
     def test_run_with_non_valid_dates(self):
-        scraper = Scraper()
+        scraper = LiborScraper()
         
         start_date = date(2019, 3, 10)
 

@@ -7,7 +7,8 @@ import json
 
 import click
 
-from bcra_scraper.scraper import Scraper
+from bcra_scraper.scraper import LiborScraper
+from bcra_scraper.parser import ExchangeRateScraper
 
 # TODO: test me!
 def write_tasas_libor(file_name, header, rows):
@@ -31,9 +32,15 @@ def read_config(file_path):
         return json.load(config_data)
 
 
+@click.group()
+@click.pass_context
+def cli(ctx):
+    pass
+
+
 # TODO: validar q no se ingrese solo end_date
 # TODO: validar q end_date >= start_date
-@click.command()
+@cli.command()
 @click.option(
     '--start-date',
     default=get_default_start_date,
@@ -49,13 +56,14 @@ def read_config(file_path):
     default='config.json',
     type=click.Path(exists=True),
     )
-def main(start_date, end_date, config):
+
+def libor(start_date, end_date, config):
     start_date = date(start_date.year, start_date.month, start_date.day)
     end_date = date(end_date.year, end_date.month, end_date.day)
 
     config = read_config(file_path=config)
 
-    scraper = Scraper(url=config.get('url'), rates=config.get('rates'))
+    scraper = LiborScraper(url=config.get('url'), rates=config.get('rates'))
 
     parsed = scraper.run(start_date, end_date)
 
@@ -69,3 +77,9 @@ def main(start_date, end_date, config):
         write_tasas_libor(csv_name, processed_header, processed_parsed)
     else:
         click.echo("No se encontraron resultados")
+
+@cli.command()
+def main_tc():
+    scraper = ExchangeRateScraper()
+    parsed = scraper.run()
+
