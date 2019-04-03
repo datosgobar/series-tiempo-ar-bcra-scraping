@@ -7,8 +7,8 @@ import json
 
 import click
 
-from bcra_scraper.scraper import Libor_scraper
-from bcra_scraper.parser import Exchange_rate_scraper
+from bcra_scraper.scraper import LiborScraper
+from bcra_scraper.parser import ExchangeRateScraper
 
 # TODO: test me!
 def write_tasas_libor(file_name, header, rows):
@@ -63,7 +63,7 @@ def libor(start_date, end_date, config):
 
     config = read_config(file_path=config)
 
-    scraper = Libor_scraper(url=config.get('url'), rates=config.get('rates'))
+    scraper = LiborScraper(url=config.get('url'), rates=config.get('rates'))
 
     parsed = scraper.run(start_date, end_date)
 
@@ -80,6 +80,6 @@ def libor(start_date, end_date, config):
 
 @cli.command()
 def main_tc():
-    scraper = Exchange_rate_scraper()
+    scraper = ExchangeRateScraper()
     parsed = scraper.run()
 

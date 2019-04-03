@@ -7,7 +7,7 @@ from selenium.webdriver.common.keys import Keys
 from .utils import get_most_recent_previous_business_day
 
 
-class Exchange_rate_scraper:
+class ExchangeRateScraper:
 
     url = 'http://www.bcra.gov.ar/PublicacionesEstadisticas/Evolucion_moneda.asp'
 
