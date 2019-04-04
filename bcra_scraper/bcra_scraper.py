@@ -79,7 +79,17 @@ def libor(start_date, end_date, config):
         click.echo("No se encontraron resultados")
 
 @cli.command()
-def main_tc():
+@click.option(
+    '--start-date',
+    default=get_default_start_date,
+    type=click.DateTime(formats=['%d/%m/%Y']),
+    )
+@click.option(
+    '--end-date',
+    default=get_default_end_date,
+    type=click.DateTime(formats=['%d/%m/%Y']),
+    )
+def main_tc(start_date, end_date):
     scraper = ExchangeRateScraper()
-    parsed = scraper.run()
+    parsed = scraper.run(start_date, end_date)
 
