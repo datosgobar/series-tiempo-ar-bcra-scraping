@@ -7,8 +7,7 @@ import json
 
 import click
 
-from bcra_scraper.scraper import LiborScraper
-from bcra_scraper.parser import ExchangeRateScraper
+from bcra_scraper.scraper import LiborScraper, ExchangeRateScraper
 
 # TODO: test me!
 def write_tasas_libor(file_name, header, rows):
