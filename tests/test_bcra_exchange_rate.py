@@ -11,20 +11,20 @@ import datetime
 from datetime import date, timedelta
 import unittest
 
-from bcra_scraper.scraper import ExchangeRateScraper
+from bcra_scraper.scraper import BCRAExchangeRateScraper
 
 class BcraExchangeRateTestCase(unittest.TestCase):
 
     def test_parse_for_empty_contents(self):
-        scraper = ExchangeRateScraper()
+        scraper = BCRAExchangeRateScraper()
         end_date = date.today()
         contents = {}
-        parsed = scraper.parse(contents, end_date)
+        parsed = scraper.parse_contents(contents, end_date)
 
         assert parsed == []
 
     def test_parse_for_non_empty_contents(self):
-        scraper = ExchangeRateScraper()
+        scraper = BCRAExchangeRateScraper()
         end_date = datetime.datetime(2019, 4, 8)
         contents = {}
         
@@ -60,14 +60,14 @@ class BcraExchangeRateTestCase(unittest.TestCase):
         
         contents['bolivar_venezolano'] = table_content
 
-        parsed = scraper.parse(contents, end_date)
+        parsed = scraper.parse_contents(contents, end_date)
 
         assert parsed == [{'moneda': 'bolivar_venezolano',
         'indice_tiempo': '08/04/2019', 'tipo_pase': '0,0003030',
         'tipo_cambio': '0,0132500'}]
 
     def test_parse_coin(self):
-        scraper = ExchangeRateScraper()
+        scraper = BCRAExchangeRateScraper()
         end_date = datetime.datetime(2019, 4, 8)
         coin = 'bolivar_venezolano'
         
