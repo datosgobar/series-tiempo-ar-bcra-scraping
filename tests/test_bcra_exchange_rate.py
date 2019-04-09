@@ -8,15 +8,26 @@ from __future__ import print_function
 from __future__ import with_statement
 
 import datetime
-from datetime import date, timedelta
+from datetime import date
 import unittest
 
 from bcra_scraper.scraper import BCRAExchangeRateScraper
 
+
 class BcraExchangeRateTestCase(unittest.TestCase):
 
     def test_parse_for_empty_contents(self):
-        scraper = BCRAExchangeRateScraper()
+        url = \
+         "http://www.bcra.gov.ar/Publicaciones\
+            Estadisticas/Evolucion_moneda.asp"
+        coins = {
+            "bolivar_venezolano": "Bolívar Venezolano",
+            "chelin_austriaco": "Chelín Austríaco",
+            "cordoba_nicaraguense": "Cordoba Nicaraguense",
+            "corona_checa": "Corona Checa",
+            "corona_danesa": "Corona Danesa",
+        }
+        scraper = BCRAExchangeRateScraper(url, coins)
         end_date = date.today()
         contents = {}
         parsed = scraper.parse_contents(contents, end_date)
@@ -24,16 +35,24 @@ class BcraExchangeRateTestCase(unittest.TestCase):
         assert parsed == []
 
     def test_parse_for_non_empty_contents(self):
-        scraper = BCRAExchangeRateScraper()
+        url = \
+         "http://www.bcra.gov.ar/Publicaciones\
+            Estadisticas/Evolucion_moneda.asp"
+        coins = {
+            "bolivar_venezolano": "Bolívar Venezolano"
+        }
+        scraper = BCRAExchangeRateScraper(url, coins)
         end_date = datetime.datetime(2019, 4, 8)
         contents = {}
-        
+
         table_content = '''
-        <table class="table table-BCRA table-bordered table-hover table-responsive" colspan="3">
+        <table class="table table-BCRA table-bordered table-hover
+        table-responsive" colspan="3">
             <thead>
             <tr>
             <td colspan="3">
-                <b>MERCADO DE CAMBIOS - COTIZACIONES CIERRE VENDEDOR<br>Bolívar Venezolano</b>
+                <b>MERCADO DE CAMBIOS - COTIZACIONES CIERRE VENDEDOR<br>
+                Bolívar Venezolano</b>
             </td>
             </tr>
             <tr>
@@ -57,26 +76,35 @@ class BcraExchangeRateTestCase(unittest.TestCase):
             </tbody>
         </table>
         '''
-        
+
         contents['bolivar_venezolano'] = table_content
 
         parsed = scraper.parse_contents(contents, end_date)
 
         assert parsed == [{'moneda': 'bolivar_venezolano',
-        'indice_tiempo': '08/04/2019', 'tipo_pase': '0,0003030',
-        'tipo_cambio': '0,0132500'}]
+                          'indice_tiempo': '08/04/2019',
+                           'tipo_pase': '0,0003030',
+                           'tipo_cambio': '0,0132500'}]
 
     def test_parse_coin(self):
-        scraper = BCRAExchangeRateScraper()
+        url = \
+         "http://www.bcra.gov.ar/Publicaciones\
+            Estadisticas/Evolucion_moneda.asp"
+        coins = {
+            "bolivar_venezolano": "Bolívar Venezolano"
+        }
+        scraper = BCRAExchangeRateScraper(url, coins)
         end_date = datetime.datetime(2019, 4, 8)
         coin = 'bolivar_venezolano'
-        
+
         content = '''
-        <table class="table table-BCRA table-bordered table-hover table-responsive" colspan="3">
+        <table class="table table-BCRA table-bordered table-hover
+        table-responsive" colspan="3">
             <thead>
             <tr>
             <td colspan="3">
-                <b>MERCADO DE CAMBIOS - COTIZACIONES CIERRE VENDEDOR<br>Bolívar Venezolano</b>
+                <b>MERCADO DE CAMBIOS - COTIZACIONES CIERRE VENDEDOR<br>
+                Bolívar Venezolano</b>
             </td>
             </tr>
             <tr>
@@ -104,5 +132,6 @@ class BcraExchangeRateTestCase(unittest.TestCase):
         parsed_coin = scraper.parse_coin(content, end_date, coin)
 
         assert parsed_coin == [{'moneda': 'bolivar_venezolano',
-        'indice_tiempo': '08/04/2019', 'tipo_pase': '0,0003030',
-        'tipo_cambio': '0,0132500'}]
+                                'indice_tiempo': '08/04/2019',
+                                'tipo_pase': '0,0003030',
+                                'tipo_cambio': '0,0132500'}]
