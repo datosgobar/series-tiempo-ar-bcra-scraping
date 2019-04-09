@@ -1,9 +1,9 @@
-import unittest
+# import unittest
 
-import click
-from click.testing import CliRunner
+# import click
+# from click.testing import CliRunner
 
-from bcra_scraper.bcra_scraper import main
+# from bcra_scraper.bcra_scraper import main
 
 
 # class MainTest(unittest.TestCase):
