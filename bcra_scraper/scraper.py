@@ -10,14 +10,11 @@ from selenium.webdriver.common.keys import Keys
 from .utils import get_most_recent_previous_business_day
 
 
-class LiborScraper:
+class BCRAScraper:
 
-    def __init__(self, url, rates, *args, **kwargs):
+    def __init__(self, url, *args, **kwargs):
         self.browser_driver = None
         self.url = url
-        self.rates = rates
-
-        super(LiborScraper, self).__init__(*args, **kwargs)
 
     def _create_browser_driver(self):
         options = webdriver.ChromeOptions()
@@ -33,7 +30,28 @@ class LiborScraper:
 
         return self.browser_driver
 
-    def fetch_content(self, start_date, end_date):
+    def fetch_contents(self, start_date, end_date):
+        raise NotImplementedError
+
+    def parse_contents(self, start_date, end_date):
+        raise NotImplementedError
+
+    def run(self, start_date, end_date):
+        contents = self.fetch_contents(start_date, end_date)
+        parsed = self.parse_contents(contents)
+
+        print(parsed)
+        return parsed
+
+
+class BCRALiborScraper(BCRAScraper):
+
+    def __init__(self, url, rates, *args, **kwargs):
+        self.rates = rates
+
+        super(BCRALiborScraper, self).__init__(url, *args, **kwargs)
+
+    def fetch_contents(self, start_date, end_date):
         contents = []
         day_count = (end_date - start_date).days + 1
 
@@ -51,7 +69,7 @@ class LiborScraper:
 
         return content
 
-    def parse(self, contents):
+    def parse_contents(self, contents):
         parsed_contents = []
         for content in contents:
             parsed = self.parse_day_content(content)
@@ -109,14 +127,8 @@ class LiborScraper:
 
         return preprocessed_header
 
-    def run(self, start_date, end_date):
-        contents = self.fetch_content(start_date, end_date)
-        parsed = self.parse(contents)
-
-        return parsed
-
-class ExchangeRateScraper:
-
+class BCRAExchangeRateScraper(BCRAScraper):
+    
     url = 'http://www.bcra.gov.ar/PublicacionesEstadisticas/Evolucion_moneda.asp'
 
     coins = {
@@ -189,7 +201,10 @@ class ExchangeRateScraper:
 
 	}
 
-    def get_coins_html(self, start_date):
+    def __init__(self, *args, **kwargs):
+        super(BCRAExchangeRateScraper, self).__init__(url=self.url, *args, **kwargs)
+
+    def fetch_contents(self, start_date, end_date):
         content = {}
         for k, v in self.coins.items():
             content[k] = self.fetch_content(start_date, v)
@@ -213,7 +228,7 @@ class ExchangeRateScraper:
         browser.close()
         return content
 
-    def parse(self, content, end_date):
+    def parse_contents(self, content, end_date=datetime.today()):
         parsed_contents = []
         for k, v in content.items():
             
@@ -250,12 +265,4 @@ class ExchangeRateScraper:
                 parsed['tipo_cambio'] = cols[2].text[5:].strip()
                 parsed_contents.append(parsed)
 
-          
         return parsed_contents
-
-    def run(self, start_date, end_date):
-
-        content = self.get_coins_html(start_date)
-        parsed = self.parse(content, end_date)
-        print(parsed)
-        return parsed
