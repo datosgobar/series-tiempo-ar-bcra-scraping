@@ -1,13 +1,9 @@
 from datetime import date, timedelta, datetime
 from decimal import Decimal
 
-import json
-
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
-
-from .utils import get_most_recent_previous_business_day
 
 
 class BCRAScraper:
@@ -55,7 +51,8 @@ class BCRALiborScraper(BCRAScraper):
         contents = []
         day_count = (end_date - start_date).days + 1
 
-        for single_date in (start_date + timedelta(n) for n in range(day_count)):
+        for single_date in (start_date + timedelta(n) for
+                            n in range(day_count)):
             contents.append(self.fetch_day_content(single_date))
 
         return contents
@@ -106,7 +103,8 @@ class BCRALiborScraper(BCRAScraper):
         for row in rows:
             preprocessed_row = {}
             for rate in rates:
-                preprocessed_row[rates[rate]] = Decimal((row[rate]).replace(',', '.'))/100
+                preprocessed_row[rates[rate]] = \
+                    Decimal((row[rate]).replace(',', '.'))/100
 
             row_date = row['indice_tiempo'].split('/')
             preprocessed_row['indice_tiempo'] = date(
@@ -127,9 +125,11 @@ class BCRALiborScraper(BCRAScraper):
 
         return preprocessed_header
 
+
 class BCRAExchangeRateScraper(BCRAScraper):
-    
-    url = 'http://www.bcra.gov.ar/PublicacionesEstadisticas/Evolucion_moneda.asp'
+
+    url = \
+        'http://www.bcra.gov.ar/PublicacionesEstadisticas/Evolucion_moneda.asp'
 
     coins = {
         "bolivar_venezolano": "Bolívar Venezolano",
@@ -198,18 +198,17 @@ class BCRAExchangeRateScraper(BCRAScraper):
         "yen_japon": "Yen (Japón)",
         "yuan_china_cny": "Yuan - China CNY",
         "yuan_china_off_shore_cnh": "Yuan-China Off Shore CNH"
-
-	}
+    }
 
     def __init__(self, *args, **kwargs):
-        super(BCRAExchangeRateScraper, self).__init__(url=self.url, *args, **kwargs)
+        super(BCRAExchangeRateScraper, self)\
+            .__init__(url=self.url, *args, **kwargs)
 
     def fetch_contents(self, start_date, end_date):
         content = {}
         for k, v in self.coins.items():
             content[k] = self.fetch_content(start_date, v)
         return content
-        
 
     def fetch_content(self, start_date, coins):
         browser = webdriver.Chrome()
@@ -217,23 +216,23 @@ class BCRAExchangeRateScraper(BCRAScraper):
         elem = browser.find_element_by_name('Fecha')
         elem.send_keys(start_date.strftime("%d/%m/%Y"))
         coin = browser.find_element_by_name('Moneda')
-        
+
         coin.send_keys(coins)
 
         submit_button = browser.find_element_by_class_name('btn-primary')
         submit_button.click()
 
         content = browser.page_source
-        
+
         browser.close()
         return content
 
     def parse_contents(self, content, end_date=datetime.today()):
         parsed_contents = []
         for k, v in content.items():
-            
+
             parsed = self.parse_coin(v, end_date, k)
-            
+
             if parsed:
                 parsed_contents.extend(parsed)
 
@@ -241,22 +240,22 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
     def parse_coin(self, content, end_date, coin):
         soup = BeautifulSoup(content, "html.parser")
-        
+
         table = soup.find('table')
-        head = table.find('thead')
         body = table.find('tbody')
 
         if not body:
             return []
-        
+
         rows = body.find_all('tr')
         parsed_contents = []
-    
+
         for row in rows:
             cols = row.find_all('td')
             parsed = {}
-            
-            row_indice_tiempo = datetime.strptime(cols[0].text[5:].strip(), '%d/%m/%Y')
+
+            row_indice_tiempo = \
+                datetime.strptime(cols[0].text[5:].strip(), '%d/%m/%Y')
 
             if row_indice_tiempo <= end_date:
                 parsed['moneda'] = coin

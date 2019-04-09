@@ -7,7 +7,8 @@ import json
 
 import click
 
-from bcra_scraper.scraper import LiborScraper, ExchangeRateScraper
+from bcra_scraper.scraper import BCRALiborScraper, BCRAExchangeRateScraper
+
 
 # TODO: test me!
 def write_tasas_libor(file_name, header, rows):
@@ -16,15 +17,18 @@ def write_tasas_libor(file_name, header, rows):
         writer.writeheader()
         writer.writerows(rows)
 
+
 def get_default_start_date():
     today = date.today()
 
     return f'{today.day}/{today.month}/{today.year}'
 
+
 def get_default_end_date():
     today = date.today()
 
     return f'{today.day}/{today.month}/{today.year}'
+
 
 def read_config(file_path):
     with open(file_path) as config_data:
@@ -55,14 +59,14 @@ def cli(ctx):
     default='config.json',
     type=click.Path(exists=True),
     )
-
 def libor(start_date, end_date, config):
     start_date = date(start_date.year, start_date.month, start_date.day)
     end_date = date(end_date.year, end_date.month, end_date.day)
 
     config = read_config(file_path=config)
 
-    scraper = LiborScraper(url=config.get('url'), rates=config.get('rates'))
+    scraper = \
+        BCRALiborScraper(url=config.get('url'), rates=config.get('rates'))
 
     parsed = scraper.run(start_date, end_date)
 
@@ -77,6 +81,7 @@ def libor(start_date, end_date, config):
     else:
         click.echo("No se encontraron resultados")
 
+
 @cli.command()
 @click.option(
     '--start-date',
@@ -89,6 +94,6 @@ def libor(start_date, end_date, config):
     type=click.DateTime(formats=['%d/%m/%Y']),
     )
 def main_tc(start_date, end_date):
-    scraper = ExchangeRateScraper()
+    scraper = BCRAExchangeRateScraper()
     parsed = scraper.run(start_date, end_date)
-
+    print(parsed)
