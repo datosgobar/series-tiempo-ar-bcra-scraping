@@ -37,7 +37,12 @@ Usar https://github.com/pyenv/pyenv-installer
 
     $ pyenv install 3.6.6
     
+### Instalación de bcra-scraper
 
+    $ git clone https://github.com/datosgobar/series-tiempo-ar-bcra-scraping.git
+    $ cd series-tiempo-ar-bcra-scraping
+    $ pip install -e .
+    
 ### Dependencias
 
 * Para ejecutar el scraper es necesario tener chromedriver en el PATH, de manera que el script pueda ejecutarlo.
