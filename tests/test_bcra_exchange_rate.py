@@ -27,7 +27,7 @@ class BcraExchangeRateTestCase(unittest.TestCase):
             "corona_checa": "Corona Checa",
             "corona_danesa": "Corona Danesa",
         }
-        scraper = BCRAExchangeRateScraper(url, coins)
+        scraper = BCRAExchangeRateScraper(url, coins, False)
         end_date = date.today()
         contents = {}
         parsed = scraper.parse_contents(contents, end_date)
@@ -41,7 +41,7 @@ class BcraExchangeRateTestCase(unittest.TestCase):
         coins = {
             "bolivar_venezolano": "Bolívar Venezolano"
         }
-        scraper = BCRAExchangeRateScraper(url, coins)
+        scraper = BCRAExchangeRateScraper(url, coins, False)
         end_date = datetime.datetime(2019, 4, 8)
         contents = {}
 
@@ -93,7 +93,7 @@ class BcraExchangeRateTestCase(unittest.TestCase):
         coins = {
             "bolivar_venezolano": "Bolívar Venezolano"
         }
-        scraper = BCRAExchangeRateScraper(url, coins)
+        scraper = BCRAExchangeRateScraper(url, coins, False)
         end_date = datetime.datetime(2019, 4, 8)
         coin = 'bolivar_venezolano'
 

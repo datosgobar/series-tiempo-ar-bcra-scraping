@@ -41,7 +41,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             "360": "libor_360_dias"
         }
 
-        scraper = BCRALiborScraper(url, rates)
+        scraper = BCRALiborScraper(url, rates, False)
         start_day = date(2019, 3, 4)
         end_day = date(2019, 3, 10)
 
@@ -61,7 +61,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             "360": "libor_360_dias"
         }
 
-        scraper = BCRALiborScraper(url, rates)
+        scraper = BCRALiborScraper(url, rates, False)
         start_day = date(2019, 3, 10)
         end_day = date(2019, 3, 4)
 
@@ -82,7 +82,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             "360": "libor_360_dias"
         }
 
-        scraper = BCRALiborScraper(url, rates)
+        scraper = BCRALiborScraper(url, rates, False)
         content_date = date.today()
         content = scraper.fetch_day_content(content_date)
 
@@ -109,7 +109,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             "360": "libor_360_dias"
         }
 
-        scraper = BCRALiborScraper(url, rates)
+        scraper = BCRALiborScraper(url, rates, False)
         content_date = get_most_recent_previous_business_day(
             date.today() - timedelta(days=1)
             )
@@ -137,7 +137,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             "360": "libor_360_dias"
         }
 
-        scraper = BCRALiborScraper(url, rates)
+        scraper = BCRALiborScraper(url, rates, False)
         contents = []
         parsed = scraper.parse_contents(contents)
 
@@ -155,7 +155,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             "360": "libor_360_dias"
         }
 
-        scraper = BCRALiborScraper(url, rates)
+        scraper = BCRALiborScraper(url, rates, False)
 
         empty_table_content = '''
         <table class="table table-BCRA table-bordered table-hover
@@ -192,7 +192,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             </thead>
         </table>
         '''
-        scraper = BCRALiborScraper(url, rates)
+        scraper = BCRALiborScraper(url, rates, False)
 
         result = scraper.parse_day_content(content)
 
@@ -247,35 +247,13 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             </tbody>
             </table>
         '''
-        scraper = BCRALiborScraper(url, rates)
+        scraper = BCRALiborScraper(url, rates, False)
 
         result = scraper.parse_day_content(content)
 
-        assert result.get('indice_tiempo') == '15/03/2019'
+        assert result.get('indice_tiempo') == '2019-03-15'
         assert result.get('30') == '2,481750'
         assert result.get('60') == '2,558380'
         assert result.get('90') == '2,625250'
         assert result.get('180') == '2,671750'
         assert result.get('360') == '2,840500'
-
-    # def test_run_with_valid_dates(self):
-    #     scraper = BCRALiborScraper()
-
-    #     start_date = date(2019, 3, 4)
-
-    #     end_date = date(2019, 3, 6)
-
-    #     parsed = scraper.run(start_date, end_date)
-
-    #     assert len(parsed) == 3
-
-    # def test_run_with_non_valid_dates(self):
-    #     scraper = BCRALiborScraper()
-
-    #     start_date = date(2019, 3, 10)
-
-    #     end_date = date(2019, 3, 9)
-
-    #     parsed = scraper.run(start_date, end_date)
-
-    #     assert parsed == []
