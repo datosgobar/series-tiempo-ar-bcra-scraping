@@ -1,16 +1,22 @@
-from datetime import date, timedelta, datetime
+from csv import DictWriter
+from datetime import date, datetime, timedelta
 from decimal import Decimal
+from functools import reduce
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+import pandas as pd
 
 
 class BCRAScraper:
 
-    def __init__(self, url, *args, **kwargs):
+    def __init__(self, url, use_intermediate_panel, *args, **kwargs):
         self.browser_driver = None
         self.url = url
+        self.use_intermediate_panel = use_intermediate_panel
+
+        super(BCRAScraper, self).__init__(*args, **kwargs)
 
     def _create_browser_driver(self):
         options = webdriver.ChromeOptions()
@@ -50,8 +56,8 @@ class BCRALiborScraper(BCRAScraper):
         contents = []
         day_count = (end_date - start_date).days + 1
 
-        for single_date in (start_date + timedelta(n) for
-                            n in range(day_count)):
+        for single_date in (start_date + timedelta(n)
+                            for n in range(day_count)):
             contents.append(self.fetch_day_content(single_date))
 
         return contents
@@ -88,6 +94,10 @@ class BCRALiborScraper(BCRAScraper):
         rows = body.find_all('tr')
 
         parsed['indice_tiempo'] = head.findAll('th')[0].text[14:].strip()
+        splited = parsed['indice_tiempo'].split('/')
+        parsed['indice_tiempo'] = '-'.join(
+            [splited[2], splited[1], splited[0]]
+        )
 
         # TODO: validate keys
         for row in rows:
@@ -101,14 +111,15 @@ class BCRALiborScraper(BCRAScraper):
 
         for row in rows:
             preprocessed_row = {}
-            for rate in rates:
-                preprocessed_row[rates[rate]] = \
-                    Decimal((row[rate]).replace(',', '.'))/100
 
-            row_date = row['indice_tiempo'].split('/')
-            preprocessed_row['indice_tiempo'] = date(
-                int(row_date[2]), int(row_date[1]), int(row_date[0])
-                )
+            preprocessed_row['indice_tiempo'] = date.fromisoformat(
+                row['indice_tiempo']
+            )
+
+            for rate in rates:
+                preprocessed_row[rates[rate]] = Decimal(
+                    (row[rate]).replace(',', '.')
+                )/100
 
             preprocessed_rows.append(preprocessed_row)
 
@@ -123,6 +134,127 @@ class BCRALiborScraper(BCRAScraper):
             preprocessed_header.append(value)
 
         return preprocessed_header
+
+    def get_intermediate_panel_data_from_parsed(self, parsed):
+        intermediate_panel_data = []
+
+        if parsed:
+            rate_dfs = {}
+            data = [[v for v in p.values()] for p in parsed]
+            columns = ['indice_tiempo']
+            columns.extend([v for v in self.rates.keys()])
+
+            rate_dfs_panel = pd.DataFrame(
+                data=[],
+                columns=['indice_tiempo', 'value', 'type']
+            )
+
+            df = pd.DataFrame(data, columns=columns)
+
+            for k in self.rates.keys():
+                rate_dfs[k] = df[['indice_tiempo', k]].copy()
+                rate_dfs[k]['type'] = k
+                rate_dfs[k].rename(columns={k: 'value'}, inplace=True)
+
+                rate_dfs_panel = rate_dfs_panel.append(rate_dfs[k])
+
+        intermediate_panel_data = [
+            {
+                'indice_tiempo': r[1],
+                'type': r[3],
+                'value': r[2],
+            }
+            for r in rate_dfs_panel.to_records()
+        ]
+
+        return intermediate_panel_data
+
+    def write_intermediate_panel(self, rows):
+        header = ['indice_tiempo', 'type', 'value']
+
+        with open('.intermediate-panel.csv', 'w') as intermediate_panel:
+            writer = DictWriter(intermediate_panel, fieldnames=header)
+            writer.writeheader()
+            writer.writerows(rows)
+
+    def save_intermediate_panel(self, parsed):
+        intermediate_panel_data = self.get_intermediate_panel_data_from_parsed(
+            parsed
+        )
+        self.write_intermediate_panel(intermediate_panel_data)
+
+    def parse_from_intermediate_panel(self):
+        parsed = []
+        rate_dfs = {}
+
+        columns = ['indice_tiempo']
+        columns.extend([v for v in self.rates.keys()])
+
+        intermediate_panel_df = self.read_intermediate_panel_dataframe()
+        intermediate_panel_df.set_index(['indice_tiempo'], inplace=True)
+
+        if not intermediate_panel_df.empty:
+            for k in self.rates.keys():
+                rate_dfs[k] = intermediate_panel_df.loc[
+                    intermediate_panel_df['type'] == k
+                ][['value']]
+                rate_dfs[k].rename(columns={'value': k}, inplace=True)
+
+            rates_df = reduce(
+                lambda df1, df2: df1.merge(
+                    df2, left_on='indice_tiempo', right_on='indice_tiempo'
+                ),
+                rate_dfs.values(),
+            )
+
+            for r in rates_df.to_records():
+                parsed_row = {}
+
+                columns = ['indice_tiempo']
+                columns.extend([v for v in self.rates.keys()])
+
+                for index, column in enumerate(columns):
+                    parsed_row[column] = r[index]
+
+                if parsed_row:
+                    parsed.append(parsed_row)
+
+        return parsed
+
+    def read_intermediate_panel_dataframe(self):
+        intermediate_panel_dataframe = None
+
+        try:
+            intermediate_panel_dataframe = pd.read_csv(
+                '.intermediate-panel.csv',
+                converters={
+                    'serie_tiempo': lambda _: _,
+                    'type': lambda _: str(_),
+                    'value': lambda _: Decimal(_)
+                }
+            )
+
+        except FileNotFoundError:
+            # TODO: fix me
+            pass
+
+        return intermediate_panel_dataframe
+
+    def run(self, start_date, end_date):
+        parsed = []
+
+        if self.use_intermediate_panel:
+            parsed = self.parse_from_intermediate_panel()
+            parsed = self.preprocess_rows(self.rates, parsed)
+        else:
+            contents = self.fetch_contents(start_date, end_date)
+            parsed = self.parse_contents(contents)
+
+            parsed = self.preprocess_rows(self.rates, parsed)
+
+            self.save_intermediate_panel(parsed)
+
+        return parsed
 
 
 class BCRAExchangeRateScraper(BCRAScraper):

@@ -15,7 +15,8 @@ autopep8 = "*"
 click = "*"
 selenium = "*"
 bs4 = "*"
-bcrascraper = {path = ".",editable = true}
+bcra-scraper = {editable = true,path = "."}
+pandas = "*"
 
 [requires]
 python_version = "3.7"

@@ -59,8 +59,17 @@ def cli(ctx):
     default='config.json',
     type=click.Path(exists=True),
     )
+@click.option(
+    '--use-intermediate-panel',
+    default=False,
+    is_flag=True,
+    help=('Use este flag para forzar la lectura de datos desde un'
+          'archivo intermedio')
+)
 @click.pass_context
-def libor(ctx, start_date, end_date, config):
+def libor(ctx, start_date, end_date, config, use_intermediate_panel,
+          *args, **kwargs):
+
     start_date = date(start_date.year, start_date.month, start_date.day)
     end_date = date(end_date.year, end_date.month, end_date.day)
 
@@ -68,7 +77,8 @@ def libor(ctx, start_date, end_date, config):
 
     scraper = BCRALiborScraper(
         url=config.get('url'),
-        rates=config.get('rates')
+        rates=config.get('rates'),
+        use_intermediate_panel=use_intermediate_panel
     )
 
     parsed = scraper.run(start_date, end_date)
@@ -78,9 +88,8 @@ def libor(ctx, start_date, end_date, config):
 
         csv_header = ['indice_tiempo', '30', '60', '90', '180', '360']
         processed_header = scraper.preprocess_header(scraper.rates, csv_header)
-        processed_parsed = scraper.preprocess_rows(scraper.rates, parsed)
 
-        write_tasas_libor(csv_name, processed_header, processed_parsed)
+        write_tasas_libor(csv_name, processed_header, parsed)
     else:
         click.echo("No se encontraron resultados")
 
@@ -110,5 +119,4 @@ def exchange_rates(ctx, start_date, end_date, config):
         url=config.get('url'),
         coins=config.get('coins')
     )
-    parsed = scraper.run(start_date, end_date)
-    print(parsed)
+    scraper.run(start_date, end_date)
