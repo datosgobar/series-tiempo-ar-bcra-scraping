@@ -110,13 +110,21 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel,
     default='config.json',
     type=click.Path(exists=True),
     )
+@click.option(
+    '--use-intermediate-panel',
+    default=False,
+    is_flag=True,
+    help=('Use este flag para forzar la lectura de datos desde un'
+          'archivo intermedio')
+)
 @click.pass_context
-def exchange_rates(ctx, start_date, end_date, config):
+def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel):
 
     config = read_config(file_path=config, command=ctx.command.name)
 
     scraper = BCRAExchangeRateScraper(
         url=config.get('url'),
-        coins=config.get('coins')
+        coins=config.get('coins'),
+        use_intermediate_panel=use_intermediate_panel
     )
     scraper.run(start_date, end_date)

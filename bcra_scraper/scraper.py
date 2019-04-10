@@ -172,7 +172,7 @@ class BCRALiborScraper(BCRAScraper):
     def write_intermediate_panel(self, rows):
         header = ['indice_tiempo', 'type', 'value']
 
-        with open('.intermediate-panel.csv', 'w') as intermediate_panel:
+        with open('.libor-intermediate-panel.csv', 'w') as intermediate_panel:
             writer = DictWriter(intermediate_panel, fieldnames=header)
             writer.writeheader()
             writer.writerows(rows)
@@ -226,7 +226,7 @@ class BCRALiborScraper(BCRAScraper):
 
         try:
             intermediate_panel_dataframe = pd.read_csv(
-                '.intermediate-panel.csv',
+                '.libor-intermediate-panel.csv',
                 converters={
                     'serie_tiempo': lambda _: _,
                     'type': lambda _: str(_),
@@ -271,20 +271,21 @@ class BCRAExchangeRateScraper(BCRAScraper):
         return content
 
     def fetch_content(self, start_date, coins):
-        browser = webdriver.Chrome()
-        browser.get(self.url)
-        elem = browser.find_element_by_name('Fecha')
+        browser_driver = self.get_browser_driver()
+        browser_driver.get(self.url)
+        elem = browser_driver.find_element_by_name('Fecha')
         elem.send_keys(start_date.strftime("%d/%m/%Y"))
-        coin = browser.find_element_by_name('Moneda')
+        coin = browser_driver.find_element_by_name('Moneda')
 
         coin.send_keys(coins)
 
-        submit_button = browser.find_element_by_class_name('btn-primary')
+        submit_button = browser_driver.find_element_by_class_name(
+            'btn-primary'
+        )
         submit_button.click()
 
-        content = browser.page_source
+        content = browser_driver.page_source
 
-        browser.close()
         return content
 
     def parse_contents(self, content, end_date=datetime.today()):
@@ -325,3 +326,65 @@ class BCRAExchangeRateScraper(BCRAScraper):
                 parsed_contents.append(parsed)
 
         return parsed_contents
+
+    def write_intermediate_panel(self, rows):
+        header = ['indice_tiempo', 'coin', 'type', 'value']
+        file_name = '.exchange-rates-intermediate-panel.csv'
+
+        with open(file_name, 'w') as intermediate_panel:
+            writer = DictWriter(intermediate_panel, fieldnames=header)
+            writer.writeheader()
+            writer.writerows(rows)
+
+    def get_intermediate_panel_data_from_parsed(self, parsed):
+        intermediate_panel_data = []
+
+        if parsed:
+            data = [[v for v in p.values()] for p in parsed]
+            columns = ['indice_tiempo', 'coin', 'type', 'value']
+
+            df = pd.DataFrame(
+                data,
+                columns=['coin', 'indice_tiempo', 'tipo_pase', 'tipo_cambio']
+            )
+            rate_dfs_panel = pd.DataFrame(data=[], columns=columns)
+
+            pase_df = df[['coin', 'indice_tiempo', 'tipo_pase']].copy()
+            pase_df['type'] = 'pase'
+            pase_df.rename(columns={'tipo_pase': 'value'}, inplace=True)
+
+            cambio_df = df[['coin', 'indice_tiempo', 'tipo_cambio']].copy()
+            cambio_df['type'] = 'cambio'
+            cambio_df.rename(columns={'tipo_cambio': 'value'}, inplace=True)
+
+            rate_dfs_panel = rate_dfs_panel.append(pase_df, sort=True)
+            rate_dfs_panel = rate_dfs_panel.append(cambio_df, sort=True)
+
+        for r in rate_dfs_panel.to_records():
+            _ = r[2].split('/')
+
+            panel_row = {
+                'indice_tiempo': '-'.join([_[2], _[1], _[0]]),
+                'coin': r[1],
+                'type': r[3],
+                'value': Decimal(r[4].replace(',', '.')),
+            }
+            intermediate_panel_data.append(panel_row)
+
+        return intermediate_panel_data
+
+    def save_intermediate_panel(self, parsed):
+        intermediate_panel_data = self.get_intermediate_panel_data_from_parsed(
+            parsed
+        )
+        self.write_intermediate_panel(intermediate_panel_data)
+
+    def run(self, start_date, end_date):
+        parsed = []
+
+        contents = self.fetch_contents(start_date, end_date)
+        parsed = self.parse_contents(contents)
+
+        self.save_intermediate_panel(parsed)
+
+        return parsed
