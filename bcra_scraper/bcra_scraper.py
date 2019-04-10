@@ -30,9 +30,9 @@ def get_default_end_date():
     return f'{today.day}/{today.month}/{today.year}'
 
 
-def read_config(file_path):
+def read_config(file_path, command):
     with open(file_path) as config_data:
-        return json.load(config_data)
+        return json.load(config_data)[command]
 
 
 @click.group()
@@ -59,14 +59,17 @@ def cli(ctx):
     default='config.json',
     type=click.Path(exists=True),
     )
-def libor(start_date, end_date, config):
+@click.pass_context
+def libor(ctx, start_date, end_date, config):
     start_date = date(start_date.year, start_date.month, start_date.day)
     end_date = date(end_date.year, end_date.month, end_date.day)
 
-    config = read_config(file_path=config)
+    config = read_config(file_path=config, command=ctx.command.name)
 
-    scraper = \
-        BCRALiborScraper(url=config.get('url'), rates=config.get('rates'))
+    scraper = BCRALiborScraper(
+        url=config.get('url'),
+        rates=config.get('rates')
+    )
 
     parsed = scraper.run(start_date, end_date)
 
@@ -93,7 +96,19 @@ def libor(start_date, end_date, config):
     default=get_default_end_date,
     type=click.DateTime(formats=['%d/%m/%Y']),
     )
-def main_tc(start_date, end_date):
-    scraper = BCRAExchangeRateScraper()
+@click.option(
+    '--config',
+    default='config.json',
+    type=click.Path(exists=True),
+    )
+@click.pass_context
+def exchange_rates(ctx, start_date, end_date, config):
+
+    config = read_config(file_path=config, command=ctx.command.name)
+
+    scraper = BCRAExchangeRateScraper(
+        url=config.get('url'),
+        coins=config.get('coins')
+    )
     parsed = scraper.run(start_date, end_date)
     print(parsed)
