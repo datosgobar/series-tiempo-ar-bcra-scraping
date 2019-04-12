@@ -415,19 +415,19 @@ class BCRASMLScraper():
 
         return content
 
-    def parse_contents(self, contents):
+    def parse_contents(self, contents, start_date, end_date):
         parsed_contents = []
 
         for k, v in contents.items():
 
-            parsed = self.parse_content(v, k)
+            parsed = self.parse_content(v, k, start_date, end_date)
 
             if parsed:
                 parsed_contents.extend(parsed)
 
         return parsed_contents
 
-    def parse_content(self, content, coin):
+    def parse_content(self, content, coin, start_date, end_date):
         soup = BeautifulSoup(content, "html.parser")
 
         table = soup.find('table')
@@ -445,22 +445,27 @@ class BCRASMLScraper():
             headers = header.find_all('th')
             for row in rows:
                 cols = row.find_all('td')
-                parsed = {}
-                parsed["moneda:"] = coin
-                parsed[headers[0].text] = cols[0].text
-                parsed[headers[1].text] = cols[1].text.strip()
-                parsed[headers[2].text] = cols[2].text.strip()
-                parsed[headers[3].text] = cols[3].text.strip()
-                parsed[headers[4].text] = cols[4].text.strip()
-                parsed_content.append(parsed)
+                row_indice_tiempo = \
+                    datetime.strptime(cols[0].text, '%d/%m/%Y')
+
+                if (row_indice_tiempo <= end_date and
+                        row_indice_tiempo >= start_date):
+                    parsed = {}
+                    parsed["moneda:"] = coin
+                    parsed[headers[0].text] = cols[0].text
+                    parsed[headers[1].text] = cols[1].text.strip()
+                    parsed[headers[2].text] = cols[2].text.strip()
+                    parsed[headers[3].text] = cols[3].text.strip()
+                    parsed[headers[4].text] = cols[4].text.strip()
+                    parsed_content.append(parsed)
 
         return parsed_content
 
-    def run(self):
+    def run(self, start_date, end_date):
         parsed = []
 
         contents = self.fetch_contents(self.coins, self.url)
-        parsed = self.parse_contents(contents)
+        parsed = self.parse_contents(contents, start_date, end_date)
 
         print(parsed)
         return parsed
