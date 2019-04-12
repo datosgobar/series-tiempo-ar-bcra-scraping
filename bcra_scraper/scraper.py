@@ -401,6 +401,7 @@ class BCRASMLScraper(BCRAScraper):
         contents = {}
         for k, v in self.coins.items():
             contents[k] = self.fetch_content(v)
+
         return contents
 
     def fetch_content(self, coins):
@@ -449,7 +450,7 @@ class BCRASMLScraper(BCRAScraper):
                 if (row_indice_tiempo <= end_date and
                         row_indice_tiempo >= start_date):
                     parsed = {}
-                    parsed["moneda:"] = coin
+                    parsed["moneda"] = coin
                     parsed[headers[0].text] = cols[0].text
                     parsed[headers[1].text] = cols[1].text.strip()
                     parsed[headers[2].text] = cols[2].text.strip()
