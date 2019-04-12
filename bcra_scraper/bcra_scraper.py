@@ -132,7 +132,7 @@ def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel):
 
 
 @cli.command()
-def sml_scraper():
+def sml():
 
     scraper = BCRASmlScraper()
     scraper.run()

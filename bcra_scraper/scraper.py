@@ -118,7 +118,7 @@ class BCRALiborScraper(BCRAScraper):
 
             for rate in rates:
                 preprocessed_row[rates[rate]] = Decimal(
-                    str(row[rate]).replace(',', '.')
+                    (row[rate]).replace(',', '.')
                 )/100
 
             preprocessed_rows.append(preprocessed_row)
@@ -390,7 +390,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
         return parsed
 
 
-class BCRASmlScraper():
+class BCRASMLScraper():
 
     url = \
      "http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_sml.asp"
