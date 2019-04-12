@@ -79,5 +79,12 @@
             "yuan_china_cny": "Yuan - China CNY",
             "yuan_china_off_shore_cnh": "Yuan-China Off Shore CNH"
         }
+    },
+    "sml": {
+        "url": "http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_sml.asp",
+        "coins": {
+            "peso_uruguayo": "Peso Uruguayo",
+            "real": "Real"
+        }
     }
 }

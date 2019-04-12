@@ -390,24 +390,22 @@ class BCRAExchangeRateScraper(BCRAScraper):
         return parsed
 
 
-class BCRASMLScraper():
+class BCRASMLScraper(BCRAScraper):
 
-    url = \
-     "http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_sml.asp"
-    coins = {
-        "peso_uruguayo": "Peso Uruguayo",
-        "real": "Real"
-    }
+    def __init__(self, url, coins, *args, **kwargs):
+        self.coins = coins
+        super(BCRASMLScraper, self)\
+            .__init__(url, *args, **kwargs)
 
-    def fetch_contents(self, coins, url):
+    def fetch_contents(self, coins):
         contents = {}
         for k, v in self.coins.items():
-            contents[k] = self.fetch_content(v, url)
+            contents[k] = self.fetch_content(v)
         return contents
 
-    def fetch_content(self, coins, url):
-        browser_driver = webdriver.Chrome()
-        browser_driver.get(url)
+    def fetch_content(self, coins):
+        browser_driver = self.get_browser_driver()
+        browser_driver.get(self.url)
         field = browser_driver.find_element_by_name('moneda')
         field.send_keys(coins)
 
@@ -464,7 +462,7 @@ class BCRASMLScraper():
     def run(self, start_date, end_date):
         parsed = []
 
-        contents = self.fetch_contents(self.coins, self.url)
+        contents = self.fetch_contents(self.coins)
         parsed = self.parse_contents(contents, start_date, end_date)
 
         print(parsed)

@@ -142,7 +142,18 @@ def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel):
     default=get_default_end_date,
     type=click.DateTime(formats=['%d/%m/%Y']),
 )
-def sml(start_date, end_date):
+@click.option(
+    '--config',
+    default='config.json',
+    type=click.Path(exists=True),
+)
+@click.pass_context
+def sml(ctx, config, start_date, end_date):
 
-    scraper = BCRASMLScraper()
+    config = read_config(file_path=config, command=ctx.command.name)
+
+    scraper = BCRASMLScraper(
+        url=config.get('url'),
+        coins=config.get('coins'), use_intermediate_panel=False
+    )
     scraper.run(start_date, end_date)
