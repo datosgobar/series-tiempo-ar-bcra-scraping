@@ -97,6 +97,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         assert body is None
 
     # TODO: rename test name
+    # Test no funciona porque no hay datos en el dia anterior
     def test_get_content_for_a_business_day(self):
 
         url = "http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp"
