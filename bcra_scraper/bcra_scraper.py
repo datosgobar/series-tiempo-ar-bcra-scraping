@@ -8,6 +8,7 @@ import json
 import click
 
 from bcra_scraper.scraper import BCRALiborScraper, BCRAExchangeRateScraper
+from bcra_scraper.scraper import BCRASmlScraper
 
 
 # TODO: test me!
@@ -128,3 +129,10 @@ def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel):
         use_intermediate_panel=use_intermediate_panel
     )
     scraper.run(start_date, end_date)
+
+
+@cli.command()
+def sml():
+
+    scraper = BCRASmlScraper()
+    scraper.run()

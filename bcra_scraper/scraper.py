@@ -388,3 +388,79 @@ class BCRAExchangeRateScraper(BCRAScraper):
         self.save_intermediate_panel(parsed)
 
         return parsed
+
+
+class BCRASMLScraper():
+
+    url = \
+     "http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_sml.asp"
+    coins = {
+        "peso_uruguayo": "Peso Uruguayo",
+        "real": "Real"
+    }
+
+    def fetch_contents(self, coins, url):
+        contents = {}
+        for k, v in self.coins.items():
+            contents[k] = self.fetch_content(v, url)
+        return contents
+
+    def fetch_content(self, coins, url):
+        browser_driver = webdriver.Chrome()
+        browser_driver.get(url)
+        field = browser_driver.find_element_by_name('moneda')
+        field.send_keys(coins)
+
+        content = browser_driver.page_source
+
+        return content
+
+    def parse_contents(self, contents):
+        parsed_contents = []
+
+        for k, v in contents.items():
+
+            parsed = self.parse_content(v, k)
+
+            if parsed:
+                parsed_contents.extend(parsed)
+
+        return parsed_contents
+
+    def parse_content(self, content, coin):
+        soup = BeautifulSoup(content, "html.parser")
+
+        table = soup.find('table')
+        head = table.find('thead')
+        body = table.find('tbody')
+
+        if not body:
+            return []
+
+        head_rows = head.find_all('tr')
+        rows = body.find_all('tr')
+        parsed_content = []
+
+        for header in head_rows:
+            headers = header.find_all('th')
+            for row in rows:
+                cols = row.find_all('td')
+                parsed = {}
+                parsed["moneda:"] = coin
+                parsed[headers[0].text] = cols[0].text
+                parsed[headers[1].text] = cols[1].text.strip()
+                parsed[headers[2].text] = cols[2].text.strip()
+                parsed[headers[3].text] = cols[3].text.strip()
+                parsed[headers[4].text] = cols[4].text.strip()
+                parsed_content.append(parsed)
+
+        return parsed_content
+
+    def run(self):
+        parsed = []
+
+        contents = self.fetch_contents(self.coins, self.url)
+        parsed = self.parse_contents(contents)
+
+        print(parsed)
+        return parsed
