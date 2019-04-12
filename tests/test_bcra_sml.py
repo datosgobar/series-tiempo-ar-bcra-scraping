@@ -84,7 +84,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
 
         assert result == []
 
-    def test_run(self):
+    def test_run_with_valid_dates(self):
 
         start_date = datetime(2019, 4, 11)
         end_date = datetime(2019, 4, 11)
@@ -119,3 +119,22 @@ class BcraSmlScraperTestCase(unittest.TestCase):
                 'Tipo de cambio SML Real Peso': '0,08950'
             }
         ]
+
+    def test_run_with_non_valid_dates(self):
+
+        start_date = datetime(2019, 4, 13)
+        end_date = datetime(2019, 4, 12)
+
+        url = '''
+         http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_sml.asp
+        '''
+
+        coins = {
+            "peso_uruguayo": "Peso Uruguayo",
+            "real": "Real"
+        }
+
+        scraper = BCRASMLScraper(url, coins, False)
+        result = scraper.run(start_date, end_date)
+
+        assert result == []

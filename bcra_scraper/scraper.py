@@ -122,7 +122,6 @@ class BCRALiborScraper(BCRAScraper):
                 )/100
 
             preprocessed_rows.append(preprocessed_row)
-
         return preprocessed_rows
 
     def preprocess_header(self, rates, header):
@@ -132,7 +131,6 @@ class BCRALiborScraper(BCRAScraper):
 
         for key, value in rates.items():
             preprocessed_header.append(value)
-
         return preprocessed_header
 
     def get_intermediate_panel_data_from_parsed(self, parsed):
@@ -391,7 +389,6 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
 
 class BCRASMLScraper(BCRAScraper):
-
     def __init__(self, url, coins, *args, **kwargs):
         self.coins = coins
         super(BCRASMLScraper, self)\
@@ -432,9 +429,6 @@ class BCRASMLScraper(BCRAScraper):
         table = soup.find('table')
         head = table.find('thead')
         body = table.find('tbody')
-
-        if not body:
-            return []
 
         head_rows = head.find_all('tr')
         rows = body.find_all('tr')

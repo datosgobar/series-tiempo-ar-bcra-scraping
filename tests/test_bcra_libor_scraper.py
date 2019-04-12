@@ -7,7 +7,8 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import with_statement
 
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
+from decimal import Decimal
 import unittest
 
 from bs4 import BeautifulSoup
@@ -258,3 +259,137 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         assert result.get('90') == '2,625250'
         assert result.get('180') == '2,671750'
         assert result.get('360') == '2,840500'
+
+    def test_preprocessed_rows(self):
+
+        rates = {
+            "30": "libor_30_dias",
+            "60": "libor_60_dias",
+            "90": "libor_90_dias",
+            "180": "libor_180_dias",
+            "360": "libor_360_dias"
+        }
+
+        rows = [
+            {
+                'indice_tiempo': '2019-04-11',
+                '30': '2,472630', '60': '2,536750',
+                '90': '2,596750', '180': '2,631250',
+                '360': '2,734130'
+            }
+        ]
+        scraper = BCRALiborScraper(False, rates, False)
+
+        result = scraper.preprocess_rows(rates, rows)
+
+        assert result == [
+            {
+                'indice_tiempo': date.fromisoformat('2019-04-11'),
+                'libor_30_dias': Decimal('0.0247263'),
+                'libor_60_dias': Decimal('0.0253675'),
+                'libor_90_dias': Decimal('0.0259675'),
+                'libor_180_dias': Decimal('0.0263125'),
+                'libor_360_dias': Decimal('0.0273413')
+            }
+        ]
+
+    def test_preprocessed_header(self):
+
+        rates = {
+            "30": "libor_30_dias",
+            "60": "libor_60_dias",
+            "90": "libor_90_dias",
+            "180": "libor_180_dias",
+            "360": "libor_360_dias"
+        }
+
+        header = ['indice_tiempo', '30', '60', '90', '180', '360']
+
+        scraper = BCRALiborScraper(False, rates, False)
+
+        result = scraper.preprocess_header(rates, header)
+
+        assert result == [
+            'indice_tiempo',
+            'libor_30_dias',
+            'libor_60_dias',
+            'libor_90_dias',
+            'libor_180_dias',
+            'libor_360_dias'
+        ]
+
+    def test_get_intermediate_panel_date_from_parsed(self):
+
+        parsed = [
+            {
+                'indice_tiempo': date.fromisoformat('2019-04-11'),
+                'libor_30_dias': Decimal('0.0247263'),
+                'libor_60_dias': Decimal('0.0253675'),
+                'libor_90_dias': Decimal('0.0259675'),
+                'libor_180_dias': Decimal('0.0263125'),
+                'libor_360_dias': Decimal('0.0273413')
+            }
+        ]
+
+        rates = {
+            "30": "libor_30_dias",
+            "60": "libor_60_dias",
+            "90": "libor_90_dias",
+            "180": "libor_180_dias",
+            "360": "libor_360_dias"
+        }
+
+        scraper = BCRALiborScraper(False, rates, False)
+
+        result = scraper.get_intermediate_panel_data_from_parsed(parsed)
+
+        assert result == [
+            {
+                'indice_tiempo': date.fromisoformat('2019-04-11'),
+                'type': '30', 'value': Decimal('0.0247263')
+            },
+            {
+                'indice_tiempo': date.fromisoformat('2019-04-11'),
+                'type': '60', 'value': Decimal('0.0253675')
+            },
+            {
+                'indice_tiempo': date.fromisoformat('2019-04-11'),
+                'type': '90', 'value': Decimal('0.0259675')
+            },
+            {
+                'indice_tiempo': date.fromisoformat('2019-04-11'),
+                'type': '180', 'value': Decimal('0.0263125')
+            },
+            {
+                'indice_tiempo': date.fromisoformat('2019-04-11'),
+                'type': '360', 'value': Decimal('0.0273413')
+            }
+        ]
+
+    def run_with_valid_dates(self):
+
+        start_date = datetime.date(2019, 4, 11)
+        end_date = datetime.date(2019, 4, 11)
+
+        rates = {
+            "30": "libor_30_dias",
+            "60": "libor_60_dias",
+            "90": "libor_90_dias",
+            "180": "libor_180_dias",
+            "360": "libor_360_dias"
+        }
+
+        scraper = BCRALiborScraper(False, rates, False)
+
+        result = scraper.run(start_date, end_date)
+
+        assert result == [
+            {
+                'indice_tiempo': date.fromisoformat('2019-04-11'),
+                'libor_30_dias': Decimal('0.0247263'),
+                'libor_60_dias': Decimal('0.0253675'),
+                'libor_90_dias': Decimal('0.0259675'),
+                'libor_180_dias': Decimal('0.0263125'),
+                'libor_360_dias': Decimal('0.0273413')
+            }
+        ]
