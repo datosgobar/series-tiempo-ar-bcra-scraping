@@ -1,0 +1,19 @@
+FROM continuumio/miniconda3:4.5.4
+
+RUN apt update && apt install --yes --no-install-recommends chromedriver make
+
+COPY . /app
+
+WORKDIR /app
+
+RUN conda create -n app python=3.7.2 --no-update-dependencies
+
+RUN echo "source activate app" > ~/.bashrc
+ENV PATH /opt/conda/envs/app/bin:$PATH
+
+RUN pip install -r requirements_dev.txt
+RUN pip install .
+
+ENTRYPOINT ["/bin/bash", "-c"]
+
+CMD "bcra_scraper"
