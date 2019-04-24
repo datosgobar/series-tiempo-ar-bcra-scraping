@@ -44,7 +44,8 @@ class BCRAScraper:
         ----------
         url : str
             Una cadena que representa una url válida, usada para obtener
-            el contenido a ser scrapeado
+            el contenido a ser scrapeado. Una URL se considera válida cuando su
+            contenido no está vacio.
         use_intermediate_panel : bool
             Flag para indicar si se debe generar o leer un archivo intermedio
             con formato panel
@@ -183,7 +184,8 @@ class BCRALiborScraper(BCRAScraper):
         ----------
         url : str
             Una cadena que representa una url válida, usada para obtener
-            el contenido a ser scrapeado
+            el contenido a ser scrapeado. Una URL se considera válida cuando su
+            contenido no está vacio.
         rates : Dict
             Diccionario que contiene los plazos en días de la tasa Libor
         """
@@ -509,7 +511,8 @@ class BCRAExchangeRateScraper(BCRAScraper):
         ----------
         url : str
             Una cadena que representa una url válida, usada para obtener
-            el contenido a ser scrapeado
+            el contenido a ser scrapeado. Una URL se considera válida cuando su
+            contenido no está vacio.
         coins : Dict
             Diccionario que contiene los plazos en días de la tasa Libor
         """
@@ -705,8 +708,8 @@ class BCRAExchangeRateScraper(BCRAScraper):
         """
         parsed = []
 
-        contents = self.fetch_contents(start_date, end_date)
-        parsed = self.parse_contents(contents)
+        contents = self.fetch_contents(start_date)
+        parsed = self.parse_contents(contents, end_date)
 
         self.save_intermediate_panel(parsed)
 
@@ -754,7 +757,8 @@ class BCRASMLScraper(BCRAScraper):
         ----------
         url : str
             Una cadena que representa una url válida, usada para obtener
-            el contenido a ser scrapeado
+            el contenido a ser scrapeado. Una URL se considera válida cuando su
+            contenido no está vacio.
         coins : Dict
             Diccionario que contiene los nombres de las monedas
         """

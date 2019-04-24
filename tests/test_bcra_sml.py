@@ -9,8 +9,17 @@ from __future__ import with_statement
 
 from datetime import datetime
 import unittest
+from unittest import mock
+import io
+import json
 
 from bcra_scraper.scraper import BCRASMLScraper
+from bcra_scraper.bcra_scraper import validate_url_config
+from bcra_scraper.bcra_scraper import validate_url_has_value
+from bcra_scraper.bcra_scraper import validate_coins_key_config
+from bcra_scraper.bcra_scraper import validate_coins_key_has_values
+from bcra_scraper.exceptions import InvalidConfigurationError
+from bcra_scraper.bcra_scraper import read_config
 
 
 class BcraSmlScraperTestCase(unittest.TestCase):
@@ -138,3 +147,57 @@ class BcraSmlScraperTestCase(unittest.TestCase):
         result = scraper.run(start_date, end_date)
 
         assert result == []
+
+    def test_sml_configuration_has_url(self):
+        """Validar la existencia de la clave url dentro de
+        la configuración de sml"""
+        dict_config = {'sml': {'foo': 'bar'}}
+
+        with mock.patch(
+            'builtins.open',
+            return_value=io.StringIO(json.dumps(dict_config))
+        ):
+
+            with self.assertRaises(InvalidConfigurationError):
+                config = read_config("config.json", "sml")
+                validate_url_config(config)
+
+    def test_sml_url_has_value(self):
+        """Validar que la url sea valida"""
+        dict_config = {'sml': {'url': ''}}
+
+        with mock.patch(
+            'builtins.open',
+            return_value=io.StringIO(json.dumps(dict_config))
+        ):
+
+            with self.assertRaises(InvalidConfigurationError):
+                config = read_config("config.json", "sml")
+                validate_url_has_value(config)
+
+    def test_sml_configuration_has_coins(self):
+        """Validar la existencia de la clave coins dentro de
+        la configuración de sml"""
+        dict_config = {'sml': {'foo': 'bar'}}
+
+        with mock.patch(
+            'builtins.open',
+            return_value=io.StringIO(json.dumps(dict_config))
+        ):
+
+            with self.assertRaises(InvalidConfigurationError):
+                config = read_config("config.json", "sml")
+                validate_coins_key_config(config)
+
+    def test_sml_coins_has_values(self):
+        """Validar la existencia de valores dentro de coins"""
+        dict_config = {'sml': {'coins': {}}}
+
+        with mock.patch(
+            'builtins.open',
+            return_value=io.StringIO(json.dumps(dict_config))
+        ):
+
+            with self.assertRaises(InvalidConfigurationError):
+                config = read_config("config.json", "sml")
+                validate_coins_key_has_values(config)

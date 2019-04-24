@@ -10,8 +10,17 @@ from __future__ import with_statement
 import datetime
 from datetime import date
 import unittest
+from unittest import mock
+import io
+import json
 
 from bcra_scraper.scraper import BCRAExchangeRateScraper
+from bcra_scraper.bcra_scraper import validate_url_config
+from bcra_scraper.bcra_scraper import validate_url_has_value
+from bcra_scraper.bcra_scraper import validate_coins_key_config
+from bcra_scraper.bcra_scraper import validate_coins_key_has_values
+from bcra_scraper.exceptions import InvalidConfigurationError
+from bcra_scraper.bcra_scraper import read_config
 
 
 class BcraExchangeRateTestCase(unittest.TestCase):
@@ -135,3 +144,57 @@ class BcraExchangeRateTestCase(unittest.TestCase):
                                 'indice_tiempo': '08/04/2019',
                                 'tipo_pase': '0,0003030',
                                 'tipo_cambio': '0,0132500'}]
+
+    def test_exchange_rates_configuration_has_url(self):
+        """Validar la existencia de la clave url dentro de
+        la configuración de exchange-rates"""
+        dict_config = {'exchange-rates': {'foo': 'bar'}}
+
+        with mock.patch(
+            'builtins.open',
+            return_value=io.StringIO(json.dumps(dict_config))
+        ):
+
+            with self.assertRaises(InvalidConfigurationError):
+                config = read_config("config.json", "exchange-rates")
+                validate_url_config(config)
+
+    def test_exchange_rates_url_has_value(self):
+        """Validar que la url sea valida"""
+        dict_config = {'exchange-rates': {'url': ''}}
+
+        with mock.patch(
+            'builtins.open',
+            return_value=io.StringIO(json.dumps(dict_config))
+        ):
+
+            with self.assertRaises(InvalidConfigurationError):
+                config = read_config("config.json", "exchange-rates")
+                validate_url_has_value(config)
+
+    def test_exchange_rates_configuration_has_coins(self):
+        """Validar la existencia de la clave coins dentro de
+        la configuración de exchange rates"""
+        dict_config = {'exchange-rates': {'foo': 'bar'}}
+
+        with mock.patch(
+            'builtins.open',
+            return_value=io.StringIO(json.dumps(dict_config))
+        ):
+
+            with self.assertRaises(InvalidConfigurationError):
+                config = read_config("config.json", "exchange-rates")
+                validate_coins_key_config(config)
+
+    def test_exchange_rates_coins_has_values(self):
+        """Validar la existencia de valores dentro de coins"""
+        dict_config = {'exchange-rates': {'coins': {}}}
+
+        with mock.patch(
+            'builtins.open',
+            return_value=io.StringIO(json.dumps(dict_config))
+        ):
+
+            with self.assertRaises(InvalidConfigurationError):
+                config = read_config("config.json", "exchange-rates")
+                validate_coins_key_has_values(config)

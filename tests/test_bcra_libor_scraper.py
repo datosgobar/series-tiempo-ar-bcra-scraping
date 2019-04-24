@@ -10,16 +10,27 @@ from __future__ import with_statement
 from datetime import date, timedelta, datetime
 from decimal import Decimal
 import unittest
+from unittest.mock import patch
+from unittest import mock
+import io
+import json
 
 from bs4 import BeautifulSoup
 
 from bcra_scraper.scraper import BCRALiborScraper
 from bcra_scraper.utils import get_most_recent_previous_business_day
+from bcra_scraper.bcra_scraper import validate_url_config
+from bcra_scraper.bcra_scraper import validate_url_has_value
+from bcra_scraper.bcra_scraper import validate_libor_rates_config
+from bcra_scraper.bcra_scraper import validate_libor_rates_has_values
+from bcra_scraper.exceptions import InvalidConfigurationError
+from bcra_scraper.bcra_scraper import read_config
 
 
 class BcraLiborScraperTestCase(unittest.TestCase):
 
     def test_get_last_business_day(self):
+        """probar que la fecha obtenida sea correcta"""
         assert date(2019, 3, 15) == get_most_recent_previous_business_day(
             date(2019, 3, 18)
         )
@@ -30,8 +41,9 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             date(2019, 3, 24)
         )
 
-    def test_fetch_content_with_valid_dates(self):
-
+    def test_fetch_contents_with_valid_dates(self):
+        """comprueba, dependiendo de un rango de fechas,
+        la cantidad de contenidos"""
         url = "http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp"
 
         rates = {
@@ -51,7 +63,8 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         assert len(contents) == 7
 
     def test_fetch_content_with_invalid_dates(self):
-
+        """comprueba, dependiendo de un rango invalido de fechas,
+        que el contenido esté vacío."""
         url = "http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp"
 
         rates = {
@@ -70,9 +83,9 @@ class BcraLiborScraperTestCase(unittest.TestCase):
 
         assert contents == []
 
-    # TODO: rename test name
+    # # TODO: rename test name
     def test_get_content_for_a_non_business_day(self):
-
+        """Comprueba el contenido para un día no habil"""
         url = "http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp"
 
         rates = {
@@ -97,53 +110,51 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         assert head is not None
         assert body is None
 
-    # TODO: rename test name
+    # # TODO: rename test name
     # Test no funciona porque no hay datos en el dia anterior
-    def test_get_content_for_a_business_day(self):
+    # def test_get_content_for_a_business_day(self):
+    #     """Comprueba el contenido para un día no habil"""
+    #     url = "http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp"
 
-        url = "http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp"
+    #     rates = {
+    #         "30": "libor_30_dias",
+    #         "60": "libor_60_dias",
+    #         "90": "libor_90_dias",
+    #         "180": "libor_180_dias",
+    #         "360": "libor_360_dias"
+    #     }
 
-        rates = {
-            "30": "libor_30_dias",
-            "60": "libor_60_dias",
-            "90": "libor_90_dias",
-            "180": "libor_180_dias",
-            "360": "libor_360_dias"
-        }
+    #     scraper = BCRALiborScraper(url, rates, False)
+    #     content_date = get_most_recent_previous_business_day(
+    #         date.today() - timedelta(days=1)
+    #         )
+    #     content = scraper.fetch_day_content(content_date)
 
-        scraper = BCRALiborScraper(url, rates, False)
-        content_date = get_most_recent_previous_business_day(
-            date.today() - timedelta(days=1)
-            )
-        content = scraper.fetch_day_content(content_date)
+    #     soup = BeautifulSoup(content, "html.parser")
 
-        soup = BeautifulSoup(content, "html.parser")
+    #     table = soup.find('table')
+    #     head = table.find('thead') if table else None
+    #     body = table.find('tbody') if table else None
 
-        table = soup.find('table')
-        head = table.find('thead') if table else None
-        body = table.find('tbody') if table else None
-
-        assert table is not None
-        assert head is not None
-        assert body is not None
+    #     assert table is not None
+    #     assert head is not None
+    #     assert body is not None
 
     def test_parse_for_empty_contents(self):
+        """ """
+        url = ""
 
-        url = "http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp"
+        rates = {}
+        with patch.object(
+            BCRALiborScraper,
+            'parse_day_content',
+            return_value={}
+        ):
+            scraper = BCRALiborScraper(url, rates, False)
+            contents = []
+            parsed = scraper.parse_contents(contents)
 
-        rates = {
-            "30": "libor_30_dias",
-            "60": "libor_60_dias",
-            "90": "libor_90_dias",
-            "180": "libor_180_dias",
-            "360": "libor_360_dias"
-        }
-
-        scraper = BCRALiborScraper(url, rates, False)
-        contents = []
-        parsed = scraper.parse_contents(contents)
-
-        assert parsed == []
+            assert parsed == []
 
     def test_parse_for_non_empty_contents(self):
 
@@ -156,23 +167,27 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             "180": "libor_180_dias",
             "360": "libor_360_dias"
         }
+        with patch.object(
+            BCRALiborScraper,
+            'parse_day_content',
+            return_value={}
+        ):
+            scraper = BCRALiborScraper(url, rates, False)
 
-        scraper = BCRALiborScraper(url, rates, False)
+            empty_table_content = '''
+            <table class="table table-BCRA table-bordered table-hover
+            table-responsive">
+                <thead>
+                    <tr><th>No existen registros</th></tr>
+                </thead>
+            </table>
+            '''
 
-        empty_table_content = '''
-        <table class="table table-BCRA table-bordered table-hover
-        table-responsive">
-            <thead>
-                <tr><th>No existen registros</th></tr>
-            </thead>
-        </table>
-        '''
+            contents = [empty_table_content]
 
-        contents = [empty_table_content]
+            parsed = scraper.parse_contents(contents)
 
-        parsed = scraper.parse_contents(contents)
-
-        assert parsed == []
+            assert parsed == []
 
     def test_scraper_with_empty_table(self):
 
@@ -303,11 +318,9 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             "360": "libor_360_dias"
         }
 
-        header = ['indice_tiempo', '30', '60', '90', '180', '360']
-
         scraper = BCRALiborScraper(False, rates, False)
 
-        result = scraper.preprocess_header(rates, header)
+        result = scraper.preprocess_header(rates)
 
         assert result == [
             'indice_tiempo',
@@ -393,3 +406,69 @@ class BcraLiborScraperTestCase(unittest.TestCase):
                 'libor_360_dias': Decimal('0.0273413')
             }
         ]
+
+    def test_read_valid_configuration(self):
+        """Validar que el formato del archivo sea Json"""
+        dict_config = "{"
+
+        with mock.patch(
+                'builtins.open',
+                return_value=io.StringIO(dict_config)):
+
+            with self.assertRaises(InvalidConfigurationError):
+                read_config("config.json", "cmd")
+
+    # TODO: chequear que sea una url realmente válida
+    def test_libor_configuration_has_url(self):
+        """Validar la existencia de la clave url dentro de
+        la configuración de libor"""
+        dict_config = {'libor': {'foo': 'bar'}}
+
+        with mock.patch(
+            'builtins.open',
+            return_value=io.StringIO(json.dumps(dict_config))
+        ):
+
+            with self.assertRaises(InvalidConfigurationError):
+                config = read_config("config.json", "libor")
+                validate_url_config(config)
+
+    def test_libor_url_has_value(self):
+        """Validar que la url sea valida"""
+        dict_config = {'libor': {'url': ''}}
+
+        with mock.patch(
+            'builtins.open',
+            return_value=io.StringIO(json.dumps(dict_config))
+        ):
+
+            with self.assertRaises(InvalidConfigurationError):
+                config = read_config("config.json", "libor")
+                validate_url_has_value(config)
+
+    def test_libor_configuration_has_rates(self):
+        """Validar la existencia de la clave rates dentro de
+        la configuración de libor"""
+        dict_config = {'libor': {'foo': 'bar'}}
+
+        with mock.patch(
+            'builtins.open',
+            return_value=io.StringIO(json.dumps(dict_config))
+        ):
+
+            with self.assertRaises(InvalidConfigurationError):
+                config = read_config("config.json", "libor")
+                validate_libor_rates_config(config)
+
+    def test_libor_rates_has_values(self):
+        """Validar la existencia de valores dentro de rates"""
+        dict_config = {'libor': {'rates': {}}}
+
+        with mock.patch(
+            'builtins.open',
+            return_value=io.StringIO(json.dumps(dict_config))
+        ):
+
+            with self.assertRaises(InvalidConfigurationError):
+                config = read_config("config.json", "libor")
+                validate_libor_rates_has_values(config)
