@@ -977,8 +977,8 @@ class BCRASMLScraper(BCRAScraper):
                 if (row_indice_tiempo <= end_date and
                         row_indice_tiempo >= start_date):
                     parsed = {}
-                    parsed["moneda"] = coin
-                    parsed[headers[0].text] = cols[0].text
+                    parsed['coin'] = coin
+                    parsed['indice_tiempo'] = cols[0].text
                     parsed[headers[1].text] = cols[1].text.strip()
                     parsed[headers[2].text] = cols[2].text.strip()
                     parsed[headers[3].text] = cols[3].text.strip()
@@ -986,6 +986,80 @@ class BCRASMLScraper(BCRAScraper):
                     parsed_content.append(parsed)
 
         return parsed_content
+
+    def get_intermediate_panel_data_from_parsed(self, parsed):
+        intermediate_panel_data = []
+
+        if parsed:
+            for c in self.coins.keys():
+                types = []
+                if c == 'peso_uruguayo':
+                    types = [
+                        'Tipo de cambio de Referencia',
+                        'Tipo de cambio URINUSCA',
+                        'Tipo de cambio SML Peso Uruguayo',
+                        'Tipo de cambio SML Uruguayo Peso',
+                    ]
+                else:
+                    types = [
+                        'Tipo de cambio de Referencia',
+                        'Tipo de cambio PTAX',
+                        'Tipo de cambio SML Peso Real',
+                        'Tipo de cambio SML Real Peso',
+                    ]
+
+                coin_dfs = {}
+                data = [
+                    [v for v in p.values()] for p in parsed if p['coin'] == c
+                ]
+                columns = ['coin', 'indice_tiempo']
+                columns.extend(types)
+
+                coin_dfs_panel = pd.DataFrame(
+                    data=[],
+                    columns=['indice_tiempo', 'coin', 'value', 'type']
+                )
+
+                df = pd.DataFrame(data, columns=columns)
+
+                coin_dfs[c] = {}
+                for type in types:
+                    coin_dfs[c][type] = df[['indice_tiempo', type]].copy()
+                    coin_dfs[c][type]['coin'] = c
+                    coin_dfs[c][type]['type'] = type
+                    coin_dfs[c][type].rename(
+                        columns={type: 'value'}, inplace=True
+                    )
+
+                    coin_dfs_panel = coin_dfs_panel.append(
+                        coin_dfs[c][type].copy()
+                    )
+
+                for r in coin_dfs_panel.to_records():
+                    intermediate_panel_data.append(
+                       {
+                           'indice_tiempo': r[2],
+                           'coin': r[1],
+                           'type': r[3],
+                           'value': r[4],
+                       }
+                    )
+
+        return intermediate_panel_data
+
+    def write_intermediate_panel(self, rows):
+        header = ['indice_tiempo', 'coin', 'type', 'value']
+
+        with open('.sml-intermediate-panel.csv', 'w') as intermediate_panel:
+            writer = DictWriter(intermediate_panel, fieldnames=header)
+            writer.writeheader()
+            writer.writerows(rows)
+
+    def save_intermediate_panel(self, parsed):
+        intermediate_panel_data = self.get_intermediate_panel_data_from_parsed(
+            parsed
+        )
+        self.write_intermediate_panel(intermediate_panel_data)
 
     def run(self, start_date, end_date):
         """
@@ -1007,5 +1081,6 @@ class BCRASMLScraper(BCRAScraper):
         contents = self.fetch_contents(self.coins)
         parsed = self.parse_contents(contents, start_date, end_date)
 
-        print(parsed)
+        self.save_intermediate_panel(parsed)
+
         return parsed
