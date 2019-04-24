@@ -3,9 +3,12 @@
 
 from csv import DictWriter
 from datetime import date
+from json import JSONDecodeError
 import json
 
 import click
+
+from bcra_scraper.exceptions import InvalidConfigurationError
 
 from bcra_scraper.scraper import BCRALiborScraper, BCRAExchangeRateScraper
 from bcra_scraper.scraper import BCRASMLScraper
@@ -32,8 +35,51 @@ def get_default_end_date():
 
 
 def read_config(file_path, command):
-    with open(file_path) as config_data:
-        return json.load(config_data)[command]
+    try:
+        with open(file_path) as config_data:
+            return json.load(config_data)[command]
+    except JSONDecodeError:
+        raise InvalidConfigurationError(
+            "El formato del archivo de configuración es inválido"
+        )
+
+
+def validate_url_config(config):
+    if 'url' not in config:
+        raise InvalidConfigurationError("La clave url no existe")
+
+
+# def validate_url_has_value(config):
+#     url = config['url'].split(':')
+#     if url[0] != 'http':
+#         raise InvalidConfigurationError("La url no es válida")
+
+
+def validate_url_has_value(config):
+    if config['url'] == '':
+        raise InvalidConfigurationError("La url no es válida")
+
+
+def validate_libor_rates_config(config):
+    if 'rates' not in config:
+        raise InvalidConfigurationError("La clave rates no existe")
+
+
+def validate_libor_rates_has_values(config):
+    rates = config.get('rates', {})
+    if rates == {}:
+        raise InvalidConfigurationError("No existen valores para rates")
+
+
+def validate_coins_key_config(config):
+    if 'coins' not in config:
+        raise InvalidConfigurationError("La clave coins no existe")
+
+
+def validate_coins_key_has_values(config):
+    coins = config.get('coins', {})
+    if coins == {}:
+        raise InvalidConfigurationError("No existen valores para coins")
 
 
 @click.group()
@@ -74,25 +120,33 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel,
     start_date = date(start_date.year, start_date.month, start_date.day)
     end_date = date(end_date.year, end_date.month, end_date.day)
 
-    config = read_config(file_path=config, command=ctx.command.name)
+    try:
+        config = read_config(file_path=config, command=ctx.command.name)
 
-    scraper = BCRALiborScraper(
-        url=config.get('url'),
-        rates=config.get('rates'),
-        use_intermediate_panel=use_intermediate_panel
-    )
+        validate_url_config(config)
+        validate_url_has_value(config)
+        validate_libor_rates_config(config)
+        validate_libor_rates_has_values(config)
 
-    parsed = scraper.run(start_date, end_date)
+        scraper = BCRALiborScraper(
+            url=config.get('url'),
+            rates=config.get('rates'),
+            use_intermediate_panel=use_intermediate_panel
+        )
 
-    if parsed:
-        csv_name = 'tasas-libor.csv'
+        parsed = scraper.run(start_date, end_date)
 
-        csv_header = ['indice_tiempo', '30', '60', '90', '180', '360']
-        processed_header = scraper.preprocess_header(scraper.rates, csv_header)
+        if parsed:
+            csv_name = 'tasas-libor.csv'
 
-        write_tasas_libor(csv_name, processed_header, parsed)
-    else:
-        click.echo("No se encontraron resultados")
+            # csv_header = ['indice_tiempo', '30', '60', '90', '180', '360']
+            processed_header = scraper.preprocess_header(scraper.rates)
+
+            write_tasas_libor(csv_name, processed_header, parsed)
+        else:
+            click.echo("No se encontraron resultados")
+    except InvalidConfigurationError as err:
+        click.echo(err)
 
 
 @cli.command()
@@ -121,14 +175,22 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel,
 @click.pass_context
 def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel):
 
-    config = read_config(file_path=config, command=ctx.command.name)
+    try:
+        config = read_config(file_path=config, command=ctx.command.name)
+        validate_url_config(config)
+        validate_url_has_value(config)
+        validate_coins_key_config(config)
+        validate_coins_key_has_values(config)
 
-    scraper = BCRAExchangeRateScraper(
-        url=config.get('url'),
-        coins=config.get('coins'),
-        use_intermediate_panel=use_intermediate_panel
-    )
-    scraper.run(start_date, end_date)
+        scraper = BCRAExchangeRateScraper(
+            url=config.get('url'),
+            coins=config.get('coins'),
+            use_intermediate_panel=use_intermediate_panel
+        )
+        scraper.run(start_date, end_date)
+
+    except InvalidConfigurationError as err:
+        click.echo(err)
 
 
 @cli.command()
@@ -150,10 +212,18 @@ def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel):
 @click.pass_context
 def sml(ctx, config, start_date, end_date):
 
-    config = read_config(file_path=config, command=ctx.command.name)
+    try:
+        config = read_config(file_path=config, command=ctx.command.name)
+        validate_url_config(config)
+        validate_url_has_value(config)
+        validate_coins_key_config(config)
+        validate_coins_key_has_values(config)
 
-    scraper = BCRASMLScraper(
-        url=config.get('url'),
-        coins=config.get('coins'), use_intermediate_panel=False
-    )
-    scraper.run(start_date, end_date)
+        scraper = BCRASMLScraper(
+            url=config.get('url'),
+            coins=config.get('coins'), use_intermediate_panel=False
+        )
+        scraper.run(start_date, end_date)
+
+    except InvalidConfigurationError as err:
+        click.echo(err)
