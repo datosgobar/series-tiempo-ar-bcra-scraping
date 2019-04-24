@@ -520,7 +520,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
         super(BCRAExchangeRateScraper, self)\
             .__init__(url, *args, **kwargs)
 
-    def fetch_contents(self, start_date):
+    def fetch_contents(self, start_date, end_date):
         """
         A través de un loop llama a un método.
         Retorna un diccionario en donde las claves son las monedas y
@@ -571,7 +571,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
         return content
 
-    def parse_contents(self, contents, end_date=datetime.today()):
+    def parse_contents(self, content, start_date, end_date=datetime.today()):
         """
         Recorre un iterable que posee los html y llama a un método.
         Retorna una lista de diccionarios con los contenidos parseados
@@ -587,16 +587,35 @@ class BCRAExchangeRateScraper(BCRAScraper):
         """
 
         parsed_contents = []
-        for k, v in contents.items():
+        parsed_tc_local, parsed_tp_usd = {}, {}
+        parsed_contents = {'tc_local': [], 'tp_usd': []}
 
-            parsed = self.parse_coin(v, end_date, k)
+        for k, v in content.items():
+
+            parsed = self.parse_coin(v, start_date, end_date, k)
 
             if parsed:
-                parsed_contents.extend(parsed)
+                for p in parsed:
+                    if p['indice_tiempo'] not in parsed_tc_local.keys():
+                        parsed_tc_local[p['indice_tiempo']] = {}
+                    parsed_tc_local[p['indice_tiempo']][p['moneda']] =\
+                        p['tc_local']
+                    if p['indice_tiempo'] not in parsed_tp_usd.keys():
+                        parsed_tp_usd[p['indice_tiempo']] = {}
+                    parsed_tp_usd[p['indice_tiempo']][p['moneda']] =\
+                        p['tp_usd']
+
+        for k, v in parsed_tc_local.items():
+            v['indice_tiempo'] = k
+            parsed_contents['tc_local'].append(v)
+
+        for k, v in parsed_tp_usd.items():
+            v['indice_tiempo'] = k
+            parsed_contents['tp_usd'].append(v)
 
         return parsed_contents
 
-    def parse_coin(self, content, end_date, coin):
+    def parse_coin(self, content, start_date, end_date, coin):
         """
         Retorna un iterable con el contenido scrapeado cuyo formato
         posee el indice de tiempo y los tipos de pase y cambio de cada moneda
@@ -612,6 +631,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
         coin : str
             Nombre de la moneda
         """
+
         soup = BeautifulSoup(content, "html.parser")
 
         table = soup.find('table')
@@ -630,14 +650,45 @@ class BCRAExchangeRateScraper(BCRAScraper):
             row_indice_tiempo = \
                 datetime.strptime(cols[0].text[5:].strip(), '%d/%m/%Y')
 
-            if row_indice_tiempo <= end_date:
+            if (start_date <= row_indice_tiempo and
+                    row_indice_tiempo <= end_date):
                 parsed['moneda'] = coin
                 parsed['indice_tiempo'] = cols[0].text[5:].strip()
-                parsed['tipo_pase'] = cols[1].text[5:].strip()
-                parsed['tipo_cambio'] = cols[2].text[5:].strip()
+                parsed['tp_usd'] = cols[1].text[5:].strip()
+                parsed['tc_local'] = cols[2].text[5:].strip()
                 parsed_contents.append(parsed)
 
         return parsed_contents
+
+    def preprocess_rows(self, rows):
+        preprocessed_rows = []
+
+        for row in rows:
+            preprocessed_row = {}
+
+            for k in row.keys():
+                if k == 'indice_tiempo':
+                    if '/' in row[k]:
+                        _ = row[k].split('/')
+                        preprocessed_date = date.fromisoformat(
+                            '-'.join([_[2], _[1], _[0]])
+                        )
+                    else:
+                        preprocessed_date = date.fromisoformat(row[k])
+
+                    preprocessed_row['indice_tiempo'] = preprocessed_date
+                elif k == 'moneda':
+                    preprocessed_row[k] = row[k]
+                else:
+                    preprocessed_row[k] = (
+                        Decimal((row[k]).replace(',', '.'))
+                        if isinstance(row[k], str)
+                        else row[k]
+                    )
+
+            preprocessed_rows.append(preprocessed_row)
+
+        return preprocessed_rows
 
     def write_intermediate_panel(self, rows):
         header = ['indice_tiempo', 'coin', 'type', 'value']
@@ -652,36 +703,18 @@ class BCRAExchangeRateScraper(BCRAScraper):
         intermediate_panel_data = []
 
         if parsed:
-            data = [[v for v in p.values()] for p in parsed]
-            columns = ['indice_tiempo', 'coin', 'type', 'value']
+            for type in ['tc_local', 'tp_usd']:
+                for r in parsed[type]:
+                    for c in self.coins.keys():
+                        if c in r.keys():
+                            panel_row = {
+                                'indice_tiempo': r['indice_tiempo'],
+                                'coin': c,
+                                'type': type,
+                                'value': r[c],
+                            }
 
-            df = pd.DataFrame(
-                data,
-                columns=['coin', 'indice_tiempo', 'tipo_pase', 'tipo_cambio']
-            )
-            rate_dfs_panel = pd.DataFrame(data=[], columns=columns)
-
-            pase_df = df[['coin', 'indice_tiempo', 'tipo_pase']].copy()
-            pase_df['type'] = 'pase'
-            pase_df.rename(columns={'tipo_pase': 'value'}, inplace=True)
-
-            cambio_df = df[['coin', 'indice_tiempo', 'tipo_cambio']].copy()
-            cambio_df['type'] = 'cambio'
-            cambio_df.rename(columns={'tipo_cambio': 'value'}, inplace=True)
-
-            rate_dfs_panel = rate_dfs_panel.append(pase_df, sort=True)
-            rate_dfs_panel = rate_dfs_panel.append(cambio_df, sort=True)
-
-        for r in rate_dfs_panel.to_records():
-            _ = r[2].split('/')
-
-            panel_row = {
-                'indice_tiempo': '-'.join([_[2], _[1], _[0]]),
-                'coin': r[1],
-                'type': r[3],
-                'value': Decimal(r[4].replace(',', '.')),
-            }
-            intermediate_panel_data.append(panel_row)
+                            intermediate_panel_data.append(panel_row)
 
         return intermediate_panel_data
 
@@ -690,6 +723,71 @@ class BCRAExchangeRateScraper(BCRAScraper):
             parsed
         )
         self.write_intermediate_panel(intermediate_panel_data)
+
+    def parse_from_intermediate_panel(self):
+        parsed = {'tc_local': [], 'tp_usd': []}
+        coin_dfs = {}
+
+        intermediate_panel_df = self.read_intermediate_panel_dataframe()
+        intermediate_panel_df.set_index(['indice_tiempo'], inplace=True)
+
+        if not intermediate_panel_df.empty:
+            coin_dfs = {'tc_local': {}, 'tp_usd': {}}
+            for k in self.coins.keys():
+                for type in ['tc_local', 'tp_usd']:
+                    coin_dfs[type][k] = intermediate_panel_df.loc[
+                        (intermediate_panel_df['type'] == type)
+                        & (intermediate_panel_df['coin'] == k)
+                    ][['value']]
+                    coin_dfs[type][k].rename(
+                        columns={'value': f'{k}_{type}'}, inplace=True
+                    )
+                    if coin_dfs[type][k].empty:
+                        del(coin_dfs[type][k])
+
+            coins_df = {}
+            for type in ['tc_local', 'tp_usd']:
+                coins_df[type] = reduce(
+                    lambda df1, df2: df1.merge(
+                        df2, left_on='indice_tiempo', right_on='indice_tiempo'
+                    ),
+                    coin_dfs[type].values(),
+                )
+
+            for type in ['tc_local', 'tp_usd']:
+                for r in coins_df[type].to_records():
+                    parsed_row = {}
+
+                    columns = ['indice_tiempo']
+                    columns.extend([v for v in coin_dfs[type].keys()])
+
+                    for index, column in enumerate(columns):
+                        parsed_row[column] = r[index]
+
+                    if parsed_row:
+                        parsed[type].append(parsed_row)
+
+        return parsed
+
+    def read_intermediate_panel_dataframe(self):
+        intermediate_panel_dataframe = None
+
+        try:
+            intermediate_panel_dataframe = pd.read_csv(
+                '.exchange-rates-intermediate-panel.csv',
+                converters={
+                    'serie_tiempo': lambda _: _,
+                    'coin': lambda _: str(_),
+                    'type': lambda _: str(_),
+                    'value': lambda _: Decimal(_)
+                }
+            )
+
+        except FileNotFoundError:
+            # TODO: fix me
+            pass
+
+        return intermediate_panel_dataframe
 
     def run(self, start_date, end_date):
         """
@@ -708,10 +806,19 @@ class BCRAExchangeRateScraper(BCRAScraper):
         """
         parsed = []
 
-        contents = self.fetch_contents(start_date)
-        parsed = self.parse_contents(contents, end_date)
+        if self.use_intermediate_panel:
+            parsed = self.parse_from_intermediate_panel()
 
-        self.save_intermediate_panel(parsed)
+            parsed['tc_local'] = self.preprocess_rows(parsed['tc_local'])
+            parsed['tp_usd'] = self.preprocess_rows(parsed['tp_usd'])
+        else:
+            contents = self.fetch_contents(start_date, end_date)
+            parsed = self.parse_contents(contents, start_date, end_date)
+
+            parsed['tc_local'] = self.preprocess_rows(parsed['tc_local'])
+            parsed['tp_usd'] = self.preprocess_rows(parsed['tp_usd'])
+
+            self.save_intermediate_panel(parsed)
 
         return parsed
 

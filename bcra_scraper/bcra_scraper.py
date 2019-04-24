@@ -187,7 +187,25 @@ def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel):
             coins=config.get('coins'),
             use_intermediate_panel=use_intermediate_panel
         )
-        scraper.run(start_date, end_date)
+        parsed = scraper.run(start_date, end_date)
+
+        if parsed:
+            coins = config.get('coins')
+
+            csv_name = 'tipos-pase-usd-series.csv'
+            csv_header = ['indice_tiempo']
+            csv_header.extend([v for v in coins.keys()])
+
+            write_tasas_libor(csv_name, csv_header, parsed['tp_usd'])
+
+            csv_name = 'tipos-cambio-local-series.csv'
+            csv_header = ['indice_tiempo']
+            csv_header.extend([v for v in coins.keys()])
+
+            write_tasas_libor(csv_name, csv_header, parsed['tc_local'])
+
+        else:
+            click.echo("No se encontraron resultados")
 
     except InvalidConfigurationError as err:
         click.echo(err)

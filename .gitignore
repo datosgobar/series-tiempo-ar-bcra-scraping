@@ -65,4 +65,4 @@ target/
 .python-version
 
 #
-.*.csv
+*.csv
