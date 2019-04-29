@@ -26,8 +26,8 @@ class BcraSmlScraperTestCase(unittest.TestCase):
 
     def test_parse_content_with_valid_content(self):
 
-        start_date = datetime(2019, 4, 11)
-        end_date = datetime(2019, 4, 11)
+        start_date = datetime(2019, 4, 24)
+        end_date = datetime(2019, 4, 24)
         coin = "peso_uruguayo"
 
         content = '''
@@ -44,11 +44,11 @@ class BcraSmlScraperTestCase(unittest.TestCase):
             </thead>
             <tbody>
                 <tr>
-                    <td>11/04/2019</td>
-                    <td>42,91170</td>
-                    <td>34,12800</td>
-                    <td>1,25740</td>
-                    <td>0,79535</td>
+                    <td>24/04/2019</td>
+                    <td>43,47830</td>
+                    <td>34,51000</td>
+                    <td>1,25990</td>
+                    <td>0,79375</td>
                 </tr>
             </tbody>
         </table>
@@ -61,14 +61,14 @@ class BcraSmlScraperTestCase(unittest.TestCase):
 
         assert result == [
             {
-                'moneda': 'peso_uruguayo',
-                'Fecha': '11/04/2019',
-                'Tipo de cambio de Referencia': '42,91170',
-                'Tipo de cambio URINUSCA': '34,12800',
-                'Tipo de cambio SML Peso Uruguayo': '1,25740',
-                'Tipo de cambio SML Uruguayo Peso': '0,79535'
-            }
-        ]
+                'coin': 'peso_uruguayo',
+                'indice_tiempo': '24/04/2019',
+                'Tipo de cambio de Referencia': '43,47830',
+                'Tipo de cambio URINUSCA': '34,51000',
+                'Tipo de cambio SML Peso Uruguayo': '1,25990',
+                'Tipo de cambio SML Uruguayo Peso': '0,79375'
+                }
+            ]
 
     def test_parse_content_with_non_valid_content(self):
 
@@ -95,8 +95,8 @@ class BcraSmlScraperTestCase(unittest.TestCase):
 
     def test_run_with_valid_dates(self):
 
-        start_date = datetime(2019, 4, 11)
-        end_date = datetime(2019, 4, 11)
+        start_date = datetime(2019, 4, 24)
+        end_date = datetime(2019, 4, 24)
 
         url = '''
          http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_sml.asp
@@ -112,20 +112,20 @@ class BcraSmlScraperTestCase(unittest.TestCase):
 
         assert result == [
             {
-                'moneda': 'peso_uruguayo',
-                'Fecha': '11/04/2019',
-                'Tipo de cambio de Referencia': '42,91170',
-                'Tipo de cambio URINUSCA': '34,12800',
-                'Tipo de cambio SML Peso Uruguayo': '1,25740',
-                'Tipo de cambio SML Uruguayo Peso': '0,79535'
+                'coin': 'peso_uruguayo',
+                'indice_tiempo': '24/04/2019',
+                'Tipo de cambio de Referencia': '43,47830',
+                'Tipo de cambio URINUSCA': '34,51000',
+                'Tipo de cambio SML Peso Uruguayo': '1,25990',
+                'Tipo de cambio SML Uruguayo Peso': '0,79375'
             },
             {
-                'moneda': 'real',
-                'Fecha': '11/04/2019',
-                'Tipo de cambio de Referencia': '42,91170',
-                'Tipo de cambio PTAX': '3,83960',
-                'Tipo de cambio SML Peso Real': '11,17610',
-                'Tipo de cambio SML Real Peso': '0,08950'
+                'coin': 'real',
+                'indice_tiempo': '24/04/2019',
+                'Tipo de cambio de Referencia': '43,47830',
+                'Tipo de cambio PTAX': '3,96270',
+                'Tipo de cambio SML Peso Real': '10,97190',
+                'Tipo de cambio SML Real Peso': '0,09115'
             }
         ]
 

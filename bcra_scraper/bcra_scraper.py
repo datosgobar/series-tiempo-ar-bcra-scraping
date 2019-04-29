@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from csv import DictWriter
-from datetime import date
+from datetime import date, datetime
 from json import JSONDecodeError
 import json
 
@@ -12,6 +12,7 @@ from bcra_scraper.exceptions import InvalidConfigurationError
 
 from bcra_scraper.scraper import BCRALiborScraper, BCRAExchangeRateScraper
 from bcra_scraper.scraper import BCRASMLScraper
+from bcra_scraper.scraper import BCRATCEScraper
 
 
 # TODO: test me!
@@ -49,12 +50,6 @@ def validate_url_config(config):
         raise InvalidConfigurationError("La clave url no existe")
 
 
-# def validate_url_has_value(config):
-#     url = config['url'].split(':')
-#     if url[0] != 'http':
-#         raise InvalidConfigurationError("La url no es válida")
-
-
 def validate_url_has_value(config):
     if config['url'] == '':
         raise InvalidConfigurationError("La url no es válida")
@@ -80,6 +75,28 @@ def validate_coins_key_has_values(config):
     coins = config.get('coins', {})
     if coins == {}:
         raise InvalidConfigurationError("No existen valores para coins")
+
+
+def validate_dates(start_date, end_date):
+    if start_date > end_date:
+        raise InvalidConfigurationError(
+            "La fecha de inicio no debe ser mayor a la de fin"
+        )
+    elif end_date > datetime.today():
+        raise InvalidConfigurationError(
+            "La fecha de fin no puede ser mayor a la fecha actual"
+        )
+
+
+def validate_entities_key_config(config):
+    if 'entities' not in config:
+        raise InvalidConfigurationError("La clave entities no existe")
+
+
+def validate_entities_key_has_values(config):
+    entities = config.get('entities', {})
+    if entities == {}:
+        raise InvalidConfigurationError("No existen valores para entities")
 
 
 @click.group()
@@ -127,6 +144,7 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel,
         validate_url_has_value(config)
         validate_libor_rates_config(config)
         validate_libor_rates_has_values(config)
+        validate_dates(start_date, end_date)
 
         scraper = BCRALiborScraper(
             url=config.get('url'),
@@ -181,6 +199,7 @@ def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel):
         validate_url_has_value(config)
         validate_coins_key_config(config)
         validate_coins_key_has_values(config)
+        validate_dates(start_date, end_date)
 
         scraper = BCRAExchangeRateScraper(
             url=config.get('url'),
@@ -236,12 +255,55 @@ def sml(ctx, config, start_date, end_date):
         validate_url_has_value(config)
         validate_coins_key_config(config)
         validate_coins_key_has_values(config)
+        validate_dates(start_date, end_date)
 
         scraper = BCRASMLScraper(
             url=config.get('url'),
             coins=config.get('coins'), use_intermediate_panel=False
         )
         scraper.run(start_date, end_date)
+
+    except InvalidConfigurationError as err:
+        click.echo(err)
+
+
+@cli.command()
+@click.option(
+    '--start-date',
+    default=get_default_start_date,
+    type=click.DateTime(formats=['%d/%m/%Y']),
+    )
+@click.option(
+    '--end-date',
+    default=get_default_end_date,
+    type=click.DateTime(formats=['%d/%m/%Y']),
+    )
+@click.option(
+    '--config',
+    default='config.json',
+    type=click.Path(exists=True),
+)
+@click.pass_context
+def tce(ctx, config, start_date, end_date):
+
+    try:
+        config = read_config(file_path=config, command=ctx.command.name)
+        validate_url_config(config)
+        validate_url_has_value(config)
+        validate_coins_key_config(config)
+        validate_coins_key_has_values(config)
+        validate_dates(start_date, end_date)
+        validate_entities_key_config(config)
+        validate_entities_key_has_values(config)
+
+        scraper = BCRATCEScraper(
+            url=config.get('url'),
+            coins=config.get('coins'),
+            entities=config.get('entities'),
+            use_intermediate_panel=False
+        )
+        parsed = scraper.run(start_date, end_date)
+        print(parsed)
 
     except InvalidConfigurationError as err:
         click.echo(err)

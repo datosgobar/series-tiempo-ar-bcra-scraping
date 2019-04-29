@@ -15,7 +15,7 @@ autopep8 = "*"
 click = "*"
 selenium = "*"
 bs4 = "*"
-bcra-scraper = {editable = true,path = "."}
+bcra-scraper = {path = ".",editable = true}
 pandas = "*"
 
 [requires]

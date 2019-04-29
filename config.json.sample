@@ -86,5 +86,25 @@
             "peso_uruguayo": "Peso Uruguayo",
             "real": "Real"
         }
+    },
+    "tce": {
+        "entities": {
+            "galicia": "BANCO DE GALICIA Y BUENOS AIRES S.A.U.",
+            "bna": "BANCO DE LA NACION ARGENTINA",
+            "icbc": "INDUSTRIAL AND COMMERCIAL BANK OF CHINA (ARGENTINA) S.A.",
+            "frances": "BBVA BANCO FRANCES S.A.",
+            "supervielle": "BANCO SUPERVIELLE S.A.",
+            "bcba": "BANCO DE LA CIUDAD DE BUENOS AIRES",
+            "patagonia": "BANCO PATAGONIA S.A.",
+            "santander": "BANCO SANTANDER RIO S.A.",
+            "hsbc": "HSBC BANK ARGENTINA S.A.",
+            "credicoop": "BANCO CREDICOOP COOPERATIVO LIMITADO",
+            "itau": "BANCO ITAU ARGENTINA S.A.",
+            "macro": "BANCO MACRO S.A.",
+            "piano": "BANCO PIANO S.A.",
+            "balanz": "BALANZ CAPITAL VALORES S.A.U.",
+            "ibcambio": "IB Cambio SAS",
+            "bullmarket": "BULL MARKET BROKERS SA"
+        }
     }
 }
