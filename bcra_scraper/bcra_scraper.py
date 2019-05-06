@@ -134,6 +134,7 @@ def cli(ctx):
 def libor(ctx, start_date, end_date, config, use_intermediate_panel,
           *args, **kwargs):
 
+    validate_dates(start_date, end_date)
     start_date = date(start_date.year, start_date.month, start_date.day)
     end_date = date(end_date.year, end_date.month, end_date.day)
 
@@ -144,7 +145,6 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel,
         validate_url_has_value(config)
         validate_libor_rates_config(config)
         validate_libor_rates_has_values(config)
-        validate_dates(start_date, end_date)
 
         scraper = BCRALiborScraper(
             url=config.get('url'),

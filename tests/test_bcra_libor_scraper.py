@@ -7,10 +7,10 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import with_statement
 
-from datetime import date, timedelta, datetime
+from datetime import date, datetime
 from decimal import Decimal
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from unittest import mock
 import io
 import json
@@ -53,14 +53,19 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             "180": "libor_180_dias",
             "360": "libor_360_dias"
         }
+        with patch.object(
+            BCRALiborScraper,
+            'fetch_day_content',
+            return_value=['a', 'b', 'c', 'd', 'e', 'f', 'g']
+        ):
 
-        scraper = BCRALiborScraper(url, rates, False)
-        start_day = date(2019, 3, 4)
-        end_day = date(2019, 3, 10)
+            scraper = BCRALiborScraper(url, rates, False)
+            start_day = date(2019, 3, 4)
+            end_day = date(2019, 3, 10)
 
-        contents = scraper.fetch_contents(start_day, end_day)
+            contents = scraper.fetch_contents(start_day, end_day)
 
-        assert len(contents) == 7
+            assert len(contents) == 7
 
     def test_fetch_content_with_invalid_dates(self):
         """comprueba, dependiendo de un rango invalido de fechas,
@@ -83,37 +88,40 @@ class BcraLiborScraperTestCase(unittest.TestCase):
 
         assert contents == []
 
-    # # TODO: rename test name
-    def test_get_content_for_a_non_business_day(self):
-        """Comprueba el contenido para un día no habil"""
-        url = "http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp"
+    def test_html_is_not_valid(self):
+        """Probar que el html no sea valido"""
+        url = ""
 
-        rates = {
-            "30": "libor_30_dias",
-            "60": "libor_60_dias",
-            "90": "libor_90_dias",
-            "180": "libor_180_dias",
-            "360": "libor_360_dias"
-        }
+        rates = {}
 
-        scraper = BCRALiborScraper(url, rates, False)
-        content_date = date.today()
-        content = scraper.fetch_day_content(content_date)
+        with patch.object(
+            BCRALiborScraper,
+            'fetch_day_content',
+            return_value='''
+                <table class="table table-BCRA table-bordered table-hover
+                    table-responsive">
+                    <thead></thead>
+                </table>
+            '''
+        ):
+            scraper = BCRALiborScraper(url, rates, False)
+            content_date = date.today()
+            content = scraper.fetch_day_content(content_date)
 
-        soup = BeautifulSoup(content, "html.parser")
+            soup = BeautifulSoup(content, "html.parser")
 
-        table = soup.find('table')
-        head = table.find('thead') if table else None
-        body = table.find('tbody') if table else None
+            table = soup.find('table')
+            head = table.find('thead') if table else None
+            body = table.find('tbody') if table else None
 
-        assert table is not None
-        assert head is not None
-        assert body is None
+            assert table is not None
+            assert head is not None
+            assert body is None
 
     # # TODO: rename test name
     # Test no funciona porque no hay datos en el dia anterior
     # def test_get_content_for_a_business_day(self):
-    #     """Comprueba el contenido para un día no habil"""
+    #     """Comprueba el contenido para un día habil"""
     #     url = "http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp"
 
     #     rates = {
@@ -139,6 +147,36 @@ class BcraLiborScraperTestCase(unittest.TestCase):
     #     assert table is not None
     #     assert head is not None
     #     assert body is not None
+
+    def test_html_is_valid(self):
+        """Probar que el html sea valido"""
+        url = ""
+        single_date = date(2019, 3, 4)
+
+        rates = {}
+        with patch.object(
+            BCRALiborScraper,
+            'fetch_day_content',
+            return_value='''
+                <table class="table table-BCRA table-bordered table-hover
+                    table-responsive">
+                <thead></thead>
+                <tbody></tbody>
+                </table>
+            '''
+        ):
+            scraper = BCRALiborScraper(url, rates, False)
+            content = scraper.fetch_day_content(single_date)
+
+            soup = BeautifulSoup(content, "html.parser")
+
+            table = soup.find('table')
+            head = table.find('thead') if table else None
+            body = table.find('tbody') if table else None
+
+            assert table is not None
+            assert head is not None
+            assert body is not None
 
     def test_parse_for_empty_contents(self):
         """ """
@@ -472,3 +510,40 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             with self.assertRaises(InvalidConfigurationError):
                 config = read_config("config.json", "libor")
                 validate_libor_rates_has_values(config)
+
+    def test_fetch_day_content_patching_driver(self):
+        """Probar fetch day content"""
+        single_date = date(2019, 3, 4)
+        rates = {}
+        url = ''
+
+        mocked_driver = MagicMock()
+        mocked_driver.page_source = "foo"
+        mocked_driver.status_code = 200
+
+        with patch.object(
+            BCRALiborScraper,
+            'get_browser_driver',
+            return_value=mocked_driver
+        ):
+            scraper = BCRALiborScraper(url, rates, False)
+            content = scraper.fetch_day_content(single_date)
+            assert content == "foo"
+
+    def test_fetch_day_content_invalid_url_patching_driver(self):
+        """Probar fetch day content con url invalida"""
+        single_date = date(2019, 3, 4)
+        rates = {}
+        url = ''
+
+        mocked_driver = MagicMock()
+        mocked_driver.page_source = 400
+
+        with patch.object(
+            BCRALiborScraper,
+            'get_browser_driver',
+            return_value=mocked_driver
+        ):
+            scraper = BCRALiborScraper(url, rates, False)
+            content = scraper.fetch_day_content(single_date)
+            assert content == 400

@@ -8,7 +8,7 @@
 
 # class MainTest(unittest.TestCase):
 
-      # TODO: rewrite
+# TODO: rewrite
 #     def test_main(self):
 #         runner = CliRunner()
 #         result = runner.invoke(main)
