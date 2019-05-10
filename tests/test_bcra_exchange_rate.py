@@ -16,6 +16,7 @@ from decimal import Decimal
 
 import io
 import json
+import pandas as pd
 
 from bs4 import BeautifulSoup
 
@@ -154,9 +155,19 @@ class BcraExchangeRateTestCase(unittest.TestCase):
 
         parsed = scraper.parse_contents(contents, start_date, end_date)
 
-        # FIXME
-        assert len(parsed['tc_local']) == 1
-        assert len(parsed['tp_usd']) == 1
+        assert parsed['tc_local'] == [
+            {
+                'bolivar_venezolano': '0,0132500',
+                'indice_tiempo': '08/04/2019'
+            }
+        ]
+
+        assert parsed['tp_usd'] == [
+            {
+                'bolivar_venezolano': '0,0003030',
+                'indice_tiempo': '08/04/2019'
+            }
+        ]
 
     def test_parse_coin(self):
         url = \
@@ -203,84 +214,255 @@ class BcraExchangeRateTestCase(unittest.TestCase):
         '''
 
         parsed_coin = scraper.parse_coin(content, start_date, end_date, coin)
-        # breakpoint()
 
-        # FIXME
-        assert len(parsed_coin) == 1
-        # assert len(parsed['tp_usd']) == 1
-        # assert parsed_coin == [{'moneda': 'bolivar_venezolano',
-        #                         'indice_tiempo': '08/04/2019',
-        #                         'tp_usd': '0,0003030',
-        #                         'tc_local': '0,0132500'}]
+        assert parsed_coin == [
+            {
+                'moneda': 'bolivar_venezolano',
+                'indice_tiempo': '08/04/2019',
+                'tp_usd': '0,0003030',
+                'tc_local': '0,0132500'
+            }
+        ]
 
-    def test_run_with_valid_dates(self):
+    def test_fetch_contents(self):
 
-        start_date = datetime.datetime(2019, 4, 8)
-        end_date = datetime.datetime(2019, 4, 8)
+        coins = {
+            "bolivar_venezolano": "Bolívar Venezolano"
+        }
+        start_date = datetime.datetime(2019, 4, 24)
+        end_date = datetime.datetime(2019, 4, 24)
+        url = ''
+        content = 'foo'
+        with patch.object(
+            BCRAExchangeRateScraper,
+            'fetch_content',
+            return_value=content
+        ):
+            scraper = BCRAExchangeRateScraper(url, coins, False)
+            result = scraper.fetch_contents(start_date, end_date)
+
+            assert result == {
+                'bolivar_venezolano': 'foo',
+            }
+
+    def test_parse_contents(self):
+        url = ''
+
+        start_date = datetime.date(2019, 4, 24)
+        end_date = datetime.date(2019, 4, 24)
+
+        coins = {
+            "bolivar_venezolano": "Bolívar Venezolano"
+        }
+
+        content = {'bolivar_venezolano': 'foo'}
+
+        parsed = [
+            {
+                'moneda': 'bolivar_venezolano',
+                'indice_tiempo': '24/04/2019',
+                'tp_usd': '0,0001930',
+                'tc_local': '0,0084610'
+            }
+        ]
+
+        with patch.object(
+            BCRAExchangeRateScraper,
+            'parse_coin',
+            return_value=parsed
+        ):
+            scraper = BCRAExchangeRateScraper(url, coins, False)
+            result = scraper.parse_contents(content, start_date, end_date)
+
+            assert result == {
+                'tc_local':
+                [
+                    {
+                        'indice_tiempo': '24/04/2019',
+                        'bolivar_venezolano': '0,0084610'
+                    }
+                ],
+                'tp_usd':
+                [
+                    {
+                        'indice_tiempo': '24/04/2019',
+                        'bolivar_venezolano': '0,0001930'
+                    }
+                ]
+            }
+
+    def test_preprocessed_rows(self):
+        rows = [
+            {
+                'bolivar_venezolano': '0,0084610',
+                'indice_tiempo': '24/04/2019'
+            }
+        ]
+        scraper = BCRAExchangeRateScraper(False, rows, False)
+
+        result = scraper.preprocess_rows(rows)
+
+        assert result == [
+                {
+                    'bolivar_venezolano': Decimal('0.0084610'),
+                    'indice_tiempo': datetime.date(2019, 4, 24)
+                }
+            ]
+
+    def test_run_not_using_intermediate_panel(self):
+
+        start_date = datetime.date(2019, 4, 24)
+        end_date = datetime.date(2019, 4, 24)
 
         url = '''
-        http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_sml.asp
+         http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_sml.asp
         '''
 
         coins = {
-            "bolivar_venezolano": "Bolívar Venezolano",
-            "cordoba_nicaraguense": "Cordoba Nicaraguense",
+            "bolivar_venezolano": "Bolívar Venezolano"
         }
+
+        parsed = {
+            'tc_local':
+                [
+                    {
+                        'bolivar_venezolano': '0,0084610',
+                        'indice_tiempo': '24/04/2019'
+                    }
+                ],
+            'tp_usd':
+                [
+                    {
+                        'bolivar_venezolano': '0,0001930',
+                        'indice_tiempo': '24/04/2019'
+                    }
+                ]
+        }
+
+        parsed_tc_local = [
+            {
+                'bolivar_venezolano': Decimal('0.0084610'),
+                'indice_tiempo': datetime.date(2019, 4, 24)
+            }
+        ]
+
+        parsed_tp_usd = [
+            {
+                'bolivar_venezolano': Decimal('0.0001930'),
+                'indice_tiempo': datetime.date(2019, 4, 24)
+            }
+        ]
 
         with patch.object(
             BCRAExchangeRateScraper,
             'fetch_contents',
-            return_value={
-                    'bolivar_venezolano':
-                    '''
-                    <table class="table table-BCRA table-bordered\
-                        table-hover table-responsive" colspan="3">
-                        <thead>
-                        </thead>
-                        <tbody><tr>
-                            <td width="10%">08/04/2019</td>
-                            <td width="40%">0,0003030</td>
-                            <td width="50%">0,0132500</td>
-                        </tr>
-                        </tbody>
-                    </table>
-                    ''',
-                    'cordoba_nicaraguense':
-                    '''
-                    <table class="table table-BCRA table-bordered\
-                        table-hover table-responsive" colspan="3">
-                        <thead>
-                        </thead>
-                        <tbody><tr>
-                            <td width="10%">08/04/2019</td>
-                            <td width="40%">0,0302850</td>
-                            <td width="50%">1,3234400</td>
-                        </tr>
-                        </tbody>
-                    </tbody>
-                    </table>
-                    '''
-                    }
+            return_value=''
+        ):
+            with patch.object(
+                BCRAExchangeRateScraper,
+                'parse_contents',
+                return_value=parsed
+            ):
+                with patch.object(
+                    BCRAExchangeRateScraper,
+                    'preprocess_rows',
+                    side_effect=[parsed_tc_local, parsed_tp_usd]
                 ):
+                    with patch.object(
+                        BCRAExchangeRateScraper,
+                        'save_intermediate_panel',
+                        return_value=''
+                    ):
+                        scraper = BCRAExchangeRateScraper(url, coins, False)
+                        result = scraper.run(start_date, end_date)
 
-            scraper = BCRAExchangeRateScraper(url, coins, False)
-            result = scraper.run(start_date, end_date)
+                        assert result == {
+                            'tc_local':
+                            [
+                                {
+                                    'bolivar_venezolano': Decimal('0.0084610'),
+                                    'indice_tiempo': datetime.date(2019, 4, 24)
+                                }
+                            ],
+                            'tp_usd':
+                            [
+                                {
+                                    'bolivar_venezolano': Decimal('0.0001930'),
+                                    'indice_tiempo': datetime.date(2019, 4, 24)
+                                }
+                            ]
+                        }
 
-            assert result == {
-                'tc_local':
+    def test_run_using_intermediate_panel(self):
+
+        start_date = datetime.date(2019, 4, 24)
+        end_date = datetime.date(2019, 4, 24)
+
+        url = '''
+         http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_sml.asp
+        '''
+
+        coins = {
+            "bolivar_venezolano": "Bolívar Venezolano"
+        }
+
+        parsed = {
+            'tc_local':
+            [
+                {
+                    'indice_tiempo': '2019-04-24',
+                    'bolivar_venezolano': Decimal('0.0084610')
+                }
+            ],
+            'tp_usd':
+            [
+                {
+                    'indice_tiempo': '2019-04-24',
+                    'bolivar_venezolano': Decimal('0.0001930')
+                }
+            ]
+        }
+
+        parsed_tc_local = [
+            {
+                'bolivar_venezolano': Decimal('0.0084610'),
+                'indice_tiempo': '2019-04-24'
+            }
+        ]
+
+        parsed_tp_usd = [
+            {
+                'bolivar_venezolano': Decimal('0.0001930'),
+                'indice_tiempo': '2019-04-24'
+            }
+        ]
+
+        with patch.object(
+            BCRAExchangeRateScraper,
+            'parse_from_intermediate_panel',
+            return_value=parsed
+        ):
+            with patch.object(
+                BCRAExchangeRateScraper,
+                'preprocess_rows',
+                side_effect=[parsed_tc_local, parsed_tp_usd]
+            ):
+                scraper = BCRAExchangeRateScraper(url, coins, True)
+                result = scraper.run(start_date, end_date)
+
+                assert result == {
+                    'tc_local':
                     [
                         {
-                            'bolivar_venezolano': Decimal('2500'),
-                            'cordoba_nicaraguense': Decimal('4400'),
-                            'indice_tiempo': datetime.date(2019, 4, 8)
+                            'bolivar_venezolano': Decimal('0.0084610'),
+                            'indice_tiempo': '2019-04-24'
                         }
                     ],
-                'tp_usd':
+                    'tp_usd':
                     [
                         {
-                            'bolivar_venezolano': Decimal('3030'),
-                            'cordoba_nicaraguense': Decimal('2850'),
-                            'indice_tiempo': datetime.date(2019, 4, 8)
+                            'bolivar_venezolano': Decimal('0.0001930'),
+                            'indice_tiempo': '2019-04-24'
                         }
                     ]
                 }
@@ -375,3 +557,98 @@ class BcraExchangeRateTestCase(unittest.TestCase):
             scraper = BCRAExchangeRateScraper(url, coins, False)
             content = scraper.fetch_content(single_date, coins)
             assert content == 400
+
+    def test_parse_from_intermediate_panel(self):
+        """Probar parseo desde el archivo intermedio"""
+        start_date = '2019-03-06'
+        end_date = '2019-03-06'
+
+        coins = {
+            "bolivar_venezolano": "Bolívar Venezolano"
+        }
+        url = ''
+
+        intermediate_panel_df = MagicMock()
+        intermediate_panel_df = {
+            'indice_tiempo': [
+                '2019-03-06',
+                '2019-03-06'
+            ],
+            'coin': [
+                'bolivar_venezolano',
+                'bolivar_venezolano'
+            ],
+            'type': [
+                'tc_local', 'tp_usd'
+            ],
+            'value': [
+                '0.0123560', '0.0003030'
+            ]
+        }
+
+        with patch.object(
+            BCRAExchangeRateScraper,
+            'read_intermediate_panel_dataframe',
+            return_value=pd.DataFrame(data=intermediate_panel_df)
+        ):
+            scraper = BCRAExchangeRateScraper(url, coins, True)
+            content = scraper.parse_from_intermediate_panel(start_date, end_date)
+
+            assert content == {
+                'tc_local':
+                [
+                    {
+                        'indice_tiempo': '2019-03-06',
+                        'bolivar_venezolano': '0.0123560'
+                    }
+                ],
+                'tp_usd':
+                [
+                    {
+                        'indice_tiempo': '2019-03-06',
+                        'bolivar_venezolano': '0.0003030'
+                    }
+                ]
+            }
+
+    def test_get_intermediate_panel_data_from_parsed(self):
+        url = ''
+        parsed = {
+            'tc_local':
+            [
+                {
+                    'bolivar_venezolano': Decimal('0.0123560'),
+                    'indice_tiempo': datetime.date(2019, 3, 6)
+                }
+            ],
+            'tp_usd':
+            [
+                {
+                    'bolivar_venezolano': Decimal('0.0003030'),
+                    'indice_tiempo': datetime.date(2019, 3, 6)
+                }
+            ]
+        }
+
+        coins = {
+            "bolivar_venezolano": "Bolívar Venezolano",
+        }
+
+        scraper = BCRAExchangeRateScraper(url, coins, True)
+
+        result = scraper.get_intermediate_panel_data_from_parsed(parsed)
+
+        assert result == [
+            {
+                'indice_tiempo': datetime.date(2019, 3, 6),
+                'coin': 'bolivar_venezolano',
+                'type': 'tc_local',
+                'value': Decimal('0.0123560')
+            },
+            {
+                'indice_tiempo': datetime.date(2019, 3, 6),
+                'coin': 'bolivar_venezolano',
+                'type': 'tp_usd',
+                'value': Decimal('0.0003030')
+            }
+        ]

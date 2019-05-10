@@ -405,6 +405,7 @@ class BCRALiborScraper(BCRAScraper):
             )
 
             for r in rates_df.to_records():
+
                 if (start_date <= r[0] and
                    r[0] <= end_date):
                     parsed_row = {}
@@ -1045,7 +1046,6 @@ class BCRASMLScraper(BCRAScraper):
                         )
                     else:
                         preprocessed_date = date.fromisoformat(row[k])
-
                     preprocessed_row['indice_tiempo'] = preprocessed_date
                 elif k == 'moneda':
                     preprocessed_row[k] = row[k]
@@ -1079,6 +1079,7 @@ class BCRASMLScraper(BCRAScraper):
                         'Tipo de cambio SML Peso Real',
                         'Tipo de cambio SML Real Peso',
                     ]
+
                 for r in parsed[c]:
                     for type in types:
                         if type in r.keys():

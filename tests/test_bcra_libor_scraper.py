@@ -14,6 +14,7 @@ from unittest.mock import patch, MagicMock
 from unittest import mock
 import io
 import json
+import pandas as pd
 
 from bs4 import BeautifulSoup
 
@@ -205,27 +206,73 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             "180": "libor_180_dias",
             "360": "libor_360_dias"
         }
+
+        rows = {
+            'indice_tiempo': '2019-03-15',
+            '30': '2,481750',
+            '60': '2,558380',
+            '90': '2,625250',
+            '180': '2,671750',
+            '360': '2,840500'
+        }
+
         with patch.object(
             BCRALiborScraper,
             'parse_day_content',
-            return_value={}
+            return_value=rows
         ):
             scraper = BCRALiborScraper(url, rates, False)
 
-            empty_table_content = '''
+            contents = ['''
             <table class="table table-BCRA table-bordered table-hover
-            table-responsive">
-                <thead>
-                    <tr><th>No existen registros</th></tr>
-                </thead>
+                table-responsive">
+            <thead>
+                <tr>
+                    <th colspan="2"
+                    align="left">Tasa LIBOR al:  15/03/2019</th>
+                </tr>
+                <tr>
+                    <th>Plazo en días</th>
+                    <th>Tasa (T.N.A. %)</th>
+                </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>30</td>
+                <td>2,481750</td>
+            </tr>
+            <tr>
+                <td>60</td>
+                <td>2,558380</td>
+            </tr>
+            <tr>
+                <td>90</td>
+                <td>2,625250</td>
+            </tr>
+            <tr>
+                <td>180</td>
+                <td>2,671750</td>
+            </tr>
+            <tr>
+                <td>360</td>
+                <td>2,840500</td>
+            </tr>
+            </tbody>
             </table>
-            '''
-
-            contents = [empty_table_content]
+            ''']
 
             parsed = scraper.parse_contents(contents)
 
-            assert parsed == []
+            assert parsed == [
+                {
+                    'indice_tiempo': '2019-03-15',
+                    '30': '2,481750',
+                    '60': '2,558380',
+                    '90': '2,625250',
+                    '180': '2,671750',
+                    '360': '2,840500'
+                }
+            ]
 
     def test_scraper_with_empty_table(self):
 
@@ -417,10 +464,8 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             }
         ]
 
-    def run_with_valid_dates(self):
-
-        start_date = datetime.date(2019, 4, 11)
-        end_date = datetime.date(2019, 4, 11)
+    def test_get_intermediate_panel_data_from_empty_parsed(self):
+        parsed = []
 
         rates = {
             "30": "libor_30_dias",
@@ -432,18 +477,121 @@ class BcraLiborScraperTestCase(unittest.TestCase):
 
         scraper = BCRALiborScraper(False, rates, False)
 
-        result = scraper.run(start_date, end_date)
+        result = scraper.get_intermediate_panel_data_from_parsed(parsed)
 
-        assert result == [
+        assert result == []
+
+    def test_run_not_using_intermediate_panel(self):
+
+        start_date = datetime(2019, 4, 24)
+        end_date = datetime(2019, 4, 24)
+
+        url = '''
+         http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_sml.asp
+        '''
+
+        rates = {
+            "30": "libor_30_dias",
+            "60": "libor_60_dias",
+            "90": "libor_90_dias",
+            "180": "libor_180_dias",
+            "360": "libor_360_dias"
+        }
+
+        parsed = [
             {
-                'indice_tiempo': date.fromisoformat('2019-04-11'),
-                'libor_30_dias': Decimal('0.0247263'),
-                'libor_60_dias': Decimal('0.0253675'),
-                'libor_90_dias': Decimal('0.0259675'),
-                'libor_180_dias': Decimal('0.0263125'),
-                'libor_360_dias': Decimal('0.0273413')
+                'indice_tiempo': '2019-04-24',
+                '30': '0.0248338',
+                '60': '0.0254163',
+                '90': '0.0258638',
+                '180': '0.0261975',
+                '360': '0.0272513'
             }
         ]
+
+        with patch.object(BCRALiborScraper, 'fetch_contents', return_value=''):
+            with patch.object(
+                BCRALiborScraper,
+                'parse_contents',
+                return_value=parsed
+            ):
+                with patch.object(
+                    BCRALiborScraper,
+                    'preprocess_rows',
+                    return_value=parsed
+                ):
+                    with patch.object(
+                        BCRALiborScraper,
+                        'save_intermediate_panel',
+                        return_value=''
+                    ):
+
+                        scraper = BCRALiborScraper(url, rates, False)
+                        result = scraper.run(start_date, end_date)
+
+                        assert result == [
+                            {
+                                'indice_tiempo': '2019-04-24',
+                                '30': '0.0248338',
+                                '60': '0.0254163',
+                                '90': '0.0258638',
+                                '180': '0.0261975',
+                                '360': '0.0272513'
+                            }
+                        ]
+
+    def test_run_using_intermediate_panel(self):
+
+        start_date = datetime(2019, 4, 24)
+        end_date = datetime(2019, 4, 24)
+
+        url = '''
+         http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_sml.asp
+        '''
+
+        rates = {
+            "30": "libor_30_dias",
+            "60": "libor_60_dias",
+            "90": "libor_90_dias",
+            "180": "libor_180_dias",
+            "360": "libor_360_dias"
+        }
+
+        parsed = [
+            {
+                'indice_tiempo': '2019-04-24',
+                '30': Decimal('0.0248588'),
+                '60': Decimal('0.0253013'),
+                '90': Decimal('0.025790'),
+                '180': Decimal('0.026120'),
+                '360': Decimal('0.027130')
+            },
+        ]
+
+        with patch.object(BCRALiborScraper, 'fetch_contents', return_value=''):
+            with patch.object(
+                BCRALiborScraper,
+                'parse_from_intermediate_panel',
+                return_value=[]
+            ):
+                with patch.object(
+                    BCRALiborScraper,
+                    'preprocess_rows',
+                    return_value=parsed
+                ):
+                    scraper = BCRALiborScraper(url, rates, True)
+                    result = scraper.run(start_date, end_date)
+
+                    assert result == [
+                        {
+                            'indice_tiempo': '2019-04-24',
+                            '30': Decimal('0.0248588'),
+                            '60': Decimal('0.0253013'),
+                            '90': Decimal('0.025790'),
+                            '180': Decimal('0.026120'),
+                            '360': Decimal('0.027130')
+                        }
+                    ]
 
     def test_read_valid_configuration(self):
         """Validar que el formato del archivo sea Json"""
@@ -456,7 +604,6 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             with self.assertRaises(InvalidConfigurationError):
                 read_config("config.json", "cmd")
 
-    # TODO: chequear que sea una url realmente válida
     def test_libor_configuration_has_url(self):
         """Validar la existencia de la clave url dentro de
         la configuración de libor"""
@@ -547,3 +694,134 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             scraper = BCRALiborScraper(url, rates, False)
             content = scraper.fetch_day_content(single_date)
             assert content == 400
+
+    # def test_write_intermediate_panel(self):
+    #     """Probar la escritura de datos en el panel intermedio"""
+    #     url = ''
+    #     rates = {}
+    #     rows = [
+    #         {
+    #             'indice_tiempo': date.fromisoformat('2019-03-15'),
+    #             'type': '30', 'value': Decimal('0.0248175')
+    #         },
+    #         {
+    #             'indice_tiempo': date.fromisoformat('2019-03-15'),
+    #             'type': '60', 'value': Decimal('0.0255838')
+    #         },
+    #         {
+    #             'indice_tiempo': date.fromisoformat('2019-03-15'),
+    #             'type': '90', 'value': Decimal('0.0262525')
+    #         },
+    #         {
+    #             'indice_tiempo': date.fromisoformat('2019-03-15'),
+    #             'type': '180', 'value': Decimal('0.0267175')
+    #         },
+    #         {
+    #             'indice_tiempo': date.fromisoformat('2019-03-15'),
+    #             'type': '360', 'value': Decimal('0.028405')
+    #         }
+    #     ]
+
+    #     mocked_writer = MagicMock()
+    #     mocked_writer.writerows = rows
+
+    #     with patch.object(
+    #         BCRALiborScraper,
+    #         'write_intermediate_panel',
+    #         return_value=mocked_writer
+    #     ) as foo:
+    #         scraper = BCRALiborScraper(url, rates, False)
+    #         content = scraper.write_intermediate_panel(rows)
+
+    #         foo.assert_called_once(content)
+
+    def test_parse_from_intermediate_panel(self):
+        start_date = '2019-03-15'
+        end_date = '2019-03-15'
+        """Probar parseo desde el archivo intermedio"""
+        rates = {
+            "30": "libor_30_dias",
+            "60": "libor_60_dias",
+            "90": "libor_90_dias",
+            "180": "libor_180_dias",
+            "360": "libor_360_dias"
+        }
+        url = ''
+
+        intermediate_panel_df = MagicMock()
+        intermediate_panel_df = {
+            'indice_tiempo': [
+                '2019-03-15',
+                '2019-03-15',
+                '2019-03-15',
+                '2019-03-15',
+                '2019-03-15'
+            ],
+            'type': [
+                '30', '60', '90', '180', '360'
+            ],
+            'value': [
+                '0.0248175', '0.0255838', '0.0262525', '0.0267175', '0.028405'
+            ]
+        }
+
+        with patch.object(
+            BCRALiborScraper,
+            'read_intermediate_panel_dataframe',
+            return_value=pd.DataFrame(data=intermediate_panel_df)
+        ):
+            scraper = BCRALiborScraper(url, rates, True)
+            content = scraper.parse_from_intermediate_panel(start_date, end_date)
+
+            assert content == [
+                {
+                    'indice_tiempo': '2019-03-15',
+                    '30': '0.0248175',
+                    '60': '0.0255838',
+                    '90': '0.0262525',
+                    '180': '0.0267175',
+                    '360': '0.028405'
+                }
+            ]
+
+    # def test_write_intermediate_panel(self):
+    #     """Probar la escritura de datos en el panel intermedio"""
+    #     url = ''
+    #     rates = {}
+    #     rows = [
+    #         {
+    #             'indice_tiempo': date.fromisoformat('2019-03-15'),
+    #             'type': '30', 'value': Decimal('0.0248175')
+    #         },
+    #         {
+    #             'indice_tiempo': date.fromisoformat('2019-03-15'),
+    #             'type': '60', 'value': Decimal('0.0255838')
+    #         },
+    #         {
+    #             'indice_tiempo': date.fromisoformat('2019-03-15'),
+    #             'type': '90', 'value': Decimal('0.0262525')
+    #         },
+    #         {
+    #             'indice_tiempo': date.fromisoformat('2019-03-15'),
+    #             'type': '180', 'value': Decimal('0.0267175')
+    #         },
+    #         {
+    #             'indice_tiempo': date.fromisoformat('2019-03-15'),
+    #             'type': '360', 'value': Decimal('0.028405')
+    #         }
+    #     ]
+
+    #     mocked_open = MagicMock()
+    #     mocked_open = open('test_file.csv', 'w')
+    #     mocked_writer = MagicMock()
+    #     mocked_writer.writerows = rows
+
+    #     with patch.object(
+    #         BCRALiborScraper,
+    #         'save_intermediate_panel',
+    #         side_effect=[mocked_open, mocked_writer]
+    #     ) as foo:
+    #         scraper = BCRALiborScraper(url, rates, False)
+    #         content = scraper.write_intermediate_panel(rows)
+    #         breakpoint()
+    #         foo.assert_called_once(content)
