@@ -245,7 +245,6 @@ class BCRALiborScraper(BCRAScraper):
         contents : Iterable
             Contenidos que van a ser parseados
         """
-
         parsed_contents = []
         for content in contents:
             parsed = self.parse_day_content(content)
@@ -282,11 +281,9 @@ class BCRALiborScraper(BCRAScraper):
             [splited[2], splited[1], splited[0]]
         )
 
-        # TODO: validate keys
         for row in rows:
             cols = row.find_all('td')
             parsed[cols[0].text] = cols[1].text
-
         return parsed
 
     def preprocess_rows(self, rates, rows):
@@ -301,7 +298,6 @@ class BCRALiborScraper(BCRAScraper):
         rows : Iterable
             Iterable que contiene la información scrapeada
         """
-
         preprocessed_rows = []
 
         for row in rows:
@@ -313,7 +309,7 @@ class BCRALiborScraper(BCRAScraper):
 
             for rate in rates:
                 preprocessed_row[rates[rate]] = Decimal(
-                    (row[rate]).replace(',', '.')
+                    str(row[rate]).replace(',', '.')
                 )/100
 
             preprocessed_rows.append(preprocessed_row)
@@ -356,8 +352,10 @@ class BCRALiborScraper(BCRAScraper):
                 rate_dfs[k] = df[['indice_tiempo', k]].copy()
                 rate_dfs[k]['type'] = k
                 rate_dfs[k].rename(columns={k: 'value'}, inplace=True)
-
                 rate_dfs_panel = rate_dfs_panel.append(rate_dfs[k])
+
+        else:
+            return []
 
         intermediate_panel_data = [
             {
@@ -367,7 +365,6 @@ class BCRALiborScraper(BCRAScraper):
             }
             for r in rate_dfs_panel.to_records()
         ]
-
         return intermediate_panel_data
 
     def write_intermediate_panel(self, rows):
@@ -384,7 +381,7 @@ class BCRALiborScraper(BCRAScraper):
         )
         self.write_intermediate_panel(intermediate_panel_data)
 
-    def parse_from_intermediate_panel(self):
+    def parse_from_intermediate_panel(self, start_date, end_date):
         parsed = []
         rate_dfs = {}
 
@@ -400,7 +397,6 @@ class BCRALiborScraper(BCRAScraper):
                     intermediate_panel_df['type'] == k
                 ][['value']]
                 rate_dfs[k].rename(columns={'value': k}, inplace=True)
-
             rates_df = reduce(
                 lambda df1, df2: df1.merge(
                     df2, left_on='indice_tiempo', right_on='indice_tiempo'
@@ -409,17 +405,18 @@ class BCRALiborScraper(BCRAScraper):
             )
 
             for r in rates_df.to_records():
-                parsed_row = {}
+                if (start_date <= r[0] and
+                   r[0] <= end_date):
+                    parsed_row = {}
 
-                columns = ['indice_tiempo']
-                columns.extend([v for v in self.rates.keys()])
+                    columns = ['indice_tiempo']
+                    columns.extend([v for v in self.rates.keys()])
 
-                for index, column in enumerate(columns):
-                    parsed_row[column] = r[index]
+                    for index, column in enumerate(columns):
+                        parsed_row[column] = r[index]
 
-                if parsed_row:
-                    parsed.append(parsed_row)
-
+                    if parsed_row:
+                        parsed.append(parsed_row)
         return parsed
 
     def read_intermediate_panel_dataframe(self):
@@ -438,7 +435,6 @@ class BCRALiborScraper(BCRAScraper):
         except FileNotFoundError:
             # TODO: fix me
             pass
-
         return intermediate_panel_dataframe
 
     def run(self, start_date, end_date):
@@ -458,16 +454,15 @@ class BCRALiborScraper(BCRAScraper):
         parsed = []
 
         if self.use_intermediate_panel:
-            parsed = self.parse_from_intermediate_panel()
+            first_date = start_date.strftime("%Y-%m-%d")
+            last_date = end_date.strftime("%Y-%m-%d")
+            parsed = self.parse_from_intermediate_panel(first_date, last_date)
             parsed = self.preprocess_rows(self.rates, parsed)
         else:
             contents = self.fetch_contents(start_date, end_date)
             parsed = self.parse_contents(contents)
-
             parsed = self.preprocess_rows(self.rates, parsed)
-
             self.save_intermediate_panel(parsed)
-
         return parsed
 
 
@@ -536,6 +531,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
         content = {}
         for k, v in self.coins.items():
             content[k] = self.fetch_content(start_date, v)
+
         return content
 
     def fetch_content(self, start_date, coins):
@@ -588,6 +584,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
         parsed_contents = []
         parsed_tc_local, parsed_tp_usd = {}, {}
         parsed_contents = {'tc_local': [], 'tp_usd': []}
+
         for k, v in content.items():
 
             parsed = self.parse_coin(v, start_date, end_date, k)
@@ -698,7 +695,6 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
     def get_intermediate_panel_data_from_parsed(self, parsed):
         intermediate_panel_data = []
-
         if parsed:
             for type in ['tc_local', 'tp_usd']:
                 for r in parsed[type]:
@@ -712,7 +708,8 @@ class BCRAExchangeRateScraper(BCRAScraper):
                             }
 
                             intermediate_panel_data.append(panel_row)
-
+        else:
+            return []
         return intermediate_panel_data
 
     def save_intermediate_panel(self, parsed):
@@ -721,7 +718,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
         )
         self.write_intermediate_panel(intermediate_panel_data)
 
-    def parse_from_intermediate_panel(self):
+    def parse_from_intermediate_panel(self, start_date, end_date):
         parsed = {'tc_local': [], 'tp_usd': []}
         coin_dfs = {}
 
@@ -753,16 +750,18 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
             for type in ['tc_local', 'tp_usd']:
                 for r in coins_df[type].to_records():
-                    parsed_row = {}
+                    if (start_date <= r[0] and
+                       r[0] <= end_date):
+                        parsed_row = {}
 
-                    columns = ['indice_tiempo']
-                    columns.extend([v for v in coin_dfs[type].keys()])
+                        columns = ['indice_tiempo']
+                        columns.extend([v for v in coin_dfs[type].keys()])
 
-                    for index, column in enumerate(columns):
-                        parsed_row[column] = r[index]
+                        for index, column in enumerate(columns):
+                            parsed_row[column] = r[index]
 
-                    if parsed_row:
-                        parsed[type].append(parsed_row)
+                        if parsed_row:
+                            parsed[type].append(parsed_row)
 
         return parsed
 
@@ -804,10 +803,13 @@ class BCRAExchangeRateScraper(BCRAScraper):
         parsed = []
 
         if self.use_intermediate_panel:
-            parsed = self.parse_from_intermediate_panel()
+            first_date = start_date.strftime("%Y-%m-%d")
+            last_date = end_date.strftime("%Y-%m-%d")
+            parsed = self.parse_from_intermediate_panel(first_date, last_date)
 
             parsed['tc_local'] = self.preprocess_rows(parsed['tc_local'])
             parsed['tp_usd'] = self.preprocess_rows(parsed['tp_usd'])
+
         else:
             contents = self.fetch_contents(start_date, end_date)
             parsed = self.parse_contents(contents, start_date, end_date)
@@ -816,6 +818,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
             parsed['tp_usd'] = self.preprocess_rows(parsed['tp_usd'])
 
             self.save_intermediate_panel(parsed)
+
         return parsed
 
 
@@ -924,13 +927,57 @@ class BCRASMLScraper(BCRAScraper):
         """
 
         parsed_contents = []
+        parsed_peso_uruguayo, parsed_real = {}, {}
+        parsed_contents = {'peso_uruguayo': [], 'real': []}
 
         for k, v in contents.items():
 
             parsed = self.parse_content(v, k, start_date, end_date)
 
             if parsed:
-                parsed_contents.extend(parsed)
+                for p in parsed:
+                    if p['coin'] == 'peso_uruguayo':
+                        if p['indice_tiempo'] not in(
+                            parsed_peso_uruguayo.keys()
+                        ):
+                            parsed_peso_uruguayo[p['indice_tiempo']] = {}
+                        parsed_peso_uruguayo[p['indice_tiempo']][
+                            'Tipo de cambio de Referencia'
+                            ] = p['Tipo de cambio de Referencia']
+                        parsed_peso_uruguayo[p['indice_tiempo']][
+                            'Tipo de cambio URINUSCA'
+                            ] = p['Tipo de cambio URINUSCA']
+                        parsed_peso_uruguayo[p['indice_tiempo']][
+                            'Tipo de cambio SML Peso Uruguayo'
+                            ] = p['Tipo de cambio SML Peso Uruguayo']
+                        parsed_peso_uruguayo[p['indice_tiempo']][
+                            'Tipo de cambio SML Uruguayo Peso'
+                            ] = p['Tipo de cambio SML Uruguayo Peso']
+
+                    else:
+                        if p['indice_tiempo'] not in parsed_real.keys():
+                            parsed_real[p['indice_tiempo']] = {}
+                        parsed_real[p['indice_tiempo']][
+                            'Tipo de cambio de Referencia'
+                            ] = p['Tipo de cambio de Referencia']
+                        parsed_real[p['indice_tiempo']][
+                            'Tipo de cambio PTAX'
+                            ] = p['Tipo de cambio PTAX']
+                        parsed_real[p['indice_tiempo']][
+                            'Tipo de cambio SML Peso Real'
+                            ] = p['Tipo de cambio SML Peso Real']
+                        parsed_real[p['indice_tiempo']][
+                            'Tipo de cambio SML Real Peso'
+                            ] = p['Tipo de cambio SML Real Peso']
+
+        for k, v in parsed_peso_uruguayo.items():
+
+            v['indice_tiempo'] = k
+            parsed_contents['peso_uruguayo'].append(v)
+
+        for k, v in parsed_real.items():
+            v['indice_tiempo'] = k
+            parsed_contents['real'].append(v)
 
         return parsed_contents
 
@@ -983,12 +1030,41 @@ class BCRASMLScraper(BCRAScraper):
 
         return parsed_content
 
+    def preprocess_rows(self, rows):
+        preprocessed_rows = []
+
+        for row in rows:
+            preprocessed_row = {}
+
+            for k in row.keys():
+                if k == 'indice_tiempo':
+                    if '/' in row[k]:
+                        _ = row[k].split('/')
+                        preprocessed_date = date.fromisoformat(
+                            '-'.join([_[2], _[1], _[0]])
+                        )
+                    else:
+                        preprocessed_date = date.fromisoformat(row[k])
+
+                    preprocessed_row['indice_tiempo'] = preprocessed_date
+                elif k == 'moneda':
+                    preprocessed_row[k] = row[k]
+                else:
+                    preprocessed_row[k] = (
+                        Decimal((row[k]).replace(',', '.'))
+                        if isinstance(row[k], str)
+                        else row[k]
+                    )
+
+            preprocessed_rows.append(preprocessed_row)
+
+        return preprocessed_rows
+
     def get_intermediate_panel_data_from_parsed(self, parsed):
         intermediate_panel_data = []
 
         if parsed:
             for c in self.coins.keys():
-                types = []
                 if c == 'peso_uruguayo':
                     types = [
                         'Tipo de cambio de Referencia',
@@ -1003,45 +1079,89 @@ class BCRASMLScraper(BCRAScraper):
                         'Tipo de cambio SML Peso Real',
                         'Tipo de cambio SML Real Peso',
                     ]
-
-                coin_dfs = {}
-                data = [
-                    [v for v in p.values()] for p in parsed if p['coin'] == c
-                ]
-                columns = ['coin', 'indice_tiempo']
-                columns.extend(types)
-
-                coin_dfs_panel = pd.DataFrame(
-                    data=[],
-                    columns=['indice_tiempo', 'coin', 'value', 'type']
-                )
-
-                df = pd.DataFrame(data, columns=columns)
-
-                coin_dfs[c] = {}
-                for type in types:
-                    coin_dfs[c][type] = df[['indice_tiempo', type]].copy()
-                    coin_dfs[c][type]['coin'] = c
-                    coin_dfs[c][type]['type'] = type
-                    coin_dfs[c][type].rename(
-                        columns={type: 'value'}, inplace=True
-                    )
-
-                    coin_dfs_panel = coin_dfs_panel.append(
-                        coin_dfs[c][type].copy()
-                    )
-
-                for r in coin_dfs_panel.to_records():
-                    intermediate_panel_data.append(
-                       {
-                           'indice_tiempo': r[2],
-                           'coin': r[1],
-                           'type': r[3],
-                           'value': r[4],
-                       }
-                    )
+                for r in parsed[c]:
+                    for type in types:
+                        if type in r.keys():
+                            panel_row = {
+                                'indice_tiempo': r['indice_tiempo'],
+                                'coin': c,
+                                'type': type,
+                                'value': r[type],
+                            }
+                            intermediate_panel_data.append(panel_row)
+        else:
+            return []
 
         return intermediate_panel_data
+
+    def parse_from_intermediate_panel(self, start_date, end_date):
+        parsed = {'peso_uruguayo': [], 'real': []}
+        coin_dfs = {}
+
+        intermediate_panel_df = self.read_intermediate_panel_dataframe()
+        intermediate_panel_df.set_index(['indice_tiempo'], inplace=True)
+
+        if not intermediate_panel_df.empty:
+            coin_dfs = {'peso_uruguayo': {}, 'real': {}}
+            for k in self.coins.keys():
+                if k == 'peso_uruguayo':
+                    for type in [
+                        'Tipo de cambio de Referencia',
+                        'Tipo de cambio URINUSCA',
+                        'Tipo de cambio SML Peso Uruguayo',
+                        'Tipo de cambio SML Uruguayo Peso'
+                    ]:
+                        coin_dfs[k][type] = intermediate_panel_df.loc[
+                            (intermediate_panel_df['type'] == type) &
+                            (intermediate_panel_df['coin'] == k)
+                        ][['value']]
+                        coin_dfs[k][type].rename(
+                            columns={'value': f'{k}_{type}'}, inplace=True
+                        )
+                        if coin_dfs[k][type].empty:
+                            del(coin_dfs[k][type])
+                else:
+                    for type in [
+                        'Tipo de cambio de Referencia',
+                        'Tipo de cambio PTAX',
+                        'Tipo de cambio SML Peso Real',
+                        'Tipo de cambio SML Real Peso'
+                    ]:
+                        coin_dfs[k][type] = intermediate_panel_df.loc[
+                            (intermediate_panel_df['type'] == type) &
+                            (intermediate_panel_df['coin'] == k)
+                        ][['value']]
+                        coin_dfs[k][type].rename(
+                            columns={'value': f'{k}_{type}'}, inplace=True
+                        )
+                        if coin_dfs[k][type].empty:
+                            del(coin_dfs[k][type])
+
+            coins_df = {}
+            for type in ['peso_uruguayo', 'real']:
+                coins_df[type] = reduce(
+                    lambda df1, df2: df1.merge(
+                        df2, left_on='indice_tiempo', right_on='indice_tiempo'
+                    ),
+                    coin_dfs[type].values(),
+                )
+
+            for type in ['peso_uruguayo', 'real']:
+                for r in coins_df[type].to_records():
+                    if (start_date <= r[0] and
+                       r[0] <= end_date):
+                        parsed_row = {}
+
+                        columns = ['indice_tiempo']
+                        columns.extend([v for v in coin_dfs[type].keys()])
+
+                        for index, column in enumerate(columns):
+                            parsed_row[column] = r[index]
+
+                        if parsed_row:
+                            parsed[type].append(parsed_row)
+
+        return parsed
 
     def write_intermediate_panel(self, rows):
         header = ['indice_tiempo', 'coin', 'type', 'value']
@@ -1050,6 +1170,26 @@ class BCRASMLScraper(BCRAScraper):
             writer = DictWriter(intermediate_panel, fieldnames=header)
             writer.writeheader()
             writer.writerows(rows)
+
+    def read_intermediate_panel_dataframe(self):
+        intermediate_panel_dataframe = None
+
+        try:
+            intermediate_panel_dataframe = pd.read_csv(
+                '.sml-intermediate-panel.csv',
+                converters={
+                    'serie_tiempo': lambda _: _,
+                    'coin': lambda _: str(_),
+                    'type': lambda _: str(_),
+                    'value': lambda _: str(_)
+                }
+            )
+
+        except FileNotFoundError:
+            # TODO: fix me
+            pass
+
+        return intermediate_panel_dataframe
 
     def save_intermediate_panel(self, parsed):
         intermediate_panel_data = self.get_intermediate_panel_data_from_parsed(
@@ -1074,10 +1214,26 @@ class BCRASMLScraper(BCRAScraper):
 
         parsed = []
 
-        contents = self.fetch_contents(self.coins)
-        parsed = self.parse_contents(contents, start_date, end_date)
+        if self.use_intermediate_panel:
+            first_date = start_date.strftime("%Y-%m-%d")
+            last_date = end_date.strftime("%Y-%m-%d")
+            parsed = self.parse_from_intermediate_panel(first_date, last_date)
 
-        self.save_intermediate_panel(parsed)
+            parsed['peso_uruguayo'] = self.preprocess_rows(
+                parsed['peso_uruguayo']
+                )
+            parsed['real'] = self.preprocess_rows(parsed['real'])
+
+        else:
+            contents = self.fetch_contents(self.coins)
+            parsed = self.parse_contents(contents, start_date, end_date)
+
+            parsed['peso_uruguayo'] = self.preprocess_rows(
+                parsed['peso_uruguayo']
+                )
+            parsed['real'] = self.preprocess_rows(parsed['real'])
+
+            self.save_intermediate_panel(parsed)
 
         return parsed
 
@@ -1248,6 +1404,7 @@ class BCRATCEScraper(BCRAScraper):
             Diccionario que contiene el nombre de los bancos
         """
         soup = BeautifulSoup(content, "html.parser")
+
         table = soup.find(
             class_='table table-BCRA table-bordered table-hover ' +
                    'table-responsive'
