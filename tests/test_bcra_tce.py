@@ -4,7 +4,7 @@ from unittest.mock import patch, MagicMock
 
 from bs4 import BeautifulSoup
 
-from bcra_scraper.scraper import BCRATCEScraper
+from bcra_scraper import BCRATCEScraper
 
 
 class BcraTceScraperTestCase(unittest.TestCase):

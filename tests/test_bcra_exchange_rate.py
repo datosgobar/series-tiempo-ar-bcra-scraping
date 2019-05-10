@@ -1,12 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-"""Tests del modulo bcrascraper."""
-
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import with_statement
-
 import datetime
 from datetime import date
 import unittest
@@ -20,7 +11,7 @@ import pandas as pd
 
 from bs4 import BeautifulSoup
 
-from bcra_scraper.scraper import BCRAExchangeRateScraper
+from bcra_scraper import BCRAExchangeRateScraper
 from bcra_scraper.bcra_scraper import validate_url_config
 from bcra_scraper.bcra_scraper import validate_url_has_value
 from bcra_scraper.bcra_scraper import validate_coins_key_config
@@ -592,7 +583,9 @@ class BcraExchangeRateTestCase(unittest.TestCase):
             return_value=pd.DataFrame(data=intermediate_panel_df)
         ):
             scraper = BCRAExchangeRateScraper(url, coins, True)
-            content = scraper.parse_from_intermediate_panel(start_date, end_date)
+            content = scraper.parse_from_intermediate_panel(
+                start_date, end_date,
+                )
 
             assert content == {
                 'tc_local':

@@ -1,12 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-"""Tests del modulo bcrascraper."""
-
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import with_statement
-
 from datetime import date, datetime
 from decimal import Decimal
 import unittest
@@ -18,7 +9,7 @@ import pandas as pd
 
 from bs4 import BeautifulSoup
 
-from bcra_scraper.scraper import BCRALiborScraper
+from bcra_scraper import BCRALiborScraper
 from bcra_scraper.utils import get_most_recent_previous_business_day
 from bcra_scraper.bcra_scraper import validate_url_config
 from bcra_scraper.bcra_scraper import validate_url_has_value
@@ -118,36 +109,6 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             assert table is not None
             assert head is not None
             assert body is None
-
-    # # TODO: rename test name
-    # Test no funciona porque no hay datos en el dia anterior
-    # def test_get_content_for_a_business_day(self):
-    #     """Comprueba el contenido para un día habil"""
-    #     url = "http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp"
-
-    #     rates = {
-    #         "30": "libor_30_dias",
-    #         "60": "libor_60_dias",
-    #         "90": "libor_90_dias",
-    #         "180": "libor_180_dias",
-    #         "360": "libor_360_dias"
-    #     }
-
-    #     scraper = BCRALiborScraper(url, rates, False)
-    #     content_date = get_most_recent_previous_business_day(
-    #         date.today() - timedelta(days=1)
-    #         )
-    #     content = scraper.fetch_day_content(content_date)
-
-    #     soup = BeautifulSoup(content, "html.parser")
-
-    #     table = soup.find('table')
-    #     head = table.find('thead') if table else None
-    #     body = table.find('tbody') if table else None
-
-    #     assert table is not None
-    #     assert head is not None
-    #     assert body is not None
 
     def test_html_is_valid(self):
         """Probar que el html sea valido"""
@@ -695,46 +656,6 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             content = scraper.fetch_day_content(single_date)
             assert content == 400
 
-    # def test_write_intermediate_panel(self):
-    #     """Probar la escritura de datos en el panel intermedio"""
-    #     url = ''
-    #     rates = {}
-    #     rows = [
-    #         {
-    #             'indice_tiempo': date.fromisoformat('2019-03-15'),
-    #             'type': '30', 'value': Decimal('0.0248175')
-    #         },
-    #         {
-    #             'indice_tiempo': date.fromisoformat('2019-03-15'),
-    #             'type': '60', 'value': Decimal('0.0255838')
-    #         },
-    #         {
-    #             'indice_tiempo': date.fromisoformat('2019-03-15'),
-    #             'type': '90', 'value': Decimal('0.0262525')
-    #         },
-    #         {
-    #             'indice_tiempo': date.fromisoformat('2019-03-15'),
-    #             'type': '180', 'value': Decimal('0.0267175')
-    #         },
-    #         {
-    #             'indice_tiempo': date.fromisoformat('2019-03-15'),
-    #             'type': '360', 'value': Decimal('0.028405')
-    #         }
-    #     ]
-
-    #     mocked_writer = MagicMock()
-    #     mocked_writer.writerows = rows
-
-    #     with patch.object(
-    #         BCRALiborScraper,
-    #         'write_intermediate_panel',
-    #         return_value=mocked_writer
-    #     ) as foo:
-    #         scraper = BCRALiborScraper(url, rates, False)
-    #         content = scraper.write_intermediate_panel(rows)
-
-    #         foo.assert_called_once(content)
-
     def test_parse_from_intermediate_panel(self):
         start_date = '2019-03-15'
         end_date = '2019-03-15'
@@ -771,7 +692,9 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             return_value=pd.DataFrame(data=intermediate_panel_df)
         ):
             scraper = BCRALiborScraper(url, rates, True)
-            content = scraper.parse_from_intermediate_panel(start_date, end_date)
+            content = scraper.parse_from_intermediate_panel(
+                start_date, end_date,
+                )
 
             assert content == [
                 {
@@ -783,45 +706,3 @@ class BcraLiborScraperTestCase(unittest.TestCase):
                     '360': '0.028405'
                 }
             ]
-
-    # def test_write_intermediate_panel(self):
-    #     """Probar la escritura de datos en el panel intermedio"""
-    #     url = ''
-    #     rates = {}
-    #     rows = [
-    #         {
-    #             'indice_tiempo': date.fromisoformat('2019-03-15'),
-    #             'type': '30', 'value': Decimal('0.0248175')
-    #         },
-    #         {
-    #             'indice_tiempo': date.fromisoformat('2019-03-15'),
-    #             'type': '60', 'value': Decimal('0.0255838')
-    #         },
-    #         {
-    #             'indice_tiempo': date.fromisoformat('2019-03-15'),
-    #             'type': '90', 'value': Decimal('0.0262525')
-    #         },
-    #         {
-    #             'indice_tiempo': date.fromisoformat('2019-03-15'),
-    #             'type': '180', 'value': Decimal('0.0267175')
-    #         },
-    #         {
-    #             'indice_tiempo': date.fromisoformat('2019-03-15'),
-    #             'type': '360', 'value': Decimal('0.028405')
-    #         }
-    #     ]
-
-    #     mocked_open = MagicMock()
-    #     mocked_open = open('test_file.csv', 'w')
-    #     mocked_writer = MagicMock()
-    #     mocked_writer.writerows = rows
-
-    #     with patch.object(
-    #         BCRALiborScraper,
-    #         'save_intermediate_panel',
-    #         side_effect=[mocked_open, mocked_writer]
-    #     ) as foo:
-    #         scraper = BCRALiborScraper(url, rates, False)
-    #         content = scraper.write_intermediate_panel(rows)
-    #         breakpoint()
-    #         foo.assert_called_once(content)

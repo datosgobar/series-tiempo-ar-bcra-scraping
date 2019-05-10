@@ -1,12 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-"""Tests del modulo bcrascraper."""
-
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import with_statement
-
 from datetime import datetime, date
 
 import unittest
@@ -20,7 +11,7 @@ import json
 
 from bs4 import BeautifulSoup
 
-from bcra_scraper.scraper import BCRASMLScraper
+from bcra_scraper import BCRASMLScraper
 from bcra_scraper.bcra_scraper import validate_url_config
 from bcra_scraper.bcra_scraper import validate_url_has_value
 from bcra_scraper.bcra_scraper import validate_coins_key_config
@@ -249,73 +240,6 @@ class BcraSmlScraperTestCase(unittest.TestCase):
                 ]
             }
 
-    # def test_run(self):
-
-    #     start_date = datetime(2019, 4, 24)
-    #     end_date = datetime(2019, 4, 24)
-
-    #     url = '''
-    #      http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_sml.asp
-    #     '''
-
-    #     coins = {
-    #         "peso_uruguayo": "Peso Uruguayo",
-    #         "real": "Real"
-    #     }
-
-    #     parsed = [
-    #         {
-    #             'coin': 'peso_uruguayo',
-    #             'indice_tiempo': '24/04/2019',
-    #             'Tipo de cambio de Referencia': '43,47830',
-    #             'Tipo de cambio URINUSCA': '34,51000',
-    #             'Tipo de cambio SML Peso Uruguayo': '1,25990',
-    #             'Tipo de cambio SML Uruguayo Peso': '0,79375'
-    #         },
-    #         {
-    #             'coin': 'real',
-    #             'indice_tiempo': '24/04/2019',
-    #             'Tipo de cambio de Referencia': '43,47830',
-    #             'Tipo de cambio PTAX': '3,96270',
-    #             'Tipo de cambio SML Peso Real': '10,97190',
-    #             'Tipo de cambio SML Real Peso': '0,09115'
-    #         }
-    #     ]
-
-    #     with patch.object(BCRASMLScraper, 'fetch_contents', return_value=''):
-    #         with patch.object(
-    #             BCRASMLScraper,
-    #             'parse_contents',
-    #             return_value=parsed
-    #         ):
-    #             with patch.object(
-    #                 BCRASMLScraper,
-    #                 'save_intermediate_panel',
-    #                 return_value=''
-    #             ):
-
-    #                 scraper = BCRASMLScraper(url, coins, False)
-    #                 result = scraper.run(start_date, end_date)
-
-    #                 assert result == [
-    #                     {
-    #                         'coin': 'peso_uruguayo',
-    #                         'indice_tiempo': '24/04/2019',
-    #                         'Tipo de cambio de Referencia': '43,47830',
-    #                         'Tipo de cambio URINUSCA': '34,51000',
-    #                         'Tipo de cambio SML Peso Uruguayo': '1,25990',
-    #                         'Tipo de cambio SML Uruguayo Peso': '0,79375'
-    #                     },
-    #                     {
-    #                         'coin': 'real',
-    #                         'indice_tiempo': '24/04/2019',
-    #                         'Tipo de cambio de Referencia': '43,47830',
-    #                         'Tipo de cambio PTAX': '3,96270',
-    #                         'Tipo de cambio SML Peso Real': '10,97190',
-    #                         'Tipo de cambio SML Real Peso': '0,09115'
-    #                     }
-    #                 ]
-
     def test_sml_configuration_has_url(self):
         """Validar la existencia de la clave url dentro de
         la configuración de sml"""
@@ -459,8 +383,8 @@ class BcraSmlScraperTestCase(unittest.TestCase):
                 'type': 'Tipo de cambio SML Peso Uruguayo',
                 'value': Decimal('1.28145')
             },
-            {                    
-                'indice_tiempo': date(2019, 5, 6), 
+            {
+                'indice_tiempo': date(2019, 5, 6),
                 'coin': 'peso_uruguayo',
                 'type': 'Tipo de cambio SML Uruguayo Peso',
                 'value': Decimal('0.78040')
@@ -592,7 +516,9 @@ class BcraSmlScraperTestCase(unittest.TestCase):
             return_value=pd.DataFrame(data=intermediate_panel_df)
         ):
             scraper = BCRASMLScraper(url, coins, True)
-            content = scraper.parse_from_intermediate_panel(start_date, end_date)
+            content = scraper.parse_from_intermediate_panel(
+                start_date, end_date,
+                )
 
             assert content == {
                 'peso_uruguayo': [

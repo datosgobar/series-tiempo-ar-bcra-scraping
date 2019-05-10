@@ -10,9 +10,12 @@ import click
 
 from bcra_scraper.exceptions import InvalidConfigurationError
 
-from bcra_scraper.scraper import BCRALiborScraper, BCRAExchangeRateScraper
-from bcra_scraper.scraper import BCRASMLScraper
-from bcra_scraper.scraper import BCRATCEScraper
+from bcra_scraper import (
+    BCRALiborScraper,
+    BCRAExchangeRateScraper,
+    BCRASMLScraper,
+    BCRATCEScraper,
+)
 
 
 # TODO: test me!
@@ -105,8 +108,6 @@ def cli(ctx):
     pass
 
 
-# TODO: validar q no se ingrese solo end_date
-# TODO: validar q end_date >= start_date
 @cli.command()
 @click.option(
     '--start-date',
