@@ -234,7 +234,6 @@ class BCRATCEScraper(BCRAScraper):
         intermediate_panel_data = self.get_intermediate_panel_data_from_parsed(
             parsed
         )
-        breakpoint()
         self.write_intermediate_panel(intermediate_panel_data)
 
     def parse_contents(self, contents, start_date, end_date, entities):
