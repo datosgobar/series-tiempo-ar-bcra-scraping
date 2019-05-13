@@ -51,3 +51,5 @@ Usar https://github.com/pyenv/pyenv-installer
 
 * bcra_scraper libor --start-date=01/04/2019
 * bcra_scraper exchange-rates --start-date=01/04/2019
+* bcra_scraper sml --start-date=01/04/2019
+* bcra_scraper tce --start-date=01/04/2019
