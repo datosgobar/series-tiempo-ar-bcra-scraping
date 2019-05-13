@@ -319,8 +319,15 @@ def sml(ctx, config, start_date, end_date, use_intermediate_panel):
     default='config.json',
     type=click.Path(exists=True),
 )
+@click.option(
+    '--use-intermediate-panel',
+    default=False,
+    is_flag=True,
+    help=('Use este flag para forzar la lectura de datos desde un'
+          'archivo intermedio')
+    )
 @click.pass_context
-def tce(ctx, config, start_date, end_date):
+def tce(ctx, config, start_date, end_date, use_intermediate_panel):
 
     try:
         config = read_config(file_path=config, command=ctx.command.name)
@@ -336,18 +343,26 @@ def tce(ctx, config, start_date, end_date):
             url=config.get('url'),
             coins=config.get('coins'),
             entities=config.get('entities'),
-            use_intermediate_panel=True
+            use_intermediate_panel=use_intermediate_panel,
         )
         parsed = scraper.run(start_date, end_date)
 
         if parsed:
-            csv_name = '.tce-intermediate-panel.csv'
-            csv_header = ['indice_tiempo', 'coin', 'type', 'value']
-            write_file(csv_name, csv_header, parsed)
+            for coin in ['dolar', 'euro']:
+                csv_header = ['indice_tiempo', 'coin']
+                for entity in config.get('entities'):
+                    for channel in ['mostrador', 'electronico']:
+                        for flow in ['compra', 'venta']:
+                            for hour in [11, 13, 15]:
+                                csv_header.append(
+                                    f'tc_ars_{coin}_{entity}_{channel}_{flow}_{hour}hs'
+                                )
+
+                csv_name = f'tipos-cambio-{coin}-entidades-financieras-series.csv'
+                write_file(csv_name, csv_header, parsed[coin])
 
         else:
             click.echo("No se encontraron resultados")
-        #print(parsed)
 
     except InvalidConfigurationError as err:
         click.echo(err)
