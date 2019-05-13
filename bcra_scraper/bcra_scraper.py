@@ -336,10 +336,18 @@ def tce(ctx, config, start_date, end_date):
             url=config.get('url'),
             coins=config.get('coins'),
             entities=config.get('entities'),
-            use_intermediate_panel=False
+            use_intermediate_panel=True
         )
         parsed = scraper.run(start_date, end_date)
-        print(parsed)
+
+        if parsed:
+            csv_name = '.tce-intermediate-panel.csv'
+            csv_header = ['indice_tiempo', 'coin', 'type', 'value']
+            write_file(csv_name, csv_header, parsed)
+
+        else:
+            click.echo("No se encontraron resultados")
+        #print(parsed)
 
     except InvalidConfigurationError as err:
         click.echo(err)

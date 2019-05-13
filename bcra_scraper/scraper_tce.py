@@ -1,8 +1,10 @@
+from csv import DictWriter
 from datetime import date, datetime, timedelta
+from decimal import Decimal
 
 from bs4 import BeautifulSoup
-from bcra_scraper.exceptions import InvalidConfigurationError
 
+from bcra_scraper.exceptions import InvalidConfigurationError
 from bcra_scraper.scraper_base import BCRAScraper
 
 
@@ -123,6 +125,19 @@ class BCRATCEScraper(BCRAScraper):
 
         return content
 
+    def write_intermediate_panel(self, rows):
+        header = ['indice_tiempo', 'coin', 'type', 'value']
+
+        with open('.tce-intermediate-panel.csv', 'w') as intermediate_panel:
+            writer = DictWriter(intermediate_panel, fieldnames=header)
+            writer.writeheader()
+            writer.writerows(rows)
+
+    def save_intermediate_panel(self, parsed):
+        intermediate_panel_data = parsed
+
+        self.write_intermediate_panel(intermediate_panel_data)
+
     def parse_contents(self, contents, start_date, end_date, entities):
         """
         Recorre un iterable que posee los html y llama a un método.
@@ -195,10 +210,6 @@ class BCRATCEScraper(BCRAScraper):
         rows = body.find_all('tr')
 
         parsed_contents = []
-        if coin == 'dolar':
-            tc_coin = 'tc_ars_usd'
-        else:
-            tc_coin = 'tc_ars_eur'
 
         try:
             for k, v in entities.items():
@@ -212,37 +223,133 @@ class BCRATCEScraper(BCRAScraper):
                     if (start_date <= row_indice_tiempo and
                             row_indice_tiempo <= end_date):
                         if cols[0].text.strip() == v:
-                            parsed['moneda'] = coin
+                            parsed = {}
+                            parsed['coin'] = coin
                             parsed['indice_tiempo'] =\
                                 header[0].text[27:].strip()
-                            parsed[f'{tc_coin}_{k}_mostrador_compra_11hs'] =\
-                                cols[1].text.strip()
-                            parsed[f'{tc_coin}_{k}_mostrador_compra_13hs'] =\
-                                cols[5].text.strip()
-                            parsed[f'{tc_coin}_{k}_mostrador_compra_15hs'] =\
-                                cols[9].text.strip()
-                            parsed[f'{tc_coin}_{k}_electronico_compra_11hs'] =\
-                                cols[3].text.strip()
-                            parsed[f'{tc_coin}_{k}_electronico_compra_13hs'] =\
-                                cols[7].text.strip()
-                            parsed[f'{tc_coin}_{k}_electronico_compra_15hs'] =\
-                                cols[11].text.strip()
-                            parsed[f'{tc_coin}_{k}_mostrador_venta_11hs'] =\
-                                cols[2].text.strip()
-                            parsed[f'{tc_coin}_{k}_mostrador_venta_13hs'] =\
-                                cols[6].text.strip()
-                            parsed[f'{tc_coin}_{k}_mostrador_venta_15hs'] =\
-                                cols[10].text.strip()
-                            parsed[f'{tc_coin}_{k}_electronico_venta_11hs'] =\
-                                cols[4].text.strip()
-                            parsed[f'{tc_coin}_{k}_electronico_venta_13hs'] =\
-                                cols[8].text.strip()
-                            parsed[f'{tc_coin}_{k}_electronico_venta_15hs'] =\
-                                cols[12].text.strip()
+                            parsed['type'] = f'{k}_mostrador_compra_11hs'
+                            parsed['value'] = cols[1].text.strip()
                             parsed_contents.append(parsed)
+
+                            parsed = {}
+                            parsed['coin'] = coin
+                            parsed['indice_tiempo'] =\
+                                header[0].text[27:].strip()
+                            parsed['type'] = f'{k}_mostrador_compra_13hs'
+                            parsed['value'] = cols[5].text.strip()
+                            parsed_contents.append(parsed)
+
+                            parsed = {}
+                            parsed['coin'] = coin
+                            parsed['indice_tiempo'] =\
+                                header[0].text[27:].strip()
+                            parsed['type'] = f'{k}_mostrador_compra_15hs'
+                            parsed['value'] = cols[9].text.strip()
+                            parsed_contents.append(parsed)
+
+                            parsed = {}
+                            parsed['coin'] = coin
+                            parsed['indice_tiempo'] =\
+                                header[0].text[27:].strip()
+                            parsed['type'] = f'{k}_electronico_compra_11hs'
+                            parsed['value'] = cols[3].text.strip()
+                            parsed_contents.append(parsed)
+
+                            parsed = {}
+                            parsed['coin'] = coin
+                            parsed['indice_tiempo'] =\
+                                header[0].text[27:].strip()
+                            parsed['type'] = f'{k}_electronico_compra_13hs'
+                            parsed['value'] = cols[7].text.strip()
+                            parsed_contents.append(parsed)
+
+                            parsed = {}
+                            parsed['coin'] = coin
+                            parsed['indice_tiempo'] =\
+                                header[0].text[27:].strip()
+                            parsed['type'] = f'{k}_electronico_compra_15hs'
+                            parsed['value'] = cols[11].text.strip()
+                            parsed_contents.append(parsed)
+
+                            parsed = {}
+                            parsed['coin'] = coin
+                            parsed['indice_tiempo'] =\
+                                header[0].text[27:].strip()
+                            parsed['type'] = f'{k}_mostrador_venta_11hs'
+                            parsed['value'] = cols[2].text.strip()
+                            parsed_contents.append(parsed)
+
+                            parsed = {}
+                            parsed['coin'] = coin
+                            parsed['indice_tiempo'] =\
+                                header[0].text[27:].strip()
+                            parsed['type'] = f'{k}_mostrador_venta_13hs'
+                            parsed['value'] = cols[6].text.strip()
+                            parsed_contents.append(parsed)
+
+                            parsed = {}
+                            parsed['coin'] = coin
+                            parsed['indice_tiempo'] =\
+                                header[0].text[27:].strip()
+                            parsed['type'] = f'{k}_mostrador_venta_15hs'
+                            parsed['value'] = cols[10].text.strip()
+                            parsed_contents.append(parsed)
+
+                            parsed = {}
+                            parsed['coin'] = coin
+                            parsed['indice_tiempo'] =\
+                                header[0].text[27:].strip()
+                            parsed['type'] = f'{k}_electronico_venta_11hs'
+                            parsed['value'] = cols[4].text.strip()
+                            parsed_contents.append(parsed)
+
+                            parsed = {}
+                            parsed['coin'] = coin
+                            parsed['indice_tiempo'] =\
+                                header[0].text[27:].strip()
+                            parsed['type'] = f'{k}_electronico_venta_13hs'
+                            parsed['value'] = cols[8].text.strip()
+                            parsed_contents.append(parsed)
+
+                            parsed = {}
+                            parsed['coin'] = coin
+                            parsed['indice_tiempo'] =\
+                                header[0].text[27:].strip()
+                            parsed['type'] = f'{k}_electronico_venta_15hs'
+                            parsed['value'] = cols[12].text.strip()
+                            parsed_contents.append(parsed)
+
             return parsed_contents
         except InvalidConfigurationError:
             raise('Error en el content a scrapear')
+
+    def preprocess_rows(self, rows):
+        preprocessed_rows = []
+
+        for row in rows:
+            preprocessed_row = {}
+
+            for k in row.keys():
+                if k == 'indice_tiempo':
+                    if '/' in row[k]:
+                        _ = row[k].split('/')
+                        preprocessed_date = date.fromisoformat(
+                            '-'.join([_[2], _[1], _[0]])
+                        )
+                    else:
+                        preprocessed_date = date.fromisoformat(row[k])
+                    preprocessed_row['indice_tiempo'] = preprocessed_date
+                elif k == 'coin':
+                    preprocessed_row[k] = row[k]
+                elif k == 'value':
+                    row[k] = row[k] if row[k] else '0.0'
+                    preprocessed_row[k] = Decimal(row[k].replace(',', '.'))
+                else:
+                    preprocessed_row[k] = row[k]
+
+            preprocessed_rows.append(preprocessed_row)
+
+        return preprocessed_rows
 
     def run(self, start_date, end_date):
         """
@@ -258,12 +365,15 @@ class BCRATCEScraper(BCRAScraper):
         end_date : date
             fecha de fin que va a tomar como referencia el scraper
         """
-
         parsed = []
 
         contents = self.fetch_contents(start_date, end_date, self.coins)
         parsed = self.parse_contents(
-            contents, start_date, end_date, self.entities
+            contents, start_date, end_date, self.entities,
         )
+
+        parsed = self.preprocess_rows(parsed)
+
+        self.save_intermediate_panel(parsed)
 
         return parsed
