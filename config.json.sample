@@ -88,6 +88,7 @@
         }
     },
     "tce": {
+        "url": "http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_minorista.asp",
         "entities": {
             "galicia": "BANCO DE GALICIA Y BUENOS AIRES S.A.U.",
             "bna": "BANCO DE LA NACION ARGENTINA",
