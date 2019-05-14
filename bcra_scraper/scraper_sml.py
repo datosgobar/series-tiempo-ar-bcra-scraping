@@ -288,7 +288,7 @@ class BCRASMLScraper(BCRAScraper):
 
         intermediate_panel_df = self.read_intermediate_panel_dataframe()
         intermediate_panel_df.set_index(['indice_tiempo'], inplace=True)
-
+        breakpoint()
         if not intermediate_panel_df.empty:
             coin_dfs = {'peso_uruguayo': {}, 'real': {}}
             for k in self.coins.keys():

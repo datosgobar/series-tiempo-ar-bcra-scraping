@@ -134,15 +134,70 @@ class BCRATCEScraper(BCRAScraper):
             newd = dict.fromkeys(p)
             newd.pop('coin')
             newd.pop('indice_tiempo')
+            newd.pop('entitie')
             coin = p.get('coin')
             indice_tiempo = p.get('indice_tiempo')
+            entitie = p.get('entitie')
 
             for k in newd.keys():
                 row = {}
-                row['indice_tiempo'] = indice_tiempo
-                row['coin'] = coin
-                row['type'] = k
-                row['value'] = p[k]
+                if 'mostrador_compra' in k:
+                    row['indice_tiempo'] = indice_tiempo
+                    row['coin'] = coin
+                    row['entitie'] = entitie
+                    row['channel'] = 'mostrador'
+                    row['flow'] = 'compra'
+                    if '11hs' in k:
+                        row['hour'] = '11hs'
+                    elif '13hs' in k:
+                        row['hour'] = '13hs'
+                    elif '15hs' in k:
+                        row['hour'] = '15hs'
+                    row['value'] = p[k]
+                if 'electronico_compra' in k:
+                    row['indice_tiempo'] = indice_tiempo
+                    row['coin'] = coin
+                    row['entitie'] = entitie
+                    row['channel'] = 'electronico'
+                    row['flow'] = 'compra'
+                    if '11hs' in k:
+                        row['hour'] = '11hs'
+                    elif '13hs' in k:
+                        row['hour'] = '13hs'
+                    elif '15hs' in k:
+                        row['hour'] = '15hs'
+                    row['value'] = p[k]
+                if 'mostrador_venta' in k:
+                    row['indice_tiempo'] = indice_tiempo
+                    row['coin'] = coin
+                    row['entitie'] = entitie
+                    row['channel'] = 'mostrador'
+                    row['flow'] = 'venta'
+                    if '11hs' in k:
+                        row['hour'] = '11hs'
+                    elif '13hs' in k:
+                        row['hour'] = '13hs'
+                    elif '15hs' in k:
+                        row['hour'] = '15hs'
+                    row['value'] = p[k]
+                if 'electronico_venta' in k:
+                    row['indice_tiempo'] = indice_tiempo
+                    row['coin'] = coin
+                    row['entitie'] = entitie
+                    row['channel'] = 'electronico'
+                    row['flow'] = 'venta'
+                    if '11hs' in k:
+                        row['hour'] = '11hs'
+                    elif '13hs' in k:
+                        row['hour'] = '13hs'
+                    elif '15hs' in k:
+                        row['hour'] = '15hs'
+                    row['value'] = p[k]
+
+                # row['indice_tiempo'] = indice_tiempo
+                # row['coin'] = coin
+                # row['type'] = k
+                # row['value'] = p[k]
 
                 intermediate_panel_data.append(row)
 
@@ -163,7 +218,8 @@ class BCRATCEScraper(BCRAScraper):
                     for channel in ['mostrador', 'electronico']:
                         for flow in ['compra', 'venta']:
                             for hour in [11, 13, 15]:
-                                type = f'tc_ars_{coin}_{entity}_{channel}_{flow}_{hour}hs'
+
+                                type = f'{coin}_{entity}_{channel}_{flow}_{hour}hs'
 
                                 for k in self.coins.keys():
                                     coin_dfs[k][type] = intermediate_panel_df.loc[
@@ -175,7 +231,7 @@ class BCRATCEScraper(BCRAScraper):
                                     )
                                     if coin_dfs[k][type].empty:
                                         del(coin_dfs[k][type])
-
+            breakpoint()
             coins_df = {}
             for coin in ['dolar', 'euro']:
                 coins_df[coin] = reduce(
@@ -199,11 +255,13 @@ class BCRATCEScraper(BCRAScraper):
 
                         if parsed_row:
                             parsed[coin].append(parsed_row)
-
+        breakpoint()
         return parsed
 
     def write_intermediate_panel(self, rows):
-        header = ['indice_tiempo', 'coin', 'type', 'value']
+        # header = ['indice_tiempo', 'coin', 'type', 'value']
+
+        header = ['indice_tiempo', 'coin', 'entitie', 'channel', 'flow', 'hour', 'value']
 
         with open('.tce-intermediate-panel.csv', 'w') as intermediate_panel:
             writer = DictWriter(intermediate_panel, fieldnames=header)
@@ -261,38 +319,9 @@ class BCRATCEScraper(BCRAScraper):
                 parsed = self.parse_content(
                     v, start_date, end_date, k, entities
                 )
-                # kpoint()
+
                 if parsed:
-                    # for p in parsed:
                     parsed_contents[k].extend(parsed)
-        # parsed_dolar, parsed_euro = {}, {}
-        # parsed_contents = {'dolar': [], 'euro': []}
-
-        # for content in contents:
-        #     for k, v in content.items():
-
-        #         parsed = self.parse_content(v, start_date, end_date, k, entities)
-        #         breakpoint()
-        #         if parsed:
-        #             for p in parsed:
-        #                 if p['coin'] == 'dolar':
-        #                     if p['indice_tiempo'] not in(
-        #                         parsed_dolar.keys()
-        #                     ):
-                                
-
-        #                 else:
-        #                     if p['indice_tiempo'] not in parsed_euro.keys():
-                                
-
-        # for k, v in parsed_dolar.items():
-
-        #     v['indice_tiempo'] = k
-        #     parsed_contents['peso_uruguayo'].append(v)
-
-        # for k, v in parsed_euro.items():
-        #     v['indice_tiempo'] = k
-        #     parsed_contents['real'].append(v)
 
         return parsed_contents
 
@@ -348,34 +377,42 @@ class BCRATCEScraper(BCRAScraper):
                             header[0].text[27:].strip(), '%d/%m/%Y'
                         )
                     parsed = {}
+                    # parsed_coin = {}
                     if (start_date <= row_indice_tiempo and
                             row_indice_tiempo <= end_date):
                         if cols[0].text.strip() == v:
+                            parsed['entitie'] = k
                             parsed['coin'] = coin
                             parsed['indice_tiempo'] = header[0].text[27:].strip()
-                            parsed[f'tc_ars_{coin}_{k}_mostrador_compra_11hs'] =\
+                            # parsed_coin[k] = {}
+                            # parsed_coin[k]['canal'] = rows[2].text[1:10].strip()
+                            # parsed_coin[k]['flujo_comercial'] = rows[3].text[1:7].strip()
+                            # parsed_coin[k]['hora'] = rows[1].text[1:6].strip()
+                            # parsed_coin[k]['value'] = Decimal((cols[1].text.strip() or '0.0').replace(',', '.'))
+                            # breakpoint()
+                            parsed[f'tc_ars_{coin}_mostrador_compra_11hs'] =\
                                 Decimal((cols[1].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_{k}_mostrador_compra_13hs'] =\
+                            parsed[f'tc_ars_{coin}_mostrador_compra_13hs'] =\
                                 Decimal((cols[5].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_{k}_mostrador_compra_15hs'] =\
+                            parsed[f'tc_ars_{coin}_mostrador_compra_15hs'] =\
                                 Decimal((cols[9].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_{k}_electronico_compra_11hs'] =\
+                            parsed[f'tc_ars_{coin}_electronico_compra_11hs'] =\
                                 Decimal((cols[3].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_{k}_electronico_compra_13hs'] =\
+                            parsed[f'tc_ars_{coin}_electronico_compra_13hs'] =\
                                 Decimal((cols[7].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_{k}_electronico_compra_15hs'] =\
+                            parsed[f'tc_ars_{coin}_electronico_compra_15hs'] =\
                                 Decimal((cols[11].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_{k}_mostrador_venta_11hs'] =\
+                            parsed[f'tc_ars_{coin}_mostrador_venta_11hs'] =\
                                 Decimal((cols[2].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_{k}_mostrador_venta_13hs'] =\
+                            parsed[f'tc_ars_{coin}_mostrador_venta_13hs'] =\
                                 Decimal((cols[6].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_{k}_mostrador_venta_15hs'] =\
+                            parsed[f'tc_ars_{coin}_mostrador_venta_15hs'] =\
                                 Decimal((cols[10].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_{k}_electronico_venta_11hs'] =\
+                            parsed[f'tc_ars_{coin}_electronico_venta_11hs'] =\
                                 Decimal((cols[4].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_{k}_electronico_venta_13hs'] =\
+                            parsed[f'tc_ars_{coin}_electronico_venta_13hs'] =\
                                 Decimal((cols[8].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_{k}_electronico_venta_15hs'] =\
+                            parsed[f'tc_ars_{coin}_electronico_venta_15hs'] =\
                                 Decimal((cols[12].text.strip() or '0.0').replace(',', '.'))
 
                             parsed_contents.append(parsed)
@@ -406,15 +443,11 @@ class BCRATCEScraper(BCRAScraper):
                 elif k == 'value':
                     row[k] = row[k] if row[k] else '0.0'
                     preprocessed_row[k] = Decimal(row[k].replace(',', '.'))
-                # elif 'tc_ars' in k:
-                #     row[k] = row[k] if row[k] else '0.0'
-                #     preprocessed_row[k] = Decimal(row[k].replace(',', '.'))
                 else:
                     preprocessed_row[k] = row[k]
 
             preprocessed_rows.append(preprocessed_row)
 
-        # breakpoint()
         return preprocessed_rows
 
     def run(self, start_date, end_date):
@@ -438,7 +471,7 @@ class BCRATCEScraper(BCRAScraper):
             last_date = end_date.strftime("%d/%m/%Y")
 
             parsed = self.parse_from_intermediate_panel(first_date, last_date)
-            # breakpoint()
+
             parsed['dolar'] = self.preprocess_rows(
                 parsed['dolar']
                 )
@@ -449,13 +482,11 @@ class BCRATCEScraper(BCRAScraper):
             parsed = self.parse_contents(
                 contents, start_date, end_date, self.entities,
             )
-            # breakpoint()
 
-
-            # parsed['dolar'] = self.preprocess_rows(
-            #     parsed['dolar']
-            #     )
-            # parsed['euro'] = self.preprocess_rows(parsed['euro'])
+            parsed['dolar'] = self.preprocess_rows(
+                parsed['dolar']
+                )
+            parsed['euro'] = self.preprocess_rows(parsed['euro'])
 
             _parsed = [p for p in parsed['dolar']] + [p for p in parsed['euro']]
             self.save_intermediate_panel(_parsed)

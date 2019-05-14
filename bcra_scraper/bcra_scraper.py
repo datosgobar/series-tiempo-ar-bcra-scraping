@@ -349,15 +349,15 @@ def tce(ctx, config, start_date, end_date, use_intermediate_panel):
 
         if parsed:
             for coin in ['dolar', 'euro']:
-                csv_header = ['indice_tiempo', 'coin']
-                for entity in config.get('entities'):
-                    for channel in ['mostrador', 'electronico']:
-                        for flow in ['compra', 'venta']:
-                            for hour in [11, 13, 15]:
-                                csv_header.append(
-                                    f'tc_ars_{coin}_{entity}_{channel}_{flow}_{hour}hs'
-                                )
-
+                csv_header = ['indice_tiempo', 'coin', 'entitie']
+                # for entity in config.get('entities'):
+                for channel in ['mostrador', 'electronico']:
+                    for flow in ['compra', 'venta']:
+                        for hour in [11, 13, 15]:
+                            csv_header.append(
+                                f'tc_ars_{coin}_{channel}_{flow}_{hour}hs'
+                            )
+                breakpoint()
                 csv_name = f'tipos-cambio-{coin}-entidades-financieras-series.csv'
                 write_file(csv_name, csv_header, parsed[coin])
 
