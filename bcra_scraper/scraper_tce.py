@@ -194,11 +194,6 @@ class BCRATCEScraper(BCRAScraper):
                         row['hour'] = '15hs'
                     row['value'] = p[k]
 
-                # row['indice_tiempo'] = indice_tiempo
-                # row['coin'] = coin
-                # row['type'] = k
-                # row['value'] = p[k]
-
                 intermediate_panel_data.append(row)
 
         return intermediate_panel_data
@@ -218,20 +213,20 @@ class BCRATCEScraper(BCRAScraper):
                     for channel in ['mostrador', 'electronico']:
                         for flow in ['compra', 'venta']:
                             for hour in [11, 13, 15]:
-
-                                type = f'{coin}_{entity}_{channel}_{flow}_{hour}hs'
-
                                 for k in self.coins.keys():
+                                    type = f'tc_ars_{k}_{entity}_{channel}_{flow}_{hour}hs'
                                     coin_dfs[k][type] = intermediate_panel_df.loc[
-                                        (intermediate_panel_df['type'] == type) &
-                                        (intermediate_panel_df['coin'] == k)
+                                        (intermediate_panel_df['coin'] == k) &
+                                        (intermediate_panel_df['entitie'] == entity) & (intermediate_panel_df['channel'] == channel) &
+                                        (intermediate_panel_df['flow'] == flow) & (intermediate_panel_df['hour'] == f'{hour}hs')
                                     ][['value']]
+
                                     coin_dfs[k][type].rename(
                                         columns={'value': f'{type}'}, inplace=True
                                     )
                                     if coin_dfs[k][type].empty:
                                         del(coin_dfs[k][type])
-            breakpoint()
+
             coins_df = {}
             for coin in ['dolar', 'euro']:
                 coins_df[coin] = reduce(
@@ -255,11 +250,10 @@ class BCRATCEScraper(BCRAScraper):
 
                         if parsed_row:
                             parsed[coin].append(parsed_row)
-        breakpoint()
+
         return parsed
 
     def write_intermediate_panel(self, rows):
-        # header = ['indice_tiempo', 'coin', 'type', 'value']
 
         header = ['indice_tiempo', 'coin', 'entitie', 'channel', 'flow', 'hour', 'value']
 
@@ -277,7 +271,6 @@ class BCRATCEScraper(BCRAScraper):
                 converters={
                     'serie_tiempo': lambda _: _,
                     'coin': lambda _: str(_),
-                    'type': lambda _: str(_),
                     'value': lambda _: str(_)
                 }
             )
@@ -377,42 +370,37 @@ class BCRATCEScraper(BCRAScraper):
                             header[0].text[27:].strip(), '%d/%m/%Y'
                         )
                     parsed = {}
-                    # parsed_coin = {}
+
                     if (start_date <= row_indice_tiempo and
                             row_indice_tiempo <= end_date):
                         if cols[0].text.strip() == v:
                             parsed['entitie'] = k
                             parsed['coin'] = coin
                             parsed['indice_tiempo'] = header[0].text[27:].strip()
-                            # parsed_coin[k] = {}
-                            # parsed_coin[k]['canal'] = rows[2].text[1:10].strip()
-                            # parsed_coin[k]['flujo_comercial'] = rows[3].text[1:7].strip()
-                            # parsed_coin[k]['hora'] = rows[1].text[1:6].strip()
-                            # parsed_coin[k]['value'] = Decimal((cols[1].text.strip() or '0.0').replace(',', '.'))
-                            # breakpoint()
-                            parsed[f'tc_ars_{coin}_mostrador_compra_11hs'] =\
+
+                            parsed[f'tc_ars_{coin}_{k}_mostrador_compra_11hs'] =\
                                 Decimal((cols[1].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_mostrador_compra_13hs'] =\
+                            parsed[f'tc_ars_{coin}_{k}_mostrador_compra_13hs'] =\
                                 Decimal((cols[5].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_mostrador_compra_15hs'] =\
+                            parsed[f'tc_ars_{coin}_{k}_mostrador_compra_15hs'] =\
                                 Decimal((cols[9].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_electronico_compra_11hs'] =\
+                            parsed[f'tc_ars_{coin}_{k}_electronico_compra_11hs'] =\
                                 Decimal((cols[3].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_electronico_compra_13hs'] =\
+                            parsed[f'tc_ars_{coin}_{k}_electronico_compra_13hs'] =\
                                 Decimal((cols[7].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_electronico_compra_15hs'] =\
+                            parsed[f'tc_ars_{coin}_{k}_electronico_compra_15hs'] =\
                                 Decimal((cols[11].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_mostrador_venta_11hs'] =\
+                            parsed[f'tc_ars_{coin}_{k}_mostrador_venta_11hs'] =\
                                 Decimal((cols[2].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_mostrador_venta_13hs'] =\
+                            parsed[f'tc_ars_{coin}_{k}_mostrador_venta_13hs'] =\
                                 Decimal((cols[6].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_mostrador_venta_15hs'] =\
+                            parsed[f'tc_ars_{coin}_{k}_mostrador_venta_15hs'] =\
                                 Decimal((cols[10].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_electronico_venta_11hs'] =\
+                            parsed[f'tc_ars_{coin}_{k}_electronico_venta_11hs'] =\
                                 Decimal((cols[4].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_electronico_venta_13hs'] =\
+                            parsed[f'tc_ars_{coin}_{k}_electronico_venta_13hs'] =\
                                 Decimal((cols[8].text.strip() or '0.0').replace(',', '.'))
-                            parsed[f'tc_ars_{coin}_electronico_venta_15hs'] =\
+                            parsed[f'tc_ars_{coin}_{k}_electronico_venta_15hs'] =\
                                 Decimal((cols[12].text.strip() or '0.0').replace(',', '.'))
 
                             parsed_contents.append(parsed)
@@ -467,8 +455,8 @@ class BCRATCEScraper(BCRAScraper):
         parsed = {}
 
         if self.use_intermediate_panel:
-            first_date = start_date.strftime("%d/%m/%Y")
-            last_date = end_date.strftime("%d/%m/%Y")
+            first_date = start_date.strftime("%Y-%m-%d")
+            last_date = end_date.strftime("%Y-%m-%d")
 
             parsed = self.parse_from_intermediate_panel(first_date, last_date)
 
@@ -482,7 +470,6 @@ class BCRATCEScraper(BCRAScraper):
             parsed = self.parse_contents(
                 contents, start_date, end_date, self.entities,
             )
-
             parsed['dolar'] = self.preprocess_rows(
                 parsed['dolar']
                 )
@@ -491,4 +478,13 @@ class BCRATCEScraper(BCRAScraper):
             _parsed = [p for p in parsed['dolar']] + [p for p in parsed['euro']]
             self.save_intermediate_panel(_parsed)
 
+            for coin in ['dolar', 'euro']:
+                result = {}
+                for p in parsed[coin]:
+                    result = {**result, **p}
+                    parsed[coin] = [result]
+                if 'entitie' in result:
+                    del result['entitie']
+                if 'coin' in result:
+                    del result['coin']
         return parsed

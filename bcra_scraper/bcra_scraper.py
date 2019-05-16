@@ -20,6 +20,7 @@ from bcra_scraper import (
 
 # TODO: test me!
 def write_file(file_name, header, rows):
+
     with open(file_name, 'w') as archivo:
         writer = DictWriter(archivo, fieldnames=header)
         writer.writeheader()
@@ -349,15 +350,15 @@ def tce(ctx, config, start_date, end_date, use_intermediate_panel):
 
         if parsed:
             for coin in ['dolar', 'euro']:
-                csv_header = ['indice_tiempo', 'coin', 'entitie']
-                # for entity in config.get('entities'):
-                for channel in ['mostrador', 'electronico']:
-                    for flow in ['compra', 'venta']:
-                        for hour in [11, 13, 15]:
-                            csv_header.append(
-                                f'tc_ars_{coin}_{channel}_{flow}_{hour}hs'
-                            )
-                breakpoint()
+                csv_header = ['indice_tiempo']
+                for entity in config.get('entities'):
+                    for channel in ['mostrador', 'electronico']:
+                        for flow in ['compra', 'venta']:
+                            for hour in [11, 13, 15]:
+                                csv_header.append(
+                                    f'tc_ars_{coin}_{entity}_{channel}_{flow}_{hour}hs'
+                                )
+
                 csv_name = f'tipos-cambio-{coin}-entidades-financieras-series.csv'
                 write_file(csv_name, csv_header, parsed[coin])
 
