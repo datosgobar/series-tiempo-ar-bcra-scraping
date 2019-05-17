@@ -242,7 +242,6 @@ class BCRATCEScraper(BCRAScraper):
         except FileNotFoundError:
             # TODO: fix me
             pass
-
         return intermediate_panel_dataframe
 
     def save_intermediate_panel(self, parsed):
