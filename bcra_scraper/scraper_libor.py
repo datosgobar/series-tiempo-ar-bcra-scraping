@@ -8,6 +8,7 @@ from selenium.webdriver.common.keys import Keys
 import pandas as pd
 
 from bcra_scraper.scraper_base import BCRAScraper
+from bcra_scraper.exceptions import InvalidConfigurationError
 
 
 class BCRALiborScraper(BCRAScraper):
@@ -201,11 +202,20 @@ class BCRALiborScraper(BCRAScraper):
 
         preprocessed_header.append('indice_tiempo')
 
-        for key, value in rates.items():
+        for value in rates.values():
             preprocessed_header.append(value)
         return preprocessed_header
 
     def get_intermediate_panel_data_from_parsed(self, parsed):
+        """
+        Recorre parsed y por cada plazo en días genera un diccionario
+        obteniendo por separado las claves que se utilizaran como headers,
+        y sus valores.
+
+        Parameters
+        ----------
+        parsed : lista de diccionarios por moneda
+        """
         intermediate_panel_data = []
 
         if parsed:
@@ -241,6 +251,13 @@ class BCRALiborScraper(BCRAScraper):
         return intermediate_panel_data
 
     def write_intermediate_panel(self, rows):
+        """
+        Escribe el panel intermedio.
+
+        Parameters
+        ----------
+        rows: Iterable
+        """
         header = ['indice_tiempo', 'type', 'value']
 
         with open('.libor-intermediate-panel.csv', 'w') as intermediate_panel:
@@ -249,12 +266,31 @@ class BCRALiborScraper(BCRAScraper):
             writer.writerows(rows)
 
     def save_intermediate_panel(self, parsed):
+        """
+        Llama a un método para obtener la data del panel intermedio
+        y a otro método pasandole esa data para que la escriba.
+
+        Parameters
+        ----------
+        parsed: Iterable
+        """
         intermediate_panel_data = self.get_intermediate_panel_data_from_parsed(
             parsed
         )
         self.write_intermediate_panel(intermediate_panel_data)
 
     def parse_from_intermediate_panel(self, start_date, end_date):
+        """
+        Lee el dataframe del panel intermedio.
+        Regresa una lista con un diccionario por cada fecha
+
+        Parameters
+        ----------
+        start_date : date
+            Fecha de inicio que toma como referencia el scraper
+        end_date : date
+            fecha de fin que va a tomar como referencia el scraper
+        """
         parsed = []
         rate_dfs = {}
 
@@ -291,9 +327,13 @@ class BCRALiborScraper(BCRAScraper):
 
                     if parsed_row:
                         parsed.append(parsed_row)
+        breakpoint()
         return parsed
 
     def read_intermediate_panel_dataframe(self):
+        """
+        Lee el dataframe
+        """
         intermediate_panel_dataframe = None
 
         try:
@@ -307,8 +347,9 @@ class BCRALiborScraper(BCRAScraper):
             )
 
         except FileNotFoundError:
-            # TODO: fix me
-            pass
+            raise InvalidConfigurationError(
+                "El archivo panel no existe"
+            )
         return intermediate_panel_dataframe
 
     def run(self, start_date, end_date):

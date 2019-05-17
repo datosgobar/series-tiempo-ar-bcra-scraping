@@ -39,8 +39,6 @@ class BcraTceScraperTestCase(unittest.TestCase):
             head = table.find('thead') if table else None
             body = table.find('tbody') if table else None
 
-            return True
-
             assert table is not None
             assert head is not None
             assert body is not None

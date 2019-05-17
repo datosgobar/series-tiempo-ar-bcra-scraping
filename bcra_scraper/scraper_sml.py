@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 
 import pandas as pd
 
+from bcra_scraper.exceptions import InvalidConfigurationError
 from bcra_scraper.scraper_base import BCRAScraper
 
 
@@ -78,7 +79,7 @@ class BCRASMLScraper(BCRAScraper):
 
         return contents
 
-    def fetch_content(self, coins):
+    def fetch_content(self, coin):
         """
         Ingresa al navegador y utiliza la moneda
         regresando el contenido que pertenece a la misma.
@@ -92,7 +93,7 @@ class BCRASMLScraper(BCRAScraper):
         browser_driver = self.get_browser_driver()
         browser_driver.get(self.url)
         field = browser_driver.find_element_by_name('moneda')
-        field.send_keys(coins)
+        field.send_keys(coin)
 
         content = browser_driver.page_source
 
@@ -101,7 +102,8 @@ class BCRASMLScraper(BCRAScraper):
     def parse_contents(self, contents, start_date, end_date):
         """
         Recorre un iterable que posee los html y llama a un método.
-        Retorna una lista de diccionarios con los contenidos parseados
+        Retorna un diccionario con las monedas como clave y como valor
+        una lista con un diccionario.
 
         Parameters
         ----------
@@ -172,9 +174,8 @@ class BCRASMLScraper(BCRAScraper):
     def parse_content(self, content, coin, start_date, end_date):
         """
         Retorna un iterable con el contenido scrapeado cuyo formato
-        posee la moneda, el indice de tiempo, y los tipo de cambio de:
-        Referencia, PTAX/URINUSCA (dependiendo la moneda),
-        SML de peso a la moneda, SML de la moneda a peso.
+        posee la moneda, el indice de tiempo, y los tipo de cambio
+        correspondientes a la moneda.
 
         Parameters
         ----------
@@ -219,6 +220,13 @@ class BCRASMLScraper(BCRAScraper):
         return parsed_content
 
     def preprocess_rows(self, rows):
+        """
+        Regresa un iterable donde la fecha y los valores son parseados.
+
+        Parameters
+        ----------
+        rows : list
+        """
         preprocessed_rows = []
 
         for row in rows:
@@ -248,6 +256,15 @@ class BCRASMLScraper(BCRAScraper):
         return preprocessed_rows
 
     def get_intermediate_panel_data_from_parsed(self, parsed):
+        """
+        Recorre parsed y por cada tipo de cambio genera un diccionario
+        obteniendo por separado las claves que se utilizaran como headers,
+        y sus valores.
+
+        Parameters
+        ----------
+        parsed : lista de diccionarios por moneda
+        """
         intermediate_panel_data = []
 
         if parsed:
@@ -279,14 +296,24 @@ class BCRASMLScraper(BCRAScraper):
                             intermediate_panel_data.append(panel_row)
         else:
             return []
-
         return intermediate_panel_data
 
     def parse_from_intermediate_panel(self, start_date, end_date):
+        """
+        Lee el dataframe del panel intermedio.
+        Retorna un diccionario con las monedas como clave y como valor
+        una lista con un diccionario.
+        Parameters
+        ----------
+        start_date : date
+            Fecha de inicio que toma como referencia el scraper
+        end_date : date
+            fecha de fin que va a tomar como referencia el scraper
+        """
         parsed = {'peso_uruguayo': [], 'real': []}
         coin_dfs = {}
-
         intermediate_panel_df = self.read_intermediate_panel_dataframe()
+
         intermediate_panel_df.set_index(['indice_tiempo'], inplace=True)
 
         if not intermediate_panel_df.empty:
@@ -307,7 +334,7 @@ class BCRASMLScraper(BCRAScraper):
                             columns={'value': f'{k}_{type}'}, inplace=True
                         )
                         if coin_dfs[k][type].empty:
-                            del(coin_dfs[k][type])
+                            (coin_dfs[k][type] == '0.0')
                 else:
                     for type in [
                         'Tipo de cambio de Referencia',
@@ -323,7 +350,7 @@ class BCRASMLScraper(BCRAScraper):
                             columns={'value': f'{k}_{type}'}, inplace=True
                         )
                         if coin_dfs[k][type].empty:
-                            del(coin_dfs[k][type])
+                            (coin_dfs[k][type] == '0.0')
 
             coins_df = {}
             for type in ['peso_uruguayo', 'real']:
@@ -348,10 +375,16 @@ class BCRASMLScraper(BCRAScraper):
 
                         if parsed_row:
                             parsed[type].append(parsed_row)
-
         return parsed
 
     def write_intermediate_panel(self, rows):
+        """
+        Escribe el panel intermedio.
+
+        Parameters
+        ----------
+        rows: Iterable
+        """
         header = ['indice_tiempo', 'coin', 'type', 'value']
 
         with open('.sml-intermediate-panel.csv', 'w') as intermediate_panel:
@@ -360,6 +393,9 @@ class BCRASMLScraper(BCRAScraper):
             writer.writerows(rows)
 
     def read_intermediate_panel_dataframe(self):
+        """
+        Lee el dataframe
+        """
         intermediate_panel_dataframe = None
 
         try:
@@ -374,12 +410,21 @@ class BCRASMLScraper(BCRAScraper):
             )
 
         except FileNotFoundError:
-            # TODO: fix me
-            pass
+            raise InvalidConfigurationError(
+                "El archivo panel no existe"
+            )
 
         return intermediate_panel_dataframe
 
     def save_intermediate_panel(self, parsed):
+        """
+        Llama a un método para obtener la data del panel intermedio
+        y a otro método pasandole esa data para que la escriba.
+
+        Parameters
+        ----------
+        parsed: Iterable
+        """
         intermediate_panel_data = self.get_intermediate_panel_data_from_parsed(
             parsed
         )

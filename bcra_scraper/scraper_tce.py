@@ -29,18 +29,19 @@ class BCRATCEScraper(BCRAScraper):
     Methods
     -------
     fetch_contents(start_date, end_date, coins)
-        Devuelve una lista de diccionarios por cada moneda
+        Devuelve una lista de diccionarios para cada moneda
         en cada fecha con el html correspondiente.
 
     fetch_content(single_date, coin)
-        Retorna el contenido de la moneda
+        Regresa un string  con el contenido que pertenece a la moneda.
 
     parse_contents(contents, start_date, end_date)
-        Recibe un iterable de contenidos y devuelve un iterable con la
-        información scrapeada
+        Retorna un diccionario que tiene como clave cada moneda
+        y como valor una lista con un diccionario que tiene los
+        contenidos parseados.
 
     parse_content(content, start_date, end_date, coin)
-        Retorna el contenido scrapeado
+        Retorna un iterable con un diccionario.
 
     run(start_date, end_date)
         Llama a los métodos que obtienen y scrapean los contenidos
@@ -124,10 +125,18 @@ class BCRATCEScraper(BCRAScraper):
         submit_button.click()
 
         content = browser_driver.page_source
-
         return content
 
     def get_intermediate_panel_data_from_parsed(self, parsed):
+        """
+        Recorre parsed y por cada registro genera un diccionario
+        obteniendo por separado las claves que se utilizaran como headers,
+        y sus valores.
+
+        Parameters
+        ----------
+        parsed : lista de diccionarios por moneda
+        """
         intermediate_panel_data = []
 
         parsed_contents = {'dolar': [], 'euro': []}
@@ -161,10 +170,24 @@ class BCRATCEScraper(BCRAScraper):
         intermediate_panel_data.extend(
             parsed_contents['dolar'] + parsed_contents['euro']
         )
-
         return intermediate_panel_data
 
     def parse_from_intermediate_panel(self, start_date, end_date):
+        """
+        Lee el dataframe del panel intermedio.
+        Unifica los valores de coin, entity, channel, flow, hour,
+        convirtiendolos en clave y como valor se asigna el dato
+        de la clave value.
+        Regresa un diccionario con las monedas como claves, y como valor
+        una lista con un diccionario que contiene la fecha y los registros.
+
+        Parameters
+        ----------
+        start_date : date
+            Fecha de inicio que toma como referencia el scraper
+        end_date : date
+            fecha de fin que va a tomar como referencia el scraper
+        """
         parsed = {'dolar': [], 'euro': []}
         coin_dfs = {}
 
@@ -229,11 +252,16 @@ class BCRATCEScraper(BCRAScraper):
 
                         if parsed_row:
                             parsed[coin].append(parsed_row)
-
         return parsed
 
     def write_intermediate_panel(self, rows):
+        """
+        Escribe el panel intermedio.
 
+        Parameters
+        ----------
+        rows: Iterable
+        """
         header = [
             'indice_tiempo',
             'coin',
@@ -250,6 +278,9 @@ class BCRATCEScraper(BCRAScraper):
             writer.writerows(rows)
 
     def read_intermediate_panel_dataframe(self):
+        """
+        Lee el dataframe
+        """
         intermediate_panel_dataframe = None
 
         try:
@@ -263,11 +294,20 @@ class BCRATCEScraper(BCRAScraper):
             )
 
         except FileNotFoundError:
-            # TODO: fix me
-            pass
+            raise InvalidConfigurationError(
+                "El archivo panel no existe"
+            )
         return intermediate_panel_dataframe
 
     def save_intermediate_panel(self, parsed):
+        """
+        Llama a un método para obtener la data del panel intermedio
+        y a otro método pasandole esa data para que la escriba.
+
+        Parameters
+        ----------
+        parsed: Iterable
+        """
         intermediate_panel_data = self.get_intermediate_panel_data_from_parsed(
             parsed
         )
@@ -275,8 +315,9 @@ class BCRATCEScraper(BCRAScraper):
 
     def parse_contents(self, contents, start_date, end_date, entities):
         """
-        Recorre un iterable que posee los html y llama a un método.
-        Retorna una lista de diccionarios con los contenidos parseados
+        Retorna un diccionario que tiene como clave cada moneda
+        y como valor una lista con un diccionario que tiene los
+        contenidos parseados.
 
         Parameters
         ----------
@@ -301,13 +342,12 @@ class BCRATCEScraper(BCRAScraper):
 
                 if parsed:
                     parsed_contents[k].extend(parsed)
-
         return parsed_contents
 
     def parse_content(self, content, start_date, end_date, coin, entities):
         """
-        Retorna un iterable con el contenido scrapeado cuyo formato
-        posee el indice de tiempo, las monedas y sus diferentes entidades
+        Parsea el contenido y agrega los registros a un diccionario,
+        retornando un iterable con el diccionario.
 
         Parameters
         ----------
@@ -435,6 +475,13 @@ class BCRATCEScraper(BCRAScraper):
             raise('Error en el content a scrapear')
 
     def preprocess_rows(self, rows):
+        """
+        Regresa un iterable donde la fecha y los valores son parseados.
+
+        Parameters
+        ----------
+        rows : list
+        """
         preprocessed_rows = []
         for row in rows:
             preprocessed_row = {}
@@ -463,9 +510,11 @@ class BCRATCEScraper(BCRAScraper):
 
     def run(self, start_date, end_date):
         """
-        Inicializa una lista. Llama a los métodos para obtener y scrapear
-        los contenidos, y los ingresa en la lista.
-        Retorna una lista de diccionarios con los resultados scrapeados
+        Inicializa un iterable. Llama a los métodos para obtener y scrapear
+        los contenidos, y los ingresa en el iterable.
+        Retorna un diccionario que tiene como clave cada moneda
+        y como valor una lista con un diccionario que tiene los
+        contenidos parseados.
 
         Parameters
         ----------

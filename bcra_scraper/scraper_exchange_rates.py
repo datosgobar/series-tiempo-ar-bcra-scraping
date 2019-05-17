@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 
 from bcra_scraper.scraper_base import BCRAScraper
+from bcra_scraper.exceptions import InvalidConfigurationError
 
 
 class BCRAExchangeRateScraper(BCRAScraper):
@@ -68,7 +69,8 @@ class BCRAExchangeRateScraper(BCRAScraper):
         ----------
         start_date : date
             fecha de inicio que va a tomar como referencia el scraper
-
+        end_date : date
+            fecha de fin que va a tomar como referencia el scraper
         """
 
         content = {}
@@ -80,8 +82,8 @@ class BCRAExchangeRateScraper(BCRAScraper):
     def fetch_content(self, start_date, coins):
         """
         Ingresa al navegador utilizando la fecha y la moneda que recibe.
-        La fecha por default es today, y en caso de pasarle otra fecha
-        va a traer el contenido desde esa fecha hasta today.
+        La fecha por default es hoy, en caso de pasarle otra fecha
+        va a traer el contenido desde esa fecha hasta hoy.
         Retorna un string que contiene el html obtenido.
 
         Parameters
@@ -117,10 +119,11 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
         Parameters
         ----------
-        contents: Dict
+        content: Dict
             String con nombre de cada moneda como clave, string con cada html
             como valor
-
+        start_date : date
+            fecha de inicio que va a tomar como referencia el scraper
         end_date : date
             fecha de fin que va a tomar como referencia el scraper
         """
@@ -162,10 +165,10 @@ class BCRAExchangeRateScraper(BCRAScraper):
         ----------
         content: str
             Html de la moneda
-
+        start_date : date
+            fecha de inicio que va a tomar como referencia el scraper
         end_date : date
             fecha de fin que va a tomar como referencia el scraper
-
         coin : str
             Nombre de la moneda
         """
@@ -198,6 +201,13 @@ class BCRAExchangeRateScraper(BCRAScraper):
         return parsed_contents
 
     def preprocess_rows(self, rows):
+        """
+        Regresa un iterable donde la fecha y los valores son parseados.
+
+        Parameters
+        ----------
+        rows : list
+        """
         preprocessed_rows = []
 
         for row in rows:
@@ -228,6 +238,13 @@ class BCRAExchangeRateScraper(BCRAScraper):
         return preprocessed_rows
 
     def write_intermediate_panel(self, rows):
+        """
+        Escribe el panel intermedio.
+
+        Parameters
+        ----------
+        rows: Iterable
+        """
         header = ['indice_tiempo', 'coin', 'type', 'value']
         file_name = '.exchange-rates-intermediate-panel.csv'
 
@@ -237,6 +254,15 @@ class BCRAExchangeRateScraper(BCRAScraper):
             writer.writerows(rows)
 
     def get_intermediate_panel_data_from_parsed(self, parsed):
+        """
+        Recorre parsed y por cada moneda genera un diccionario
+        obteniendo por separado las claves que se utilizaran como headers,
+        y sus valores.
+
+        Parameters
+        ----------
+        parsed : lista de diccionarios por moneda
+        """
         intermediate_panel_data = []
         if parsed:
             for type in ['tc_local', 'tp_usd']:
@@ -256,12 +282,32 @@ class BCRAExchangeRateScraper(BCRAScraper):
         return intermediate_panel_data
 
     def save_intermediate_panel(self, parsed):
+        """
+        Llama a un método para obtener la data del panel intermedio
+        y a otro método pasandole esa data para que la escriba.
+
+        Parameters
+        ----------
+        parsed: Iterable
+        """
         intermediate_panel_data = self.get_intermediate_panel_data_from_parsed(
             parsed
         )
         self.write_intermediate_panel(intermediate_panel_data)
 
     def parse_from_intermediate_panel(self, start_date, end_date):
+        """
+        Lee el dataframe del panel intermedio.
+        Regresa un diccionario con las monedas como claves, y como valor
+        una lista con un diccionario que contiene la fecha y los registros.
+
+        Parameters
+        ----------
+        start_date : date
+            Fecha de inicio que toma como referencia el scraper
+        end_date : date
+            fecha de fin que va a tomar como referencia el scraper
+        """
         parsed = {'tc_local': [], 'tp_usd': []}
         coin_dfs = {}
 
@@ -305,10 +351,12 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
                         if parsed_row:
                             parsed[type].append(parsed_row)
-
         return parsed
 
     def read_intermediate_panel_dataframe(self):
+        """
+        Lee el dataframe
+        """
         intermediate_panel_dataframe = None
 
         try:
@@ -323,8 +371,9 @@ class BCRAExchangeRateScraper(BCRAScraper):
             )
 
         except FileNotFoundError:
-            # TODO: fix me
-            pass
+            raise InvalidConfigurationError(
+                "El archivo panel no existe"
+            )
 
         return intermediate_panel_dataframe
 
