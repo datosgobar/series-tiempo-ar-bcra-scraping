@@ -327,7 +327,7 @@ class BCRALiborScraper(BCRAScraper):
 
                     if parsed_row:
                         parsed.append(parsed_row)
-        breakpoint()
+
         return parsed
 
     def read_intermediate_panel_dataframe(self):
