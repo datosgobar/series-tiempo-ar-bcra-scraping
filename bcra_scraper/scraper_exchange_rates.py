@@ -72,14 +72,25 @@ class BCRAExchangeRateScraper(BCRAScraper):
         end_date : date
             fecha de fin que va a tomar como referencia el scraper
         """
-
         content = {}
         for k, v in self.coins.items():
-            content[k] = self.fetch_content(start_date, v)
-
+            fetched = self.fetch_content(start_date, v)
+            if fetched:
+                content[k] = fetched
         return content
 
-    def fetch_content(self, start_date, coins):
+    def validate_coin_in_configuration_file(self, coin, options):
+        """
+        Valida que el valor de la moneda en el archivo de configuración
+        se corresponda con los valores de las opciones del select en la página
+        """
+        select_options = [select_option.text for select_option in options]
+        if coin in select_options:
+            return True
+        else:
+            return False
+
+    def fetch_content(self, start_date, coin):
         """
         Ingresa al navegador utilizando la fecha y la moneda que recibe.
         La fecha por default es hoy, en caso de pasarle otra fecha
@@ -91,26 +102,24 @@ class BCRAExchangeRateScraper(BCRAScraper):
         start_date : date
             fecha de inicio que va a tomar como referencia el scraper
 
-        coins: str
+        coin: str
             Nombre de cada moneda
         """
-
         browser_driver = self.get_browser_driver()
         browser_driver.get(self.url)
         elem = browser_driver.find_element_by_name('Fecha')
         elem.send_keys(start_date.strftime("%d/%m/%Y"))
-        coin = browser_driver.find_element_by_name('Moneda')
+        element = browser_driver.find_element_by_name('Moneda')
+        options = element.find_elements_by_tag_name('option')
 
-        coin.send_keys(coins)
-
-        submit_button = browser_driver.find_element_by_class_name(
-            'btn-primary'
-        )
-        submit_button.click()
-
-        content = browser_driver.page_source
-
-        return content
+        valid = self.validate_coin_in_configuration_file(coin, options)
+        if valid:
+            element.send_keys(coin)
+            submit_button = browser_driver.find_element_by_class_name(
+                'btn-primary')
+            submit_button.click()
+            content = browser_driver.page_source
+            return content
 
     def parse_contents(self, content, start_date, end_date):
         """
@@ -176,6 +185,15 @@ class BCRAExchangeRateScraper(BCRAScraper):
         soup = BeautifulSoup(content, "html.parser")
 
         table = soup.find('table')
+
+        if not table:
+            return []
+
+        head = table.find('thead')
+
+        if not head:
+            return []
+
         body = table.find('tbody')
 
         if not body:
@@ -187,6 +205,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
         for row in rows:
             cols = row.find_all('td')
             parsed = {}
+
             row_indice_tiempo = \
                 datetime.strptime(cols[0].text.strip(), '%d/%m/%Y')
 
@@ -197,7 +216,6 @@ class BCRAExchangeRateScraper(BCRAScraper):
                 parsed['tp_usd'] = cols[1].text[5:].strip()
                 parsed['tc_local'] = cols[2].text[5:].strip()
                 parsed_contents.append(parsed)
-
         return parsed_contents
 
     def preprocess_rows(self, rows):
@@ -224,14 +242,17 @@ class BCRAExchangeRateScraper(BCRAScraper):
                         preprocessed_date = date.fromisoformat(row[k])
 
                     preprocessed_row['indice_tiempo'] = preprocessed_date
-                elif k == 'moneda':
-                    preprocessed_row[k] = row[k]
                 else:
-                    preprocessed_row[k] = (
-                        Decimal((row[k]).replace(',', '.'))
-                        if isinstance(row[k], str)
-                        else row[k]
-                    )
+                    if '-' in str(row[k]):
+                        preprocessed_row[k] = None
+                    else:
+                        if '.' in row[k]:
+                            row[k] = row[k].replace('.', '')
+                        preprocessed_row[k] = (
+                                Decimal((row[k]).replace(',', '.'))
+                                if isinstance(row[k], str)
+                                else row[k]
+                            )
 
             preprocessed_rows.append(preprocessed_row)
 
@@ -310,7 +331,6 @@ class BCRAExchangeRateScraper(BCRAScraper):
         """
         parsed = {'tc_local': [], 'tp_usd': []}
         coin_dfs = {}
-
         intermediate_panel_df = self.read_intermediate_panel_dataframe()
         intermediate_panel_df.set_index(['indice_tiempo'], inplace=True)
 
@@ -325,6 +345,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
                     coin_dfs[type][k].rename(
                         columns={'value': f'{k}_{type}'}, inplace=True
                     )
+
                     if coin_dfs[type][k].empty:
                         del(coin_dfs[type][k])
 
@@ -366,7 +387,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
                     'serie_tiempo': lambda _: _,
                     'coin': lambda _: str(_),
                     'type': lambda _: str(_),
-                    'value': lambda _: Decimal(_)
+                    'value': lambda _: Decimal(_) if _ else None
                 }
             )
 
@@ -398,9 +419,6 @@ class BCRAExchangeRateScraper(BCRAScraper):
             first_date = start_date.strftime("%Y-%m-%d")
             last_date = end_date.strftime("%Y-%m-%d")
             parsed = self.parse_from_intermediate_panel(first_date, last_date)
-
-            parsed['tc_local'] = self.preprocess_rows(parsed['tc_local'])
-            parsed['tp_usd'] = self.preprocess_rows(parsed['tp_usd'])
 
         else:
             contents = self.fetch_contents(start_date, end_date)

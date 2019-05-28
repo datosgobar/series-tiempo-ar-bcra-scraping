@@ -75,9 +75,22 @@ class BCRASMLScraper(BCRAScraper):
 
         contents = {}
         for k, v in self.coins.items():
-            contents[k] = self.fetch_content(v)
 
+            fetched = self.fetch_content(v)
+            if fetched:
+                contents[k] = fetched
         return contents
+
+    def validate_coin_in_configuration_file(self, coin, options):
+        """
+        Valida que el valor de la moneda en el archivo de configuración
+        se corresponda con los valores de las opciones del select en la página
+        """
+        select_options = [select_option.text for select_option in options]
+        if coin in select_options:
+            return True
+        else:
+            return False
 
     def fetch_content(self, coin):
         """
@@ -89,15 +102,15 @@ class BCRASMLScraper(BCRAScraper):
         coins : String
             String que contiene el nombre de la moneda
         """
-
         browser_driver = self.get_browser_driver()
         browser_driver.get(self.url)
-        field = browser_driver.find_element_by_name('moneda')
-        field.send_keys(coin)
-
-        content = browser_driver.page_source
-
-        return content
+        element = browser_driver.find_element_by_name('moneda')
+        options = element.find_elements_by_tag_name('option')
+        valid = self.validate_coin_in_configuration_file(coin, options)
+        if valid:
+            element.send_keys(coin)
+            content = browser_driver.page_source
+            return content
 
     def parse_contents(self, contents, start_date, end_date):
         """
@@ -190,10 +203,20 @@ class BCRASMLScraper(BCRAScraper):
         """
 
         soup = BeautifulSoup(content, "html.parser")
-
         table = soup.find('table')
+
+        if not table:
+            return []
+
         head = table.find('thead')
+
+        if not head:
+            return []
+
         body = table.find('tbody')
+
+        if not body:
+            return []
 
         head_rows = head.find_all('tr')
         rows = body.find_all('tr')
@@ -242,8 +265,6 @@ class BCRASMLScraper(BCRAScraper):
                     else:
                         preprocessed_date = date.fromisoformat(row[k])
                     preprocessed_row['indice_tiempo'] = preprocessed_date
-                elif k == 'moneda':
-                    preprocessed_row[k] = row[k]
                 else:
                     preprocessed_row[k] = (
                         Decimal((row[k]).replace(',', '.'))
@@ -451,11 +472,6 @@ class BCRASMLScraper(BCRAScraper):
             first_date = start_date.strftime("%Y-%m-%d")
             last_date = end_date.strftime("%Y-%m-%d")
             parsed = self.parse_from_intermediate_panel(first_date, last_date)
-
-            parsed['peso_uruguayo'] = self.preprocess_rows(
-                parsed['peso_uruguayo']
-                )
-            parsed['real'] = self.preprocess_rows(parsed['real'])
 
         else:
             contents = self.fetch_contents(self.coins)

@@ -159,7 +159,6 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel,
         csv_name = 'tasas-libor.csv'
 
         processed_header = scraper.preprocess_header(scraper.rates)
-
         write_file(csv_name, processed_header, parsed)
 
     except InvalidConfigurationError as err:

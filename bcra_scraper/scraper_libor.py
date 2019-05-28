@@ -156,9 +156,35 @@ class BCRALiborScraper(BCRAScraper):
         )
 
         for row in rows:
+            validation_list = {}
             cols = row.find_all('td')
-            parsed[cols[0].text] = cols[1].text
+            validation_list[cols[0].text] = cols[1].text
+
+            for r in validation_list.keys():
+                valid = self.rates_config_validator(r, self.rates)
+                if valid:
+                    parsed[cols[0].text] = cols[1].text
         return parsed
+
+    def rates_config_validator(self, parsed, rates):
+        """Valida que parsed exista dentro de
+        los valores de rates en el archivo de
+        configuración
+
+        Parameters
+        ----------
+        parsed : String
+            String con la clave correspondiente al plazo en días
+        rates : Dict
+            Diccionario que contiene los plazos en días de la tasa Libor
+        """
+        if f'libor_{parsed}_dias' in rates.values():
+            return True
+        else:
+            raise InvalidConfigurationError(
+                f'La clave libor_{parsed}_dias ' +
+                'no se encuentra en el archivo de config'
+            )
 
     def preprocess_rows(self, rates, rows):
         """
@@ -314,13 +340,12 @@ class BCRALiborScraper(BCRAScraper):
             )
 
             for r in rates_df.to_records():
-
                 if (start_date <= r[0] and
                    r[0] <= end_date):
                     parsed_row = {}
 
                     columns = ['indice_tiempo']
-                    columns.extend([v for v in self.rates.keys()])
+                    columns.extend([v for v in self.rates.values()])
 
                     for index, column in enumerate(columns):
                         parsed_row[column] = r[index]
@@ -342,7 +367,7 @@ class BCRALiborScraper(BCRAScraper):
                 converters={
                     'serie_tiempo': lambda _: _,
                     'type': lambda _: str(_),
-                    'value': lambda _: Decimal(_)
+                    'value': lambda _: Decimal(_) if _ else None
                 }
             )
 
@@ -372,7 +397,6 @@ class BCRALiborScraper(BCRAScraper):
             first_date = start_date.strftime("%Y-%m-%d")
             last_date = end_date.strftime("%Y-%m-%d")
             parsed = self.parse_from_intermediate_panel(first_date, last_date)
-            parsed = self.preprocess_rows(self.rates, parsed)
         else:
             contents = self.fetch_contents(start_date, end_date)
             parsed = self.parse_contents(contents)

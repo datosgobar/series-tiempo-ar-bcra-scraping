@@ -1,4 +1,5 @@
 from selenium import webdriver
+from shutil import which
 
 
 class BCRAScraper:
@@ -53,12 +54,15 @@ class BCRAScraper:
         Método que crea el navegador y le pasa una opción
         para esconder la visualización del mismo.
         """
-        options = webdriver.ChromeOptions()
-        options.headless = True
+        if which("chromedriver"):
+            options = webdriver.ChromeOptions()
+            options.headless = True
 
-        browser_driver = webdriver.Chrome(options=options)
+            browser_driver = webdriver.Chrome(options=options)
 
-        return browser_driver
+            return browser_driver
+        else:
+            print("El driver del navegador no se encuentra en el PATH")
 
     def get_browser_driver(self):
         """
