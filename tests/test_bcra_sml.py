@@ -240,6 +240,71 @@ class BcraSmlScraperTestCase(unittest.TestCase):
                 ]
             }
 
+    def test_parse_content_not_table(self):
+        start_date = datetime(2019, 4, 22)
+        end_date = datetime(2019, 4, 22)
+        url = ''
+        coins = {}
+        contents = {
+            'peso_uruguayo': '',
+            'real': ''
+        }
+        scraper = BCRASMLScraper(url, coins, False)
+        result = scraper.parse_contents(contents, start_date, end_date)
+
+        assert result == {
+                            'peso_uruguayo': [],
+                            'real': []
+                        }
+
+    def test_parse_content_not_head(self):
+        start_date = datetime(2019, 4, 22)
+        end_date = datetime(2019, 4, 22)
+        url = ''
+        coins = {}
+        contents = {
+            'peso_uruguayo': '''
+                <table class="table table-BCRA table-bordered table-hover\
+                        table-responsive" colspan="3">
+                </table>''',
+            'real': '''
+                <table class="table table-BCRA table-bordered table-hover\
+                        table-responsive" colspan="3">
+                </table>'''
+        }
+        scraper = BCRASMLScraper(url, coins, False)
+        result = scraper.parse_contents(contents, start_date, end_date)
+
+        assert result == {
+                            'peso_uruguayo': [],
+                            'real': []
+                        }
+
+    def test_parse_content_not_body(self):
+        start_date = datetime(2019, 4, 22)
+        end_date = datetime(2019, 4, 22)
+        url = ''
+        coins = {}
+        contents = {
+            'peso_uruguayo': '''
+                <table class="table table-BCRA table-bordered table-hover\
+                    table-responsive" colspan="3">
+                        <thead></thead>
+                </table>''',
+            'real': '''
+                <table class="table table-BCRA table-bordered table-hover\
+                    table-responsive" colspan="3">
+                        <thead></thead>
+                </table>'''
+        }
+        scraper = BCRASMLScraper(url, coins, False)
+        result = scraper.parse_contents(contents, start_date, end_date)
+
+        assert result == {
+                            'peso_uruguayo': [],
+                            'real': []
+                        }
+
     def test_sml_configuration_has_url(self):
         """Validar la existencia de la clave url dentro de
         la configuración de sml"""
@@ -308,9 +373,14 @@ class BcraSmlScraperTestCase(unittest.TestCase):
             'get_browser_driver',
             return_value=mocked_driver
         ):
-            scraper = BCRASMLScraper(url, coins, False)
-            content = scraper.fetch_content(coins)
-            assert content == "foo"
+            with patch.object(
+                BCRASMLScraper,
+                'validate_coin_in_configuration_file',
+                return_value=True
+            ):
+                scraper = BCRASMLScraper(url, coins, False)
+                content = scraper.fetch_content(coins)
+                assert content == "foo"
 
     def test_fetch_content_invalid_url_patching_driver(self):
         """Probar fetch content con url invalida"""
@@ -325,9 +395,48 @@ class BcraSmlScraperTestCase(unittest.TestCase):
             'get_browser_driver',
             return_value=mocked_driver
         ):
-            scraper = BCRASMLScraper(url, coins, False)
-            content = scraper.fetch_content(coins)
-            assert content == 400
+            with patch.object(
+                BCRASMLScraper,
+                'validate_coin_in_configuration_file',
+                return_value=True
+            ):
+                scraper = BCRASMLScraper(url, coins, False)
+                content = scraper.fetch_content(coins)
+                assert content == 400
+
+    def test_validate_coin_in_configuration_file_true(self):
+        coins = {
+            "real": "Real",
+            "peso_uruguayo": "Peso Uruguayo"
+        }
+        url = 'foo.com'
+        coin = "Real"
+
+        options = []
+        for option_text in ['Seleccione moneda', 'Real', 'Peso Uruguayo']:
+            mock = MagicMock()
+            mock.text = option_text
+            options.append(mock)
+
+        scraper = BCRASMLScraper(url, coins, False)
+        coin_in_configuration_file = scraper.validate_coin_in_configuration_file(coin, options)
+
+        assert coin_in_configuration_file is True
+
+    def test_validate_coin_in_configuration_file_false(self):
+        coins = {}
+        url = 'foo.com'
+        coin = "Rel"
+
+        options = []
+        for option_text in ['Seleccione moneda', 'Real', 'Peso Uruguayo']:
+            mock = MagicMock()
+            mock.text = option_text
+            options.append(mock)
+
+        scraper = BCRASMLScraper(url, coins, False)
+        coin_in_configuration_file = scraper.validate_coin_in_configuration_file(coin, options)
+        assert coin_in_configuration_file is False
 
     def test_get_intermediate_panel_data_from_parsed(self):
 
@@ -454,6 +563,44 @@ class BcraSmlScraperTestCase(unittest.TestCase):
             }
         ]
 
+    def test_preprocessed_rows_variants(self):
+        rows = [
+            {
+                'indice_tiempo': '06/03/2019',
+                'Tipo de cambio de Referencia': '40.48170',
+                'Tipo de cambio URINUSCA': '32.68200',
+                'Tipo de cambio SML Peso Uruguayo': '1.23865',
+                'Tipo de cambio SML Uruguayo Peso': '0.80735'
+            },
+            {
+                'indice_tiempo': '2019-03-06',
+                'Tipo de cambio de Referencia': '40.48170',
+                'Tipo de cambio PTAX': '3.83000',
+                'Tipo de cambio SML Peso Real': '10.56965',
+                'Tipo de cambio SML Real Peso': '0.09465'
+            }
+        ]
+        scraper = BCRASMLScraper(False, rows, False)
+
+        result = scraper.preprocess_rows(rows)
+
+        assert result == [
+            {
+                'indice_tiempo': date(2019, 3, 6),
+                'Tipo de cambio de Referencia': Decimal('40.48170'),
+                'Tipo de cambio URINUSCA': Decimal('32.68200'),
+                'Tipo de cambio SML Peso Uruguayo': Decimal('1.23865'),
+                'Tipo de cambio SML Uruguayo Peso': Decimal('0.80735')
+            },
+            {
+                'indice_tiempo': date(2019, 3, 6),
+                'Tipo de cambio de Referencia': Decimal('40.48170'),
+                'Tipo de cambio PTAX': Decimal('3.83000'),
+                'Tipo de cambio SML Peso Real': Decimal('10.56965'),
+                'Tipo de cambio SML Real Peso': Decimal('0.09465')
+            }
+        ]
+
     def test_parse_from_intermediate_panel(self):
         """Probar parseo desde el archivo intermedio"""
 
@@ -539,6 +686,132 @@ class BcraSmlScraperTestCase(unittest.TestCase):
                         'Tipo de cambio SML Real Peso': '0.09465'
                     }
                 ]
+            }
+
+    def test_parse_from_intermediate_panel_empty_uruguayo(self):
+        """Probar parseo desde el archivo intermedio"""
+
+        start_date = '2019-03-06'
+        end_date = '2019-03-06'
+
+        coins = {
+            "peso_uruguayo": "Peso Uruguayo",
+            "real": "Real"
+        }
+        url = ''
+
+        intermediate_panel_df = MagicMock()
+        intermediate_panel_df = {
+            'indice_tiempo': [
+                '2019-03-06',
+                '2019-03-06',
+                '2019-03-06',
+                '2019-03-06'
+            ],
+            'coin': [
+                'real',
+                'real',
+                'real',
+                'real',
+            ],
+            'type': [
+                'Tipo de cambio de Referencia',
+                'Tipo de cambio PTAX',
+                'Tipo de cambio SML Peso Real',
+                'Tipo de cambio SML Real Peso'
+            ],
+            'value': [
+                '40.48170',
+                '3.83000',
+                '10.56965',
+                '0.09465'
+            ]
+        }
+
+        with patch.object(
+            BCRASMLScraper,
+            'read_intermediate_panel_dataframe',
+            return_value=pd.DataFrame(data=intermediate_panel_df)
+        ):
+            scraper = BCRASMLScraper(url, coins, True)
+            content = scraper.parse_from_intermediate_panel(
+                start_date, end_date,
+                )
+
+            assert content == {
+                'peso_uruguayo': [],
+                'real': [
+                    {
+                        'indice_tiempo': '2019-03-06',
+                        'Tipo de cambio de Referencia': '40.48170',
+                        'Tipo de cambio PTAX': '3.83000',
+                        'Tipo de cambio SML Peso Real': '10.56965',
+                        'Tipo de cambio SML Real Peso': '0.09465'
+                    }
+                ]
+            }
+
+    def test_parse_from_intermediate_panel_empty_real(self):
+        """Probar parseo desde el archivo intermedio"""
+
+        start_date = '2019-03-06'
+        end_date = '2019-03-06'
+
+        coins = {
+            "peso_uruguayo": "Peso Uruguayo",
+            "real": "Real"
+        }
+        url = ''
+
+        intermediate_panel_df = MagicMock()
+        intermediate_panel_df = {
+            'indice_tiempo': [
+                '2019-03-06',
+                '2019-03-06',
+                '2019-03-06',
+                '2019-03-06'
+            ],
+            'coin': [
+                'peso_uruguayo',
+                'peso_uruguayo',
+                'peso_uruguayo',
+                'peso_uruguayo'
+            ],
+            'type': [
+                'Tipo de cambio de Referencia',
+                'Tipo de cambio URINUSCA',
+                'Tipo de cambio SML Peso Uruguayo',
+                'Tipo de cambio SML Uruguayo Peso'
+            ],
+            'value': [
+                '40.48170',
+                '32.68200',
+                '1.23865',
+                '0.80735'
+            ]
+        }
+
+        with patch.object(
+            BCRASMLScraper,
+            'read_intermediate_panel_dataframe',
+            return_value=pd.DataFrame(data=intermediate_panel_df)
+        ):
+            scraper = BCRASMLScraper(url, coins, True)
+            content = scraper.parse_from_intermediate_panel(
+                start_date, end_date,
+                )
+
+            assert content == {
+                'peso_uruguayo': [
+                    {
+                        'indice_tiempo': '2019-03-06',
+                        'Tipo de cambio de Referencia': '40.48170',
+                        'Tipo de cambio URINUSCA': '32.68200',
+                        'Tipo de cambio SML Peso Uruguayo': '1.23865',
+                        'Tipo de cambio SML Uruguayo Peso': '0.80735'
+                    }
+                ],
+                'real': []
             }
 
     def test_run_not_using_intermediate_panel(self):
@@ -756,3 +1029,18 @@ class BcraSmlScraperTestCase(unittest.TestCase):
                         }
                     ]
                 }
+
+    def test_get_intermediate_panel_data_from_empty_parsed(self):
+        url = ''
+        parsed = {}
+
+        coins = {
+            'peso_uruguayo': 'Peso Uruguayo',
+            'real': 'Real'
+        }
+
+        scraper = BCRASMLScraper(url, coins, True)
+
+        result = scraper.get_intermediate_panel_data_from_parsed(parsed)
+
+        assert result == []

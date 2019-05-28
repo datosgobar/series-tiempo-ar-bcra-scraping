@@ -1,5 +1,4 @@
-import datetime
-from datetime import date
+from datetime import date, datetime
 import unittest
 from unittest import mock
 from unittest.mock import patch, MagicMock
@@ -25,7 +24,8 @@ class BcraExchangeRateTestCase(unittest.TestCase):
     def test_html_is_valid(self):
         """Probar que el html sea valido"""
         url = ""
-        single_date = date(2019, 3, 4)
+        start_date = date(2019, 3, 4)
+        coin = ''
 
         rates = {}
         with patch.object(
@@ -42,7 +42,7 @@ class BcraExchangeRateTestCase(unittest.TestCase):
             '''
         ):
             scraper = BCRAExchangeRateScraper(url, rates, False)
-            content = scraper.fetch_content(single_date)
+            content = scraper.fetch_content(start_date, coin)
 
             soup = BeautifulSoup(content, "html.parser")
 
@@ -57,16 +57,16 @@ class BcraExchangeRateTestCase(unittest.TestCase):
     def test_html_is_not_valid(self):
         """Probar que el html no sea valido"""
         url = ""
-        single_date = date(2019, 3, 4)
-
+        start_date = date(2019, 3, 4)
+        coin = ''
         coins = {}
         with patch.object(
             BCRAExchangeRateScraper,
             'fetch_content',
-            return_value=' '
+            return_value=''
         ):
             scraper = BCRAExchangeRateScraper(url, coins, False)
-            content = scraper.fetch_content(single_date)
+            content = scraper.fetch_content(start_date, coin)
 
             soup = BeautifulSoup(content, "html.parser")
 
@@ -106,8 +106,8 @@ class BcraExchangeRateTestCase(unittest.TestCase):
             "bolivar_venezolano": "Bolívar Venezolano"
         }
         scraper = BCRAExchangeRateScraper(url, coins, False)
-        start_date = datetime.datetime(2019, 4, 8)
-        end_date = datetime.datetime(2019, 4, 8)
+        start_date = datetime(2019, 4, 8)
+        end_date = datetime(2019, 4, 8)
         contents = {}
 
         table_content = '''
@@ -168,8 +168,8 @@ class BcraExchangeRateTestCase(unittest.TestCase):
             "bolivar_venezolano": "Bolívar Venezolano"
         }
         scraper = BCRAExchangeRateScraper(url, coins, False)
-        start_date = datetime.datetime(2019, 4, 8)
-        end_date = datetime.datetime(2019, 4, 8)
+        start_date = datetime(2019, 4, 8)
+        end_date = datetime(2019, 4, 8)
         coin = 'bolivar_venezolano'
 
         content = '''
@@ -215,13 +215,102 @@ class BcraExchangeRateTestCase(unittest.TestCase):
             }
         ]
 
+    def test_not_body_parse_coin(self):
+        url = \
+         "http://www.bcra.gov.ar/Publicaciones\
+            Estadisticas/Evolucion_moneda.asp"
+        coins = {
+            "bolivar_venezolano": "Bolívar Venezolano"
+        }
+
+        start_date = datetime(2019, 4, 8)
+        end_date = datetime(2019, 4, 8)
+        coin = 'bolivar_venezolano'
+
+        content = '''
+                    <table class="table table-BCRA table-bordered table-hover
+                        table-responsive" colspan="3">
+                            <thead>
+                            <tr>
+                            <td colspan="3">
+                                <b></b>
+                            </td>
+                            </tr>
+                            <tr>
+                                <td width="10%"><b></b>
+                                </td>
+                                <td width="40%"><b></b></td>
+                                <td width="50%"><b></b></td>
+                                </tr>
+                            </thead>
+                    </table>
+                '''
+
+        scraper = BCRAExchangeRateScraper(url, coins, False)
+        parsed_coin = scraper.parse_coin(content, start_date, end_date, coin)
+
+        assert parsed_coin == []
+
+    def test_not_head_parse_coin(self):
+        url = \
+         "http://www.bcra.gov.ar/Publicaciones\
+            Estadisticas/Evolucion_moneda.asp"
+        coins = {
+            "bolivar_venezolano": "Bolívar Venezolano"
+        }
+
+        start_date = datetime(2019, 4, 8)
+        end_date = datetime(2019, 4, 8)
+        coin = 'bolivar_venezolano'
+
+        content = '''
+                    <table class="table table-BCRA table-bordered table-hover
+                            table-responsive" colspan="3">
+                        <tr>
+                        <td colspan="3">
+                            <b></b>
+                        </td>
+                        </tr>
+                        <tr>
+                            <td width="10%"><b></b>
+                            </td>
+                            <td width="40%"><b></b></td>
+                            <td width="50%"><b></b></td>
+                            </tr>
+                    </table>
+                '''
+
+        scraper = BCRAExchangeRateScraper(url, coins, False)
+        parsed_coin = scraper.parse_coin(content, start_date, end_date, coin)
+
+        assert parsed_coin == []
+
+    def test_not_table_parse_coin(self):
+        url = \
+         "http://www.bcra.gov.ar/Publicaciones\
+            Estadisticas/Evolucion_moneda.asp"
+        coins = {
+            "bolivar_venezolano": "Bolívar Venezolano"
+        }
+
+        start_date = datetime(2019, 4, 8)
+        end_date = datetime(2019, 4, 8)
+        coin = 'bolivar_venezolano'
+
+        content = ''
+
+        scraper = BCRAExchangeRateScraper(url, coins, False)
+        parsed_coin = scraper.parse_coin(content, start_date, end_date, coin)
+
+        assert parsed_coin == []
+
     def test_fetch_contents(self):
 
         coins = {
             "bolivar_venezolano": "Bolívar Venezolano"
         }
-        start_date = datetime.datetime(2019, 4, 24)
-        end_date = datetime.datetime(2019, 4, 24)
+        start_date = datetime(2019, 4, 24)
+        end_date = datetime(2019, 4, 24)
         url = ''
         content = 'foo'
         with patch.object(
@@ -239,8 +328,8 @@ class BcraExchangeRateTestCase(unittest.TestCase):
     def test_parse_contents(self):
         url = ''
 
-        start_date = datetime.date(2019, 4, 24)
-        end_date = datetime.date(2019, 4, 24)
+        start_date = datetime(2019, 4, 24)
+        end_date = datetime(2019, 4, 24)
 
         coins = {
             "bolivar_venezolano": "Bolívar Venezolano"
@@ -285,8 +374,10 @@ class BcraExchangeRateTestCase(unittest.TestCase):
     def test_preprocessed_rows(self):
         rows = [
             {
-                'bolivar_venezolano': '0,0084610',
-                'indice_tiempo': '24/04/2019'
+                'bolivar_venezolano': '0,0003040',
+                'dolar_estadounidense': '--------',
+                'oro_onza_troy': '1.289,6300000',
+                'indice_tiempo': '01/04/2019'
             }
         ]
         scraper = BCRAExchangeRateScraper(False, rows, False)
@@ -295,15 +386,39 @@ class BcraExchangeRateTestCase(unittest.TestCase):
 
         assert result == [
                 {
-                    'bolivar_venezolano': Decimal('0.0084610'),
-                    'indice_tiempo': datetime.date(2019, 4, 24)
+                    'bolivar_venezolano': Decimal('0.0003040'),
+                    'dolar_estadounidense': None,
+                    'oro_onza_troy': Decimal('1289.6300000'),
+                    'indice_tiempo': date(2019, 4, 1)
+                }
+            ]
+
+    def test_preprocessed_rows_date(self):
+        rows = [
+            {
+                'bolivar_venezolano': '0,0003040',
+                'dolar_estadounidense': '--------',
+                'oro_onza_troy': '1.289,6300000',
+                'indice_tiempo': '2019-04-01'
+            }
+        ]
+        scraper = BCRAExchangeRateScraper(False, rows, False)
+
+        result = scraper.preprocess_rows(rows)
+
+        assert result == [
+                {
+                    'bolivar_venezolano': Decimal('0.0003040'),
+                    'dolar_estadounidense': None,
+                    'oro_onza_troy': Decimal('1289.6300000'),
+                    'indice_tiempo': date(2019, 4, 1)
                 }
             ]
 
     def test_run_not_using_intermediate_panel(self):
 
-        start_date = datetime.date(2019, 4, 24)
-        end_date = datetime.date(2019, 4, 24)
+        start_date = datetime(2019, 4, 24)
+        end_date = datetime(2019, 4, 24)
 
         url = '''
          http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_sml.asp
@@ -333,14 +448,14 @@ class BcraExchangeRateTestCase(unittest.TestCase):
         parsed_tc_local = [
             {
                 'bolivar_venezolano': Decimal('0.0084610'),
-                'indice_tiempo': datetime.date(2019, 4, 24)
+                'indice_tiempo': date(2019, 4, 24)
             }
         ]
 
         parsed_tp_usd = [
             {
                 'bolivar_venezolano': Decimal('0.0001930'),
-                'indice_tiempo': datetime.date(2019, 4, 24)
+                'indice_tiempo': date(2019, 4, 24)
             }
         ]
 
@@ -372,22 +487,22 @@ class BcraExchangeRateTestCase(unittest.TestCase):
                             [
                                 {
                                     'bolivar_venezolano': Decimal('0.0084610'),
-                                    'indice_tiempo': datetime.date(2019, 4, 24)
+                                    'indice_tiempo': date(2019, 4, 24)
                                 }
                             ],
                             'tp_usd':
                             [
                                 {
                                     'bolivar_venezolano': Decimal('0.0001930'),
-                                    'indice_tiempo': datetime.date(2019, 4, 24)
+                                    'indice_tiempo': date(2019, 4, 24)
                                 }
                             ]
                         }
 
     def test_run_using_intermediate_panel(self):
 
-        start_date = datetime.date(2019, 4, 24)
-        end_date = datetime.date(2019, 4, 24)
+        start_date = datetime(2019, 4, 24)
+        end_date = datetime(2019, 4, 24)
 
         url = '''
          http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_sml.asp
@@ -527,15 +642,20 @@ class BcraExchangeRateTestCase(unittest.TestCase):
             'get_browser_driver',
             return_value=mocked_driver
         ):
-            scraper = BCRAExchangeRateScraper(url, coins, False)
-            content = scraper.fetch_content(single_date, coins)
-            assert content == "foo"
+            with patch.object(
+                BCRAExchangeRateScraper,
+                'validate_coin_in_configuration_file',
+                return_value=True
+            ):
+                scraper = BCRAExchangeRateScraper(url, coins, False)
+                content = scraper.fetch_content(single_date, coins)
+                assert content == 'foo'
 
     def test_fetch_content_invalid_url_patching_driver(self):
         """Probar fetch content con url invalida"""
         single_date = date(2019, 3, 4)
         coins = {}
-        url = ''
+        url = 'foo.com'
 
         mocked_driver = MagicMock()
         mocked_driver.page_source = 400
@@ -545,9 +665,44 @@ class BcraExchangeRateTestCase(unittest.TestCase):
             'get_browser_driver',
             return_value=mocked_driver
         ):
+            with patch.object(
+                    BCRAExchangeRateScraper,
+                    'validate_coin_in_configuration_file',
+                    return_value=True
+            ):
+                scraper = BCRAExchangeRateScraper(url, coins, False)
+                content = scraper.fetch_content(single_date, coins)
+                assert content == 400
+
+    def test_validate_coin_in_configuration_file_false(self):
+        coins = {}
+        url = 'foo.com'
+        coin = "Boenezol"
+
+        options = []
+        for option_text in ['Seleccione Moneda', 'Bolívar Venezolano']:
+            mock = MagicMock()
+            mock.text = option_text
+            options.append(mock)
+
             scraper = BCRAExchangeRateScraper(url, coins, False)
-            content = scraper.fetch_content(single_date, coins)
-            assert content == 400
+            coin_in_configuration_file = scraper.validate_coin_in_configuration_file(coin, options)
+            assert coin_in_configuration_file is False
+
+    def test_validate_coin_in_configuration_file_true(self):
+        coins = {}
+        url = 'foo.com'
+        coin = "Bolívar Venezolano"
+        options = []
+
+        for option_text in ['Seleccione Moneda', 'Bolívar Venezolano']:
+            mock = MagicMock()
+            mock.text = option_text
+            options.append(mock)
+
+        scraper = BCRAExchangeRateScraper(url, coins, False)
+        coin_in_configuration_file = scraper.validate_coin_in_configuration_file(coin, options)
+        assert coin_in_configuration_file is True
 
     def test_parse_from_intermediate_panel(self):
         """Probar parseo desde el archivo intermedio"""
@@ -604,6 +759,63 @@ class BcraExchangeRateTestCase(unittest.TestCase):
                 ]
             }
 
+    def test_parse_from_intermediate_panel_empty_value(self):
+        """Probar parseo desde el archivo intermedio"""
+        start_date = '2019-03-06'
+        end_date = '2019-03-06'
+
+        coins = {
+            "bolivar_venezolano": "Bolívar Venezolano",
+            "chelin_austriaco": 'Chelin Austriaco'
+        }
+        url = ''
+
+        intermediate_panel_df = MagicMock()
+        intermediate_panel_df = {
+            'indice_tiempo': [
+                '2019-03-06',
+                '2019-03-06'
+            ],
+            'coin': [
+                'bolivar_venezolano',
+                'bolivar_venezolano'
+            ],
+            'type': [
+                'tc_local', 'tp_usd'
+            ],
+            'value': [
+                '0.0003030',
+                '0.0123560'
+            ]
+        }
+
+        with patch.object(
+            BCRAExchangeRateScraper,
+            'read_intermediate_panel_dataframe',
+            return_value=pd.DataFrame(data=intermediate_panel_df)
+        ):
+            scraper = BCRAExchangeRateScraper(url, coins, True)
+            content = scraper.parse_from_intermediate_panel(
+                start_date, end_date,
+                )
+
+            assert content == {
+                'tc_local':
+                [
+                    {
+                        'indice_tiempo': '2019-03-06',
+                        'bolivar_venezolano': '0.0003030'
+                    }
+                ],
+                'tp_usd':
+                [
+                    {
+                        'indice_tiempo': '2019-03-06',
+                        'bolivar_venezolano': '0.0123560'
+                    }
+                ]
+            }
+
     def test_get_intermediate_panel_data_from_parsed(self):
         url = ''
         parsed = {
@@ -611,14 +823,14 @@ class BcraExchangeRateTestCase(unittest.TestCase):
             [
                 {
                     'bolivar_venezolano': Decimal('0.0123560'),
-                    'indice_tiempo': datetime.date(2019, 3, 6)
+                    'indice_tiempo': datetime(2019, 3, 6)
                 }
             ],
             'tp_usd':
             [
                 {
                     'bolivar_venezolano': Decimal('0.0003030'),
-                    'indice_tiempo': datetime.date(2019, 3, 6)
+                    'indice_tiempo': datetime(2019, 3, 6)
                 }
             ]
         }
@@ -633,15 +845,29 @@ class BcraExchangeRateTestCase(unittest.TestCase):
 
         assert result == [
             {
-                'indice_tiempo': datetime.date(2019, 3, 6),
+                'indice_tiempo': datetime(2019, 3, 6),
                 'coin': 'bolivar_venezolano',
                 'type': 'tc_local',
                 'value': Decimal('0.0123560')
             },
             {
-                'indice_tiempo': datetime.date(2019, 3, 6),
+                'indice_tiempo': datetime(2019, 3, 6),
                 'coin': 'bolivar_venezolano',
                 'type': 'tp_usd',
                 'value': Decimal('0.0003030')
             }
         ]
+
+    def test_get_intermediate_panel_data_from_empty_parsed(self):
+        url = ''
+        parsed = {}
+
+        coins = {
+            "bolivar_venezolano": "Bolívar Venezolano",
+        }
+
+        scraper = BCRAExchangeRateScraper(url, coins, True)
+
+        result = scraper.get_intermediate_panel_data_from_parsed(parsed)
+
+        assert result == []

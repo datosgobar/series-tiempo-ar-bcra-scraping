@@ -565,6 +565,24 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             with self.assertRaises(InvalidConfigurationError):
                 read_config("config.json", "cmd")
 
+    def test_rates_not_in_config(self):
+        """Validar error en caso de que no exista
+        el valor dentro del archivo de configuracion"""
+        url = ''
+        parsed = 'foo'
+        rates = {
+            "30": "libor_30_dias",
+            "60": "libor_60_dias",
+            "90": "libor_90_dias",
+            "180": "libor_180_dias",
+            "360": "libor_360_dias"
+        }
+
+        scraper = BCRALiborScraper(url, rates, False)
+
+        with self.assertRaises(InvalidConfigurationError):
+            scraper.rates_config_validator(parsed, rates)
+
     def test_libor_configuration_has_url(self):
         """Validar la existencia de la clave url dentro de
         la configuración de libor"""
