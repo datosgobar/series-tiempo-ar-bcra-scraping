@@ -79,6 +79,8 @@ class BcraSmlScraperTestCase(unittest.TestCase):
             assert body is None
 
     def test_fetch_contents(self):
+        start_date = datetime(2019, 4, 11)
+        end_date = datetime(2019, 4, 11)
         url = ''
 
         coins = {
@@ -94,7 +96,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
             return_value=content
         ):
             scraper = BCRASMLScraper(url, coins, False)
-            result = scraper.fetch_contents(coins)
+            result = scraper.fetch_contents(start_date, end_date)
 
             assert result == {
                 'peso_uruguayo': 'foo',
