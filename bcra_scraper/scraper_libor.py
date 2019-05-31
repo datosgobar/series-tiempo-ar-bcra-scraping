@@ -8,6 +8,11 @@ from selenium.webdriver.common.keys import Keys
 import pandas as pd
 
 from bcra_scraper.scraper_base import BCRAScraper
+from bcra_scraper.exceptions import InvalidConfigurationError
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 
 
 class BCRALiborScraper(BCRAScraper):
@@ -100,15 +105,23 @@ class BCRALiborScraper(BCRAScraper):
         single_date : date
             fecha que va a tomar como referencia el scraper
         """
-        browser_driver = self.get_browser_driver()
-        browser_driver.get(self.url)
-        elem = browser_driver.find_element_by_name('fecha')
-        elem.send_keys(single_date.strftime("%d/%m/%Y") + Keys.RETURN)
+        try:
+            browser_driver = self.get_browser_driver()
+            browser_driver.get(self.url)
+            element_present = EC.presence_of_element_located(
+                (By.NAME, 'fecha')
+            )
+            element = WebDriverWait(browser_driver, 0).until(element_present)
+        except TimeoutException:
+            raise InvalidConfigurationError(
+                'La conexion de internet ha fallado'
+            )
+        element.send_keys(single_date.strftime("%d/%m/%Y") + Keys.RETURN)
         content = browser_driver.page_source
 
         return content
 
-    def parse_contents(self, contents):
+    def parse_contents(self, contents, start_date, end_date):
         """
         Retorna un iterable donde cada elemento es un String, o una lista
             vacía si no hay contenidos.
@@ -155,8 +168,42 @@ class BCRALiborScraper(BCRAScraper):
         )
 
         for row in rows:
+            validation_list = {}
             cols = row.find_all('td')
-            parsed[cols[0].text] = cols[1].text
+            if cols[0].text in self.rates.keys():
+                validation_list[cols[0].text] = cols[1].text
+
+                for r in validation_list.keys():
+                    valid = self.rates_config_validator(r, self.rates)
+                    if valid:
+                        parsed[cols[0].text] = cols[1].text
+                    else:
+                        continue
+
+        return parsed
+
+    def rates_config_validator(self, parsed, rates):
+        """Valida que parsed exista dentro de
+        los valores de rates en el archivo de
+        configuración
+
+        Parameters
+        ----------
+        parsed : String
+            String con la clave correspondiente al plazo en días
+        rates : Dict
+            Diccionario que contiene los plazos en días de la tasa Libor
+        """
+        if f'libor_{parsed}_dias' in rates.values():
+            return True
+        else:
+            raise InvalidConfigurationError(
+                f'La clave libor_{parsed}_dias ' +
+                'no se encuentra en el archivo de config'
+            )
+
+    def _preprocess_rows(self, parsed):
+        parsed = self.preprocess_rows(self.rates, parsed)
         return parsed
 
     def preprocess_rows(self, rates, rows):
@@ -181,9 +228,12 @@ class BCRALiborScraper(BCRAScraper):
             )
 
             for rate in rates:
-                preprocessed_row[rates[rate]] = Decimal(
-                    str(row[rate]).replace(',', '.')
-                )/100
+                if rate in row:
+                    preprocessed_row[rates[rate]] = Decimal(
+                        str(row[rate]).replace(',', '.')
+                    )/100
+                else:
+                    preprocessed_row[rates[rate]] = None
 
             preprocessed_rows.append(preprocessed_row)
         return preprocessed_rows
@@ -201,11 +251,20 @@ class BCRALiborScraper(BCRAScraper):
 
         preprocessed_header.append('indice_tiempo')
 
-        for key, value in rates.items():
+        for value in rates.values():
             preprocessed_header.append(value)
         return preprocessed_header
 
     def get_intermediate_panel_data_from_parsed(self, parsed):
+        """
+        Recorre parsed y por cada plazo en días genera un diccionario
+        obteniendo por separado las claves que se utilizaran como headers,
+        y sus valores.
+
+        Parameters
+        ----------
+        parsed : lista de diccionarios por moneda
+        """
         intermediate_panel_data = []
 
         if parsed:
@@ -241,6 +300,13 @@ class BCRALiborScraper(BCRAScraper):
         return intermediate_panel_data
 
     def write_intermediate_panel(self, rows):
+        """
+        Escribe el panel intermedio.
+
+        Parameters
+        ----------
+        rows: Iterable
+        """
         header = ['indice_tiempo', 'type', 'value']
 
         with open('.libor-intermediate-panel.csv', 'w') as intermediate_panel:
@@ -249,12 +315,31 @@ class BCRALiborScraper(BCRAScraper):
             writer.writerows(rows)
 
     def save_intermediate_panel(self, parsed):
+        """
+        Llama a un método para obtener la data del panel intermedio
+        y a otro método pasandole esa data para que la escriba.
+
+        Parameters
+        ----------
+        parsed: Iterable
+        """
         intermediate_panel_data = self.get_intermediate_panel_data_from_parsed(
             parsed
         )
         self.write_intermediate_panel(intermediate_panel_data)
 
     def parse_from_intermediate_panel(self, start_date, end_date):
+        """
+        Lee el dataframe del panel intermedio.
+        Regresa una lista con un diccionario por cada fecha
+
+        Parameters
+        ----------
+        start_date : date
+            Fecha de inicio que toma como referencia el scraper
+        end_date : date
+            fecha de fin que va a tomar como referencia el scraper
+        """
         parsed = []
         rate_dfs = {}
 
@@ -278,22 +363,25 @@ class BCRALiborScraper(BCRAScraper):
             )
 
             for r in rates_df.to_records():
-
                 if (start_date <= r[0] and
                    r[0] <= end_date):
                     parsed_row = {}
 
                     columns = ['indice_tiempo']
-                    columns.extend([v for v in self.rates.keys()])
+                    columns.extend([v for v in self.rates.values()])
 
                     for index, column in enumerate(columns):
                         parsed_row[column] = r[index]
 
                     if parsed_row:
                         parsed.append(parsed_row)
+
         return parsed
 
     def read_intermediate_panel_dataframe(self):
+        """
+        Lee el dataframe
+        """
         intermediate_panel_dataframe = None
 
         try:
@@ -302,39 +390,12 @@ class BCRALiborScraper(BCRAScraper):
                 converters={
                     'serie_tiempo': lambda _: _,
                     'type': lambda _: str(_),
-                    'value': lambda _: Decimal(_)
+                    'value': lambda _: Decimal(_) if _ else None
                 }
             )
 
         except FileNotFoundError:
-            # TODO: fix me
-            pass
+            raise InvalidConfigurationError(
+                "El archivo panel no existe"
+            )
         return intermediate_panel_dataframe
-
-    def run(self, start_date, end_date):
-        """
-        Función que evalua si es necesario usar un archivo intermedio.
-        En base a esa validación llama a los métodos que serán utilizados
-        para obtener y scrapear los datos, y los regresa como un iterable.
-
-        Parameters
-        ----------
-        start_date : date
-            fecha de inicio que va a tomar como referencia el scraper
-        end_date: date
-            fecha de fin que va a tomar como referencia el scraper
-        """
-
-        parsed = []
-
-        if self.use_intermediate_panel:
-            first_date = start_date.strftime("%Y-%m-%d")
-            last_date = end_date.strftime("%Y-%m-%d")
-            parsed = self.parse_from_intermediate_panel(first_date, last_date)
-            parsed = self.preprocess_rows(self.rates, parsed)
-        else:
-            contents = self.fetch_contents(start_date, end_date)
-            parsed = self.parse_contents(contents)
-            parsed = self.preprocess_rows(self.rates, parsed)
-            self.save_intermediate_panel(parsed)
-        return parsed

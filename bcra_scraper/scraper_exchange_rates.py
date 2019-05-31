@@ -1,5 +1,5 @@
 from csv import DictWriter
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from functools import reduce
 
@@ -7,6 +7,11 @@ from bs4 import BeautifulSoup
 import pandas as pd
 
 from bcra_scraper.scraper_base import BCRAScraper
+from bcra_scraper.exceptions import InvalidConfigurationError
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 
 
 class BCRAExchangeRateScraper(BCRAScraper):
@@ -68,20 +73,32 @@ class BCRAExchangeRateScraper(BCRAScraper):
         ----------
         start_date : date
             fecha de inicio que va a tomar como referencia el scraper
-
+        end_date : date
+            fecha de fin que va a tomar como referencia el scraper
         """
-
         content = {}
         for k, v in self.coins.items():
-            content[k] = self.fetch_content(start_date, v)
-
+            fetched = self.fetch_content(start_date, v)
+            if fetched:
+                content[k] = fetched
         return content
 
-    def fetch_content(self, start_date, coins):
+    def validate_coin_in_configuration_file(self, coin, options):
+        """
+        Valida que el valor de la moneda en el archivo de configuración
+        se corresponda con los valores de las opciones del select en la página
+        """
+        select_options = [select_option.text for select_option in options]
+        if coin in select_options:
+            return True
+        else:
+            return False
+
+    def fetch_content(self, start_date, coin):
         """
         Ingresa al navegador utilizando la fecha y la moneda que recibe.
-        La fecha por default es today, y en caso de pasarle otra fecha
-        va a traer el contenido desde esa fecha hasta today.
+        La fecha por default es hoy, en caso de pasarle otra fecha
+        va a traer el contenido desde esa fecha hasta hoy.
         Retorna un string que contiene el html obtenido.
 
         Parameters
@@ -89,26 +106,34 @@ class BCRAExchangeRateScraper(BCRAScraper):
         start_date : date
             fecha de inicio que va a tomar como referencia el scraper
 
-        coins: str
+        coin: str
             Nombre de cada moneda
         """
+        try:
+            browser_driver = self.get_browser_driver()
+            browser_driver.get(self.url)
+            element_present = EC.presence_of_element_located(
+                (By.NAME, 'Fecha')
+            )
+            elem = WebDriverWait(browser_driver, 0).until(element_present)
+        except TimeoutException:
+            raise InvalidConfigurationError(
+                'La conexion de internet ha fallado'
+            )
 
-        browser_driver = self.get_browser_driver()
-        browser_driver.get(self.url)
-        elem = browser_driver.find_element_by_name('Fecha')
         elem.send_keys(start_date.strftime("%d/%m/%Y"))
-        coin = browser_driver.find_element_by_name('Moneda')
+        element = browser_driver.find_element_by_name('Moneda')
+        options = element.find_elements_by_tag_name('option')
 
-        coin.send_keys(coins)
+        valid = self.validate_coin_in_configuration_file(coin, options)
+        if valid:
+            element.send_keys(coin)
+            submit_button = browser_driver.find_element_by_class_name(
+                'btn-primary')
+            submit_button.click()
+            content = browser_driver.page_source
 
-        submit_button = browser_driver.find_element_by_class_name(
-            'btn-primary'
-        )
-        submit_button.click()
-
-        content = browser_driver.page_source
-
-        return content
+            return content
 
     def parse_contents(self, content, start_date, end_date):
         """
@@ -117,10 +142,11 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
         Parameters
         ----------
-        contents: Dict
+        content: Dict
             String con nombre de cada moneda como clave, string con cada html
             como valor
-
+        start_date : date
+            fecha de inicio que va a tomar como referencia el scraper
         end_date : date
             fecha de fin que va a tomar como referencia el scraper
         """
@@ -162,10 +188,10 @@ class BCRAExchangeRateScraper(BCRAScraper):
         ----------
         content: str
             Html de la moneda
-
+        start_date : date
+            fecha de inicio que va a tomar como referencia el scraper
         end_date : date
             fecha de fin que va a tomar como referencia el scraper
-
         coin : str
             Nombre de la moneda
         """
@@ -173,6 +199,15 @@ class BCRAExchangeRateScraper(BCRAScraper):
         soup = BeautifulSoup(content, "html.parser")
 
         table = soup.find('table')
+
+        if not table:
+            return []
+
+        head = table.find('thead')
+
+        if not head:
+            return []
+
         body = table.find('tbody')
 
         if not body:
@@ -184,6 +219,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
         for row in rows:
             cols = row.find_all('td')
             parsed = {}
+
             row_indice_tiempo = \
                 datetime.strptime(cols[0].text.strip(), '%d/%m/%Y')
 
@@ -197,7 +233,20 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
         return parsed_contents
 
+    def _preprocess_rows(self, parsed):
+
+        parsed['tc_local'] = self.preprocess_rows(parsed['tc_local'])
+        parsed['tp_usd'] = self.preprocess_rows(parsed['tp_usd'])
+        return parsed
+
     def preprocess_rows(self, rows):
+        """
+        Regresa un iterable donde la fecha y los valores son parseados.
+
+        Parameters
+        ----------
+        rows : list
+        """
         preprocessed_rows = []
 
         for row in rows:
@@ -214,20 +263,30 @@ class BCRAExchangeRateScraper(BCRAScraper):
                         preprocessed_date = date.fromisoformat(row[k])
 
                     preprocessed_row['indice_tiempo'] = preprocessed_date
-                elif k == 'moneda':
-                    preprocessed_row[k] = row[k]
                 else:
-                    preprocessed_row[k] = (
-                        Decimal((row[k]).replace(',', '.'))
-                        if isinstance(row[k], str)
-                        else row[k]
-                    )
+                    if '-' in str(row[k]):
+                        preprocessed_row[k] = None
+                    else:
+                        if '.' in row[k]:
+                            row[k] = row[k].replace('.', '')
+                        preprocessed_row[k] = (
+                                Decimal((row[k]).replace(',', '.'))
+                                if isinstance(row[k], str)
+                                else row[k]
+                            )
 
             preprocessed_rows.append(preprocessed_row)
 
         return preprocessed_rows
 
     def write_intermediate_panel(self, rows):
+        """
+        Escribe el panel intermedio.
+
+        Parameters
+        ----------
+        rows: Iterable
+        """
         header = ['indice_tiempo', 'coin', 'type', 'value']
         file_name = '.exchange-rates-intermediate-panel.csv'
 
@@ -237,6 +296,15 @@ class BCRAExchangeRateScraper(BCRAScraper):
             writer.writerows(rows)
 
     def get_intermediate_panel_data_from_parsed(self, parsed):
+        """
+        Recorre parsed y por cada moneda genera un diccionario
+        obteniendo por separado las claves que se utilizaran como headers,
+        y sus valores.
+
+        Parameters
+        ----------
+        parsed : lista de diccionarios por moneda
+        """
         intermediate_panel_data = []
         if parsed:
             for type in ['tc_local', 'tp_usd']:
@@ -256,15 +324,34 @@ class BCRAExchangeRateScraper(BCRAScraper):
         return intermediate_panel_data
 
     def save_intermediate_panel(self, parsed):
+        """
+        Llama a un método para obtener la data del panel intermedio
+        y a otro método pasandole esa data para que la escriba.
+
+        Parameters
+        ----------
+        parsed: Iterable
+        """
         intermediate_panel_data = self.get_intermediate_panel_data_from_parsed(
             parsed
         )
         self.write_intermediate_panel(intermediate_panel_data)
 
     def parse_from_intermediate_panel(self, start_date, end_date):
+        """
+        Lee el dataframe del panel intermedio.
+        Regresa un diccionario con las monedas como claves, y como valor
+        una lista con un diccionario que contiene la fecha y los registros.
+
+        Parameters
+        ----------
+        start_date : date
+            Fecha de inicio que toma como referencia el scraper
+        end_date : date
+            fecha de fin que va a tomar como referencia el scraper
+        """
         parsed = {'tc_local': [], 'tp_usd': []}
         coin_dfs = {}
-
         intermediate_panel_df = self.read_intermediate_panel_dataframe()
         intermediate_panel_df.set_index(['indice_tiempo'], inplace=True)
 
@@ -279,6 +366,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
                     coin_dfs[type][k].rename(
                         columns={'value': f'{k}_{type}'}, inplace=True
                     )
+
                     if coin_dfs[type][k].empty:
                         del(coin_dfs[type][k])
 
@@ -305,10 +393,12 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
                         if parsed_row:
                             parsed[type].append(parsed_row)
-
         return parsed
 
     def read_intermediate_panel_dataframe(self):
+        """
+        Lee el dataframe
+        """
         intermediate_panel_dataframe = None
 
         try:
@@ -318,48 +408,26 @@ class BCRAExchangeRateScraper(BCRAScraper):
                     'serie_tiempo': lambda _: _,
                     'coin': lambda _: str(_),
                     'type': lambda _: str(_),
-                    'value': lambda _: Decimal(_)
+                    'value': lambda _: Decimal(_) if _ else None
                 }
             )
 
         except FileNotFoundError:
-            # TODO: fix me
-            pass
+            raise InvalidConfigurationError(
+                "El archivo panel no existe"
+            )
 
         return intermediate_panel_dataframe
 
-    def run(self, start_date, end_date):
-        """
-        Inicializa una lista. Llama a los métodos para obtener y scrapear
-        los contenidos, y los ingresa en la lista.
-        Llama a un método para guardar el archivo intermedio.
-        Retorna una lista de diccionarios con los resultados scrapeados
+    def preprocess_start_date(self, start_date):
+        browser_driver = self.get_browser_driver()
+        browser_driver.get(self.url)
+        element_present = EC.presence_of_element_located(
+            (By.NAME, 'Fecha')
+        )
+        elem = WebDriverWait(browser_driver, 0).until(element_present)
 
-        Parameters
-        ----------
-        start_date: date
-            fecha de inicio que toma como referencia el scraper
+        while (not (start_date.strftime("%d/%m/%Y") in elem.text) and start_date < datetime.today()):
+            start_date = start_date + timedelta(days=1)
 
-        end_date : date
-            fecha de fin que va a tomar como referencia el scraper
-        """
-        parsed = []
-
-        if self.use_intermediate_panel:
-            first_date = start_date.strftime("%Y-%m-%d")
-            last_date = end_date.strftime("%Y-%m-%d")
-            parsed = self.parse_from_intermediate_panel(first_date, last_date)
-
-            parsed['tc_local'] = self.preprocess_rows(parsed['tc_local'])
-            parsed['tp_usd'] = self.preprocess_rows(parsed['tp_usd'])
-
-        else:
-            contents = self.fetch_contents(start_date, end_date)
-            parsed = self.parse_contents(contents, start_date, end_date)
-
-            parsed['tc_local'] = self.preprocess_rows(parsed['tc_local'])
-            parsed['tp_usd'] = self.preprocess_rows(parsed['tp_usd'])
-
-            self.save_intermediate_panel(parsed)
-
-        return parsed
+        return start_date

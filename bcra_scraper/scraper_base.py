@@ -1,4 +1,5 @@
 from selenium import webdriver
+from shutil import which
 
 
 class BCRAScraper:
@@ -53,12 +54,15 @@ class BCRAScraper:
         Método que crea el navegador y le pasa una opción
         para esconder la visualización del mismo.
         """
-        options = webdriver.ChromeOptions()
-        options.headless = True
+        if which("chromedriver"):
+            options = webdriver.ChromeOptions()
+            options.headless = True
 
-        browser_driver = webdriver.Chrome(options=options)
+            browser_driver = webdriver.Chrome(options=options)
 
-        return browser_driver
+            return browser_driver
+        else:
+            print("El driver del navegador no se encuentra en el PATH")
 
     def get_browser_driver(self):
         """
@@ -108,20 +112,42 @@ class BCRAScraper:
 
         raise NotImplementedError
 
+    def preprocess_start_date(self, start_date):
+        return start_date
+
+    def preprocess_end_date(self, end_date):
+        return end_date
+
     def run(self, start_date, end_date):
         """
-        Obtiene los contenidos a ser parseados y devuelve un iterable con la
-        información scrapeada
+        Inicializa un iterable. Llama a los métodos para obtener y scrapear
+        los contenidos, y los ingresa en el iterable.
+        Retorna un diccionario que tiene como clave cada moneda
+        y como valor una lista con un diccionario que tiene los
+        contenidos parseados.
 
         Parameters
         ----------
-        start_date : date
-            fecha de inicio que va a tomar como referencia el scraper
-        end_date: date
+        start_date: date
+            fecha de inicio que toma como referencia el scraper
+
+        end_date : date
             fecha de fin que va a tomar como referencia el scraper
         """
+        parsed = []
+        start_date = self.preprocess_start_date(start_date)
+        end_date = self.preprocess_end_date(end_date)
 
-        contents = self.fetch_contents(start_date, end_date)
-        parsed = self.parse_contents(contents)
+        if self.use_intermediate_panel:
+            first_date = start_date.strftime("%Y-%m-%d")
+            last_date = end_date.strftime("%Y-%m-%d")
 
+            parsed = self.parse_from_intermediate_panel(first_date, last_date)
+        else:
+            contents = self.fetch_contents(start_date, end_date)
+            _parsed = self.parse_contents(contents, start_date, end_date)
+
+            parsed = self._preprocess_rows(_parsed)
+
+            self.save_intermediate_panel(parsed)
         return parsed

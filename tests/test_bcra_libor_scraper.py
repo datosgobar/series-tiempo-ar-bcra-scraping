@@ -141,7 +141,9 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             assert body is not None
 
     def test_parse_for_empty_contents(self):
-        """ """
+        start_date = datetime(2019, 4, 24)
+        end_date = datetime(2019, 4, 24)
+
         url = ""
 
         rates = {}
@@ -152,11 +154,13 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         ):
             scraper = BCRALiborScraper(url, rates, False)
             contents = []
-            parsed = scraper.parse_contents(contents)
+            parsed = scraper.parse_contents(contents, start_date, end_date)
 
             assert parsed == []
 
     def test_parse_for_non_empty_contents(self):
+        start_date = datetime(2019, 4, 24)
+        end_date = datetime(2019, 4, 24)
 
         url = "http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp"
 
@@ -222,7 +226,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             </table>
             ''']
 
-            parsed = scraper.parse_contents(contents)
+            parsed = scraper.parse_contents(contents, start_date, end_date)
 
             assert parsed == [
                 {
@@ -521,11 +525,11 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         parsed = [
             {
                 'indice_tiempo': '2019-04-24',
-                '30': Decimal('0.0248588'),
-                '60': Decimal('0.0253013'),
-                '90': Decimal('0.025790'),
-                '180': Decimal('0.026120'),
-                '360': Decimal('0.027130')
+                'libor_30_dias': Decimal('0.0248588'),
+                'libor_60_dias': Decimal('0.0253013'),
+                'libor_90_dias': Decimal('0.025790'),
+                'libor_180_dias': Decimal('0.026120'),
+                'libor_360_dias': Decimal('0.027130')
             },
         ]
 
@@ -533,26 +537,21 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             with patch.object(
                 BCRALiborScraper,
                 'parse_from_intermediate_panel',
-                return_value=[]
+                return_value=parsed
             ):
-                with patch.object(
-                    BCRALiborScraper,
-                    'preprocess_rows',
-                    return_value=parsed
-                ):
-                    scraper = BCRALiborScraper(url, rates, True)
-                    result = scraper.run(start_date, end_date)
+                scraper = BCRALiborScraper(url, rates, True)
+                result = scraper.run(start_date, end_date)
 
-                    assert result == [
-                        {
-                            'indice_tiempo': '2019-04-24',
-                            '30': Decimal('0.0248588'),
-                            '60': Decimal('0.0253013'),
-                            '90': Decimal('0.025790'),
-                            '180': Decimal('0.026120'),
-                            '360': Decimal('0.027130')
-                        }
-                    ]
+                assert result == [
+                    {
+                        'indice_tiempo': '2019-04-24',
+                        'libor_30_dias': Decimal('0.0248588'),
+                        'libor_60_dias': Decimal('0.0253013'),
+                        'libor_90_dias': Decimal('0.025790'),
+                        'libor_180_dias': Decimal('0.026120'),
+                        'libor_360_dias': Decimal('0.027130')
+                    }
+                ]
 
     def test_read_valid_configuration(self):
         """Validar que el formato del archivo sea Json"""
@@ -564,6 +563,24 @@ class BcraLiborScraperTestCase(unittest.TestCase):
 
             with self.assertRaises(InvalidConfigurationError):
                 read_config("config.json", "cmd")
+
+    def test_rates_not_in_config(self):
+        """Validar error en caso de que no exista
+        el valor dentro del archivo de configuracion"""
+        url = ''
+        parsed = 'foo'
+        rates = {
+            "30": "libor_30_dias",
+            "60": "libor_60_dias",
+            "90": "libor_90_dias",
+            "180": "libor_180_dias",
+            "360": "libor_360_dias"
+        }
+
+        scraper = BCRALiborScraper(url, rates, False)
+
+        with self.assertRaises(InvalidConfigurationError):
+            scraper.rates_config_validator(parsed, rates)
 
     def test_libor_configuration_has_url(self):
         """Validar la existencia de la clave url dentro de
@@ -699,10 +716,10 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             assert content == [
                 {
                     'indice_tiempo': '2019-03-15',
-                    '30': '0.0248175',
-                    '60': '0.0255838',
-                    '90': '0.0262525',
-                    '180': '0.0267175',
-                    '360': '0.028405'
+                    'libor_30_dias': '0.0248175',
+                    'libor_60_dias': '0.0255838',
+                    'libor_90_dias': '0.0262525',
+                    'libor_180_dias': '0.0267175',
+                    'libor_360_dias': '0.028405'
                 }
             ]

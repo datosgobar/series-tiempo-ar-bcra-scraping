@@ -1,6 +1,8 @@
 from datetime import datetime, date
 import unittest
+from decimal import Decimal
 from unittest.mock import patch, MagicMock
+import pandas as pd
 
 from bs4 import BeautifulSoup
 
@@ -16,6 +18,8 @@ class BcraTceScraperTestCase(unittest.TestCase):
 
         entities = {}
         coins = {}
+        coin = ''
+
         with patch.object(
             BCRATCEScraper,
             'fetch_content',
@@ -30,15 +34,13 @@ class BcraTceScraperTestCase(unittest.TestCase):
             '''
         ):
             scraper = BCRATCEScraper(url, coins, entities, False)
-            content = scraper.fetch_content(single_date)
+            content = scraper.fetch_content(single_date, coin)
 
             soup = BeautifulSoup(content, "html.parser")
 
             table = soup.find('table')
             head = table.find('thead') if table else None
             body = table.find('tbody') if table else None
-
-            return True
 
             assert table is not None
             assert head is not None
@@ -51,13 +53,15 @@ class BcraTceScraperTestCase(unittest.TestCase):
 
         entities = {}
         coins = {}
+        coin = ''
+
         with patch.object(
             BCRATCEScraper,
             'fetch_content',
-            return_value=' '
+            return_value=''
         ):
             scraper = BCRATCEScraper(url, coins, entities, False)
-            content = scraper.fetch_content(single_date)
+            content = scraper.fetch_content(single_date, coin)
 
             soup = BeautifulSoup(content, "html.parser")
 
@@ -86,7 +90,7 @@ class BcraTceScraperTestCase(unittest.TestCase):
             return_value=content
         ):
             scraper = BCRATCEScraper(url, coins, entities, False)
-            result = scraper.fetch_contents(start_date, end_date, coins)
+            result = scraper.fetch_contents(start_date, end_date)
 
             assert result == [
                 {
@@ -158,12 +162,12 @@ class BcraTceScraperTestCase(unittest.TestCase):
             scraper = BCRATCEScraper(url, coins, entities, False)
             result = scraper.parse_contents(
                 contents,
-                entities,
                 start_date,
                 end_date
                 )
 
-            assert result == [
+            assert result == {
+                'dolar': [
                     {
                         'moneda': 'dolar',
                         'indice_tiempo': '22/04/2019',
@@ -179,7 +183,9 @@ class BcraTceScraperTestCase(unittest.TestCase):
                         'tc_ars_usd_galicia_electronico_venta_11hs': '43,800',
                         'tc_ars_usd_galicia_electronico_venta_13hs': '43,900',
                         'tc_ars_usd_galicia_electronico_venta_15hs': '43,900'
-                    },
+                    }
+                ],
+                'euro': [
                     {
                         'moneda': 'euro',
                         'indice_tiempo': '22/04/2019',
@@ -197,8 +203,9 @@ class BcraTceScraperTestCase(unittest.TestCase):
                         'tc_ars_eur_galicia_electronico_venta_15hs': ''
                     }
                 ]
+            }
 
-    def test_run(self):
+    def test_run_not_using_intermediate_panel(self):
 
         start_date = datetime(2019, 4, 22)
         end_date = datetime(2019, 4, 22)
@@ -216,38 +223,72 @@ class BcraTceScraperTestCase(unittest.TestCase):
             "galicia": "BANCO DE GALICIA Y BUENOS AIRES S.A.U."
         }
 
+        _parsed = {
+            'dolar': [
+                {
+                    'indice_tiempo': '22/04/2019',
+                    'tc_ars_dolar_galicia_mostrador_compra_11hs': '41.800',
+                    'tc_ars_dolar_galicia_mostrador_compra_13hs': '41.900',
+                    'tc_ars_dolar_galicia_mostrador_compra_15hs': '41.900',
+                    'tc_ars_dolar_galicia_electronico_compra_11hs': '41.800',
+                    'tc_ars_dolar_galicia_electronico_compra_13hs': '41.900',
+                    'tc_ars_dolar_galicia_electronico_compra_15hs': '41.900',
+                    'tc_ars_dolar_galicia_mostrador_venta_11hs': '43.800',
+                    'tc_ars_dolar_galicia_mostrador_venta_13hs': '43.900',
+                    'tc_ars_dolar_galicia_mostrador_venta_15hs': '43.900',
+                    'tc_ars_dolar_galicia_electronico_venta_11hs': '43.800',
+                    'tc_ars_dolar_galicia_electronico_venta_13hs': '43.900',
+                    'tc_ars_dolar_galicia_electronico_venta_15hs': '43.900'
+                }],
+            'euro': [
+                {
+                    'indice_tiempo': '22/04/2019',
+                    'tc_ars_euro_galicia_mostrador_compra_11hs': '46.600',
+                    'tc_ars_euro_galicia_mostrador_compra_13hs': '46.600',
+                    'tc_ars_euro_galicia_mostrador_compra_15hs': '46.600',
+                    'tc_ars_euro_galicia_electronico_compra_11hs': '0.0',
+                    'tc_ars_euro_galicia_electronico_compra_13hs': '0.0',
+                    'tc_ars_euro_galicia_electronico_compra_15hs': '0.0',
+                    'tc_ars_euro_galicia_mostrador_venta_11hs': '49.000',
+                    'tc_ars_euro_galicia_mostrador_venta_13hs': '49.000',
+                    'tc_ars_euro_galicia_mostrador_venta_15hs': '49.000',
+                    'tc_ars_euro_galicia_electronico_venta_11hs': '0.0',
+                    'tc_ars_euro_galicia_electronico_venta_13hs': '0.0',
+                    'tc_ars_euro_galicia_electronico_venta_15hs': '0.0'
+                }
+            ]
+        }
+
         parsed = [
             {
-                'moneda': 'dolar',
-                'indice_tiempo': '22/04/2019',
-                'tc_ars_usd_galicia_mostrador_compra_11hs': '41,800',
-                'tc_ars_usd_galicia_mostrador_compra_13hs': '41,900',
-                'tc_ars_usd_galicia_mostrador_compra_15hs': '41,900',
-                'tc_ars_usd_galicia_electronico_compra_11hs': '41,800',
-                'tc_ars_usd_galicia_electronico_compra_13hs': '41,900',
-                'tc_ars_usd_galicia_electronico_compra_15hs': '41,900',
-                'tc_ars_usd_galicia_mostrador_venta_11hs': '43,800',
-                'tc_ars_usd_galicia_mostrador_venta_13hs': '43,900',
-                'tc_ars_usd_galicia_mostrador_venta_15hs': '43,900',
-                'tc_ars_usd_galicia_electronico_venta_11hs': '43,800',
-                'tc_ars_usd_galicia_electronico_venta_13hs': '43,900',
-                'tc_ars_usd_galicia_electronico_venta_15hs': '43,900'
-            },
+                'indice_tiempo': date(2019, 4, 22),
+                'tc_ars_dolar_galicia_mostrador_compra_11hs': Decimal('41.800'),
+                'tc_ars_dolar_galicia_mostrador_compra_13hs': Decimal('41.900'),
+                'tc_ars_dolar_galicia_mostrador_compra_15hs': Decimal('41.900'),
+                'tc_ars_dolar_galicia_electronico_compra_11hs': Decimal('41.800'),
+                'tc_ars_dolar_galicia_electronico_compra_13hs': Decimal('41.900'),
+                'tc_ars_dolar_galicia_electronico_compra_15hs': Decimal('41.900'),
+                'tc_ars_dolar_galicia_mostrador_venta_11hs': Decimal('43.800'),
+                'tc_ars_dolar_galicia_mostrador_venta_13hs': Decimal('43.900'),
+                'tc_ars_dolar_galicia_mostrador_venta_15hs': Decimal('43.900'),
+                'tc_ars_dolar_galicia_electronico_venta_11hs': Decimal('43.800'),
+                'tc_ars_dolar_galicia_electronico_venta_13hs': Decimal('43.900'),
+                'tc_ars_dolar_galicia_electronico_venta_15hs': Decimal('43.900')
+            }, 
             {
-                'moneda': 'euro',
-                'indice_tiempo': '22/04/2019',
-                'tc_ars_eur_galicia_mostrador_compra_11hs': '46,600',
-                'tc_ars_eur_galicia_mostrador_compra_13hs': '46,600',
-                'tc_ars_eur_galicia_mostrador_compra_15hs': '46,600',
-                'tc_ars_eur_galicia_electronico_compra_11hs': '',
-                'tc_ars_eur_galicia_electronico_compra_13hs': '',
-                'tc_ars_eur_galicia_electronico_compra_15hs': '',
-                'tc_ars_eur_galicia_mostrador_venta_11hs': '49,000',
-                'tc_ars_eur_galicia_mostrador_venta_13hs': '49,000',
-                'tc_ars_eur_galicia_mostrador_venta_15hs': '49,000',
-                'tc_ars_eur_galicia_electronico_venta_11hs': '',
-                'tc_ars_eur_galicia_electronico_venta_13hs': '',
-                'tc_ars_eur_galicia_electronico_venta_15hs': ''
+                'indice_tiempo': date(2019, 4, 22),
+                'tc_ars_euro_galicia_mostrador_compra_11hs': Decimal('46.600'),
+                'tc_ars_euro_galicia_mostrador_compra_13hs': Decimal('46.600'),
+                'tc_ars_euro_galicia_mostrador_compra_15hs': Decimal('46.600'),
+                'tc_ars_euro_galicia_electronico_compra_11hs': None,
+                'tc_ars_euro_galicia_electronico_compra_13hs': None,
+                'tc_ars_euro_galicia_electronico_compra_15hs': None,
+                'tc_ars_euro_galicia_mostrador_venta_11hs': Decimal('49.000'),
+                'tc_ars_euro_galicia_mostrador_venta_13hs': Decimal('49.000'),
+                'tc_ars_euro_galicia_mostrador_venta_15hs': Decimal('49.000'),
+                'tc_ars_euro_galicia_electronico_venta_11hs': None,
+                'tc_ars_euro_galicia_electronico_venta_13hs': None,
+                'tc_ars_euro_galicia_electronico_venta_15hs': None
             }
         ]
 
@@ -259,45 +300,215 @@ class BcraTceScraperTestCase(unittest.TestCase):
             with patch.object(
                 BCRATCEScraper,
                 'parse_contents',
-                return_value=parsed
+                return_value=_parsed
             ):
-                scraper = BCRATCEScraper(url, coins, entities, False)
-                result = scraper.run(start_date, end_date)
+                with patch.object(
+                    BCRATCEScraper,
+                    '_preprocess_rows',
+                    return_value=parsed
+                ):
+                    with patch.object(
+                        BCRATCEScraper,
+                        'save_intermediate_panel',
+                        return_value=''
+                    ):
+                        scraper = BCRATCEScraper(url, coins, entities, False)
+                        result = scraper.run(start_date, end_date)
+                        assert result == [
+                            {
+                                'indice_tiempo': date(2019, 4, 22),
+                                'tc_ars_dolar_galicia_mostrador_compra_11hs': Decimal('41.800'),
+                                'tc_ars_dolar_galicia_mostrador_compra_13hs': Decimal('41.900'),
+                                'tc_ars_dolar_galicia_mostrador_compra_15hs': Decimal('41.900'),
+                                'tc_ars_dolar_galicia_electronico_compra_11hs': Decimal('41.800'),
+                                'tc_ars_dolar_galicia_electronico_compra_13hs': Decimal('41.900'),
+                                'tc_ars_dolar_galicia_electronico_compra_15hs': Decimal('41.900'),
+                                'tc_ars_dolar_galicia_mostrador_venta_11hs': Decimal('43.800'),
+                                'tc_ars_dolar_galicia_mostrador_venta_13hs': Decimal('43.900'),
+                                'tc_ars_dolar_galicia_mostrador_venta_15hs': Decimal('43.900'),
+                                'tc_ars_dolar_galicia_electronico_venta_11hs': Decimal('43.800'),
+                                'tc_ars_dolar_galicia_electronico_venta_13hs': Decimal('43.900'),
+                                'tc_ars_dolar_galicia_electronico_venta_15hs': Decimal('43.900')
+                            },
+                            {
+                                'indice_tiempo': date(2019, 4, 22),
+                                'tc_ars_euro_galicia_mostrador_compra_11hs': Decimal('46.600'),
+                                'tc_ars_euro_galicia_mostrador_compra_13hs': Decimal('46.600'),
+                                'tc_ars_euro_galicia_mostrador_compra_15hs': Decimal('46.600'),
+                                'tc_ars_euro_galicia_electronico_compra_11hs': None,
+                                'tc_ars_euro_galicia_electronico_compra_13hs': None,
+                                'tc_ars_euro_galicia_electronico_compra_15hs': None,
+                                'tc_ars_euro_galicia_mostrador_venta_11hs': Decimal('49.000'),
+                                'tc_ars_euro_galicia_mostrador_venta_13hs': Decimal('49.000'),
+                                'tc_ars_euro_galicia_mostrador_venta_15hs': Decimal('49.000'),
+                                'tc_ars_euro_galicia_electronico_venta_11hs': None,
+                                'tc_ars_euro_galicia_electronico_venta_13hs': None,
+                                'tc_ars_euro_galicia_electronico_venta_15hs': None
+                            }
+                        ]
 
-                assert result == [
-                    {
-                        'moneda': 'dolar',
-                        'indice_tiempo': '22/04/2019',
-                        'tc_ars_usd_galicia_mostrador_compra_11hs': '41,800',
-                        'tc_ars_usd_galicia_mostrador_compra_13hs': '41,900',
-                        'tc_ars_usd_galicia_mostrador_compra_15hs': '41,900',
-                        'tc_ars_usd_galicia_electronico_compra_11hs': '41,800',
-                        'tc_ars_usd_galicia_electronico_compra_13hs': '41,900',
-                        'tc_ars_usd_galicia_electronico_compra_15hs': '41,900',
-                        'tc_ars_usd_galicia_mostrador_venta_11hs': '43,800',
-                        'tc_ars_usd_galicia_mostrador_venta_13hs': '43,900',
-                        'tc_ars_usd_galicia_mostrador_venta_15hs': '43,900',
-                        'tc_ars_usd_galicia_electronico_venta_11hs': '43,800',
-                        'tc_ars_usd_galicia_electronico_venta_13hs': '43,900',
-                        'tc_ars_usd_galicia_electronico_venta_15hs': '43,900'
-                    },
-                    {
-                        'moneda': 'euro',
-                        'indice_tiempo': '22/04/2019',
-                        'tc_ars_eur_galicia_mostrador_compra_11hs': '46,600',
-                        'tc_ars_eur_galicia_mostrador_compra_13hs': '46,600',
-                        'tc_ars_eur_galicia_mostrador_compra_15hs': '46,600',
-                        'tc_ars_eur_galicia_electronico_compra_11hs': '',
-                        'tc_ars_eur_galicia_electronico_compra_13hs': '',
-                        'tc_ars_eur_galicia_electronico_compra_15hs': '',
-                        'tc_ars_eur_galicia_mostrador_venta_11hs': '49,000',
-                        'tc_ars_eur_galicia_mostrador_venta_13hs': '49,000',
-                        'tc_ars_eur_galicia_mostrador_venta_15hs': '49,000',
-                        'tc_ars_eur_galicia_electronico_venta_11hs': '',
-                        'tc_ars_eur_galicia_electronico_venta_13hs': '',
-                        'tc_ars_eur_galicia_electronico_venta_15hs': ''
-                    }
-                ]
+    def test_run_using_intermediate_panel(self):
+
+        start_date = datetime(2019, 4, 22)
+        end_date = datetime(2019, 4, 22)
+
+        url = '''
+         http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_sml.asp
+        '''
+
+        coins = {
+            "dolar": "DOLAR",
+            "euro": "EURO"
+        }
+
+        entities = {
+            "galicia": "BANCO DE GALICIA Y BUENOS AIRES S.A.U."
+        }
+
+        parsed = {
+            'dolar': [
+                {
+                    'indice_tiempo': '22/04/2019',
+                    'tc_ars_dolar_galicia_mostrador_compra_11hs': '41.800',
+                    'tc_ars_dolar_galicia_mostrador_compra_13hs': '41.900',
+                    'tc_ars_dolar_galicia_mostrador_compra_15hs': '41.900',
+                    'tc_ars_dolar_galicia_electronico_compra_11hs': '41.800',
+                    'tc_ars_dolar_galicia_electronico_compra_13hs': '41.900',
+                    'tc_ars_dolar_galicia_electronico_compra_15hs': '41.900',
+                    'tc_ars_dolar_galicia_mostrador_venta_11hs': '43.800',
+                    'tc_ars_dolar_galicia_mostrador_venta_13hs': '43.900',
+                    'tc_ars_dolar_galicia_mostrador_venta_15hs': '43.900',
+                    'tc_ars_dolar_galicia_electronico_venta_11hs': '43.800',
+                    'tc_ars_dolar_galicia_electronico_venta_13hs': '43.900',
+                    'tc_ars_dolar_galicia_electronico_venta_15hs': '43.900'
+                }],
+            'euro': [
+                {
+                    'indice_tiempo': '22/04/2019',
+                    'tc_ars_euro_galicia_mostrador_compra_11hs': '46.600',
+                    'tc_ars_euro_galicia_mostrador_compra_13hs': '46.600',
+                    'tc_ars_euro_galicia_mostrador_compra_15hs': '46.600',
+                    'tc_ars_euro_galicia_electronico_compra_11hs': '0.0',
+                    'tc_ars_euro_galicia_electronico_compra_13hs': '0.0',
+                    'tc_ars_euro_galicia_electronico_compra_15hs': '0.0',
+                    'tc_ars_euro_galicia_mostrador_venta_11hs': '49.000',
+                    'tc_ars_euro_galicia_mostrador_venta_13hs': '49.000',
+                    'tc_ars_euro_galicia_mostrador_venta_15hs': '49.000',
+                    'tc_ars_euro_galicia_electronico_venta_11hs': '0.0',
+                    'tc_ars_euro_galicia_electronico_venta_13hs': '0.0',
+                    'tc_ars_euro_galicia_electronico_venta_15hs': '0.0'
+                }
+            ]
+        }
+
+        dolar_preprocess = [
+            {
+                'indice_tiempo': date(2019, 4, 12),
+                'tc_ars_dolar_galicia_mostrador_compra_11hs': '41.500',
+                'tc_ars_dolar_galicia_mostrador_compra_13hs': '41.300',
+                'tc_ars_dolar_galicia_mostrador_compra_15hs': '41.300',
+                'tc_ars_dolar_galicia_electronico_compra_11hs': '41.500',
+                'tc_ars_dolar_galicia_electronico_compra_13hs': '41.300',
+                'tc_ars_dolar_galicia_electronico_compra_15hs': '41.300',
+                'tc_ars_dolar_galicia_mostrador_venta_11hs': '43.500',
+                'tc_ars_dolar_galicia_mostrador_venta_13hs': '43.300',
+                'tc_ars_dolar_galicia_mostrador_venta_15hs': '43.300',
+                'tc_ars_dolar_galicia_electronico_venta_11hs': '43.500',
+                'tc_ars_dolar_galicia_electronico_venta_13hs': '43.300',
+                'tc_ars_dolar_galicia_electronico_venta_15hs': '43.300'
+            },
+        ]
+
+        euro_preprocess = [
+            {
+                'indice_tiempo': date(2019, 4, 12),
+                'tc_ars_euro_galicia_mostrador_compra_11hs': '47.000',
+                'tc_ars_euro_galicia_mostrador_compra_13hs': '47.000',
+                'tc_ars_euro_galicia_mostrador_compra_15hs': '47.000',
+                'tc_ars_euro_galicia_electronico_compra_11hs': '0.0',
+                'tc_ars_euro_galicia_electronico_compra_13hs': '0.0',
+                'tc_ars_euro_galicia_electronico_compra_15hs': '0.0',
+                'tc_ars_euro_galicia_mostrador_venta_11hs': '49.400',
+                'tc_ars_euro_galicia_mostrador_venta_13hs': '49.400',
+                'tc_ars_euro_galicia_mostrador_venta_15hs': '49.400',
+                'tc_ars_euro_galicia_electronico_venta_11hs': '0.0',
+                'tc_ars_euro_galicia_electronico_venta_13hs': '0.0',
+                'tc_ars_euro_galicia_electronico_venta_15hs': '0.0'
+            }
+        ]
+
+        with patch.object(
+            BCRATCEScraper,
+            'parse_from_intermediate_panel',
+            return_value=parsed
+        ):
+            with patch.object(
+                BCRATCEScraper,
+                'preprocess_rows',
+                side_effect=[dolar_preprocess, euro_preprocess]
+            ):
+                scraper = BCRATCEScraper(url, coins, entities, True)
+                result = scraper.run(start_date, end_date)
+                assert result == {
+                    'dolar': [
+                        {
+                            'indice_tiempo': '22/04/2019',
+                            'tc_ars_dolar_galicia_' +
+                            'mostrador_compra_11hs': '41.800',
+                            'tc_ars_dolar_galicia_' +
+                            'mostrador_compra_13hs': '41.900',
+                            'tc_ars_dolar_galicia_' +
+                            'mostrador_compra_15hs': '41.900',
+                            'tc_ars_dolar_galicia_' +
+                            'electronico_compra_11hs': '41.800',
+                            'tc_ars_dolar_galicia_' +
+                            'electronico_compra_13hs': '41.900',
+                            'tc_ars_dolar_galicia_' +
+                            'electronico_compra_15hs': '41.900',
+                            'tc_ars_dolar_galicia_' +
+                            'mostrador_venta_11hs': '43.800',
+                            'tc_ars_dolar_galicia_' +
+                            'mostrador_venta_13hs': '43.900',
+                            'tc_ars_dolar_galicia_' +
+                            'mostrador_venta_15hs': '43.900',
+                            'tc_ars_dolar_galicia_' +
+                            'electronico_venta_11hs': '43.800',
+                            'tc_ars_dolar_galicia_' +
+                            'electronico_venta_13hs': '43.900',
+                            'tc_ars_dolar_galicia_' +
+                            'electronico_venta_15hs': '43.900'
+                        }
+                    ],
+                    'euro': [
+                        {
+                            'indice_tiempo': '22/04/2019',
+                            'tc_ars_euro_galicia_' +
+                            'mostrador_compra_11hs': '46.600',
+                            'tc_ars_euro_galicia_' +
+                            'mostrador_compra_13hs': '46.600',
+                            'tc_ars_euro_galicia_' +
+                            'mostrador_compra_15hs': '46.600',
+                            'tc_ars_euro_galicia_' +
+                            'electronico_compra_11hs': '0.0',
+                            'tc_ars_euro_galicia_' +
+                            'electronico_compra_13hs': '0.0',
+                            'tc_ars_euro_galicia_' +
+                            'electronico_compra_15hs': '0.0',
+                            'tc_ars_euro_galicia_' +
+                            'mostrador_venta_11hs': '49.000',
+                            'tc_ars_euro_galicia_' +
+                            'mostrador_venta_13hs': '49.000',
+                            'tc_ars_euro_galicia_' +
+                            'mostrador_venta_15hs': '49.000',
+                            'tc_ars_euro_galicia_' +
+                            'electronico_venta_11hs': '0.0',
+                            'tc_ars_euro_galicia_' +
+                            'electronico_venta_13hs': '0.0',
+                            'tc_ars_euro_galicia_' +
+                            'electronico_venta_15hs': '0.0'
+                        }
+                    ]
+                }
 
     def test_fetch_content_patching_driver(self):
         """Probar fetch content"""
@@ -315,9 +526,14 @@ class BcraTceScraperTestCase(unittest.TestCase):
             'get_browser_driver',
             return_value=mocked_driver
         ):
-            scraper = BCRATCEScraper(url, coins, entities, False)
-            content = scraper.fetch_content(single_date, coins)
-            assert content == "foo"
+            with patch.object(
+                BCRATCEScraper,
+                'validate_coin_in_configuration_file',
+                return_value=True
+            ):
+                scraper = BCRATCEScraper(url, coins, entities, False)
+                content = scraper.fetch_content(single_date, coins)
+                assert content == "foo"
 
     def test_fetch_content_invalid_url_patching_driver(self):
         """Probar fetch content con url invalida"""
@@ -334,9 +550,50 @@ class BcraTceScraperTestCase(unittest.TestCase):
             'get_browser_driver',
             return_value=mocked_driver
         ):
-            scraper = BCRATCEScraper(url, coins, entities, False)
-            content = scraper.fetch_content(single_date, coins)
-            assert content == 400
+            with patch.object(
+                BCRATCEScraper,
+                'validate_coin_in_configuration_file',
+                return_value=True
+            ):
+                scraper = BCRATCEScraper(url, coins, entities, False)
+                content = scraper.fetch_content(single_date, coins)
+                assert content == 400
+
+    def test_validate_coin_in_configuration_file_false(self):
+        coins = {}
+        url = 'foo.com'
+        entities = {
+                        "galicia": "BANCO DE GALICIA Y BUENOS AIRES S.A.U."
+                    }
+        coin = "DOL"
+
+        options = []
+        for option_text in ['Seleccione Moneda', 'DOLAR', 'EURO']:
+            mock = MagicMock()
+            mock.text = option_text
+            options.append(mock)
+
+        scraper = BCRATCEScraper(url, coins, entities, False)
+        coin_in_configuration_file = scraper.validate_coin_in_configuration_file(coin, options)
+        assert coin_in_configuration_file is False
+
+    def test_validate_coin_in_configuration_file_true(self):
+        coins = {}
+        url = 'foo.com'
+        entities = {
+                        "galicia": "BANCO DE GALICIA Y BUENOS AIRES S.A.U."
+                    }
+        coin = "DOLAR"
+
+        options = []
+        for option_text in ['Seleccione moneda', 'DOLAR', 'EURO']:
+            mock = MagicMock()
+            mock.text = option_text
+            options.append(mock)
+
+        scraper = BCRATCEScraper(url, coins, entities, False)
+        coin_in_configuration_file = scraper.validate_coin_in_configuration_file(coin, options)
+        assert coin_in_configuration_file is True
 
     def test_parse_content(self):
 
@@ -412,19 +669,885 @@ class BcraTceScraperTestCase(unittest.TestCase):
 
         assert result == [
             {
-                'moneda': 'dolar',
                 'indice_tiempo': '22/04/2019',
-                'tc_ars_usd_galicia_mostrador_compra_11hs': '41,800',
-                'tc_ars_usd_galicia_mostrador_compra_13hs': '41,900',
-                'tc_ars_usd_galicia_mostrador_compra_15hs': '41,900',
-                'tc_ars_usd_galicia_electronico_compra_11hs': '41,800',
-                'tc_ars_usd_galicia_electronico_compra_13hs': '41,900',
-                'tc_ars_usd_galicia_electronico_compra_15hs': '41,900',
-                'tc_ars_usd_galicia_mostrador_venta_11hs': '43,800',
-                'tc_ars_usd_galicia_mostrador_venta_13hs': '43,900',
-                'tc_ars_usd_galicia_mostrador_venta_15hs': '43,900',
-                'tc_ars_usd_galicia_electronico_venta_11hs': '43,800',
-                'tc_ars_usd_galicia_electronico_venta_13hs': '43,900',
-                'tc_ars_usd_galicia_electronico_venta_15hs': '43,900'
+                'tc_ars_dolar_galicia_mostrador_compra_11hs': '41,800',
+                'tc_ars_dolar_galicia_mostrador_compra_13hs': '41,900',
+                'tc_ars_dolar_galicia_mostrador_compra_15hs': '41,900',
+                'tc_ars_dolar_galicia_electronico_compra_11hs': '41,800',
+                'tc_ars_dolar_galicia_electronico_compra_13hs': '41,900',
+                'tc_ars_dolar_galicia_electronico_compra_15hs': '41,900',
+                'tc_ars_dolar_galicia_mostrador_venta_11hs': '43,800',
+                'tc_ars_dolar_galicia_mostrador_venta_13hs': '43,900',
+                'tc_ars_dolar_galicia_mostrador_venta_15hs': '43,900',
+                'tc_ars_dolar_galicia_electronico_venta_11hs': '43,800',
+                'tc_ars_dolar_galicia_electronico_venta_13hs': '43,900',
+                'tc_ars_dolar_galicia_electronico_venta_15hs': '43,900'
+            }
+        ]
+
+    def test_parse_content_not_table(self):
+
+        start_date = datetime(2019, 4, 22)
+        end_date = datetime(2019, 4, 22)
+        url = ''
+        coins = {}
+        coin = "dolar"
+        entities = {
+            "galicia": "BANCO DE GALICIA Y BUENOS AIRES S.A.U."
+        }
+
+        content = ''
+
+        scraper = BCRATCEScraper(url, coins, entities, False)
+        result = scraper.parse_content(
+            content, start_date, end_date, coin, entities
+        )
+
+        assert result == []
+
+    def test_parse_content_not_head(self):
+        start_date = datetime(2019, 4, 22)
+        end_date = datetime(2019, 4, 22)
+        url = ''
+        coins = {}
+        coin = "dolar"
+        entities = {
+            "galicia": "BANCO DE GALICIA Y BUENOS AIRES S.A.U."
+        }
+
+        content = '''<table class="table table-BCRA table-bordered table-hover\
+                table-responsive" colspan="3">
+                </table>'''
+
+        scraper = BCRATCEScraper(url, coins, entities, False)
+        result = scraper.parse_content(
+            content, start_date, end_date, coin, entities
+        )
+
+        assert result == []
+
+    def test_parse_content_not_body(self):
+        start_date = datetime(2019, 4, 22)
+        end_date = datetime(2019, 4, 22)
+        url = ''
+        coins = {}
+        coin = "dolar"
+        entities = {
+            "galicia": "BANCO DE GALICIA Y BUENOS AIRES S.A.U."
+        }
+
+        content = '''<table class="table table-BCRA table-bordered table-hover\
+                table-responsive" colspan="3">
+                <thead>
+                </thead>
+                </table>
+                '''
+
+        scraper = BCRATCEScraper(url, coins, entities, False)
+        result = scraper.parse_content(
+            content, start_date, end_date, coin, entities
+        )
+
+        assert result == []
+
+    def test_get_intermediate_panel_data_from_parsed(self):
+        entities = {
+            "galicia": "BANCO DE GALICIA Y BUENOS AIRES S.A.U."
+        }
+        parsed = [
+            {
+                'indice_tiempo': date(2019, 4, 22),
+                'tc_ars_dolar_galicia_mostrador_compra_11hs': '41.800',
+                'tc_ars_dolar_galicia_mostrador_compra_13hs': '41.900',
+                'tc_ars_dolar_galicia_mostrador_compra_15hs': '41.900',
+                'tc_ars_dolar_galicia_electronico_compra_11hs': '41.800',
+                'tc_ars_dolar_galicia_electronico_compra_13hs': '41.900',
+                'tc_ars_dolar_galicia_electronico_compra_15hs': '41.900',
+                'tc_ars_dolar_galicia_mostrador_venta_11hs': '43.800',
+                'tc_ars_dolar_galicia_mostrador_venta_13hs': '43.900',
+                'tc_ars_dolar_galicia_mostrador_venta_15hs': '43.900',
+                'tc_ars_dolar_galicia_electronico_venta_11hs': '43.800',
+                'tc_ars_dolar_galicia_electronico_venta_13hs': '43.900',
+                'tc_ars_dolar_galicia_electronico_venta_15hs': '43.900'
+            },
+            {
+                'indice_tiempo': date(2019, 4, 22),
+                'tc_ars_euro_galicia_mostrador_compra_11hs': '46.600',
+                'tc_ars_euro_galicia_mostrador_compra_13hs': '46.600',
+                'tc_ars_euro_galicia_mostrador_compra_15hs': '46.600',
+                'tc_ars_euro_galicia_electronico_compra_11hs': '0.0',
+                'tc_ars_euro_galicia_electronico_compra_13hs': '0.0',
+                'tc_ars_euro_galicia_electronico_compra_15hs': '0.0',
+                'tc_ars_euro_galicia_mostrador_venta_11hs': '49.000',
+                'tc_ars_euro_galicia_mostrador_venta_13hs': '49.000',
+                'tc_ars_euro_galicia_mostrador_venta_15hs': '49.000',
+                'tc_ars_euro_galicia_electronico_venta_11hs': '0.0',
+                'tc_ars_euro_galicia_electronico_venta_13hs': '0.0',
+                'tc_ars_euro_galicia_electronico_venta_15hs': '0.0'
+            }
+        ]
+
+        url = ''
+        coins = {
+            'dolar': 'DOLAR',
+            'euro': 'EURO'
+        }
+
+        scraper = BCRATCEScraper(url, coins, entities, True)
+
+        result = scraper.get_intermediate_panel_data_from_parsed(parsed)
+
+        assert result == [
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'dolar',
+                    'entity': 'galicia',
+                    'channel': 'mostrador',
+                    'flow': 'compra',
+                    'hour': '11hs',
+                    'value': '41.800'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'dolar',
+                    'entity': 'galicia',
+                    'channel': 'mostrador',
+                    'flow': 'compra',
+                    'hour': '13hs',
+                    'value': '41.900'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'dolar',
+                    'entity': 'galicia',
+                    'channel': 'mostrador',
+                    'flow': 'compra',
+                    'hour': '15hs',
+                    'value': '41.900'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'dolar',
+                    'entity': 'galicia',
+                    'channel': 'electronico',
+                    'flow': 'compra',
+                    'hour': '11hs',
+                    'value': '41.800'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'dolar',
+                    'entity': 'galicia',
+                    'channel': 'electronico',
+                    'flow': 'compra',
+                    'hour': '13hs',
+                    'value': '41.900'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'dolar',
+                    'entity': 'galicia',
+                    'channel': 'electronico',
+                    'flow': 'compra',
+                    'hour': '15hs',
+                    'value': '41.900'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'dolar',
+                    'entity': 'galicia',
+                    'channel': 'mostrador',
+                    'flow': 'venta',
+                    'hour': '11hs',
+                    'value': '43.800'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'dolar',
+                    'entity': 'galicia',
+                    'channel': 'mostrador',
+                    'flow': 'venta',
+                    'hour': '13hs',
+                    'value': '43.900'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'dolar',
+                    'entity': 'galicia',
+                    'channel': 'mostrador',
+                    'flow': 'venta',
+                    'hour': '15hs',
+                    'value': '43.900'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'dolar',
+                    'entity': 'galicia',
+                    'channel': 'electronico',
+                    'flow': 'venta',
+                    'hour': '11hs',
+                    'value': '43.800'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'dolar',
+                    'entity': 'galicia',
+                    'channel': 'electronico',
+                    'flow': 'venta',
+                    'hour': '13hs',
+                    'value': '43.900'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'dolar',
+                    'entity': 'galicia',
+                    'channel': 'electronico',
+                    'flow': 'venta',
+                    'hour': '15hs',
+                    'value': '43.900'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'euro',
+                    'entity': 'galicia',
+                    'channel': 'mostrador',
+                    'flow': 'compra',
+                    'hour': '11hs',
+                    'value': '46.600'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'euro',
+                    'entity': 'galicia',
+                    'channel': 'mostrador',
+                    'flow': 'compra',
+                    'hour': '13hs',
+                    'value': '46.600'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'euro',
+                    'entity': 'galicia',
+                    'channel': 'mostrador',
+                    'flow': 'compra',
+                    'hour': '15hs',
+                    'value': '46.600'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'euro',
+                    'entity': 'galicia',
+                    'channel': 'electronico',
+                    'flow': 'compra',
+                    'hour': '11hs',
+                    'value': '0.0'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'euro',
+                    'entity': 'galicia',
+                    'channel': 'electronico',
+                    'flow': 'compra',
+                    'hour': '13hs',
+                    'value': '0.0'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'euro',
+                    'entity': 'galicia',
+                    'channel': 'electronico',
+                    'flow': 'compra',
+                    'hour': '15hs',
+                    'value': '0.0'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'euro',
+                    'entity': 'galicia',
+                    'channel': 'mostrador',
+                    'flow': 'venta',
+                    'hour': '11hs',
+                    'value': '49.000'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'euro',
+                    'entity': 'galicia',
+                    'channel': 'mostrador',
+                    'flow': 'venta',
+                    'hour': '13hs',
+                    'value': '49.000'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'euro',
+                    'entity': 'galicia',
+                    'channel': 'mostrador',
+                    'flow': 'venta',
+                    'hour': '15hs',
+                    'value': '49.000'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'euro',
+                    'entity': 'galicia',
+                    'channel': 'electronico',
+                    'flow': 'venta',
+                    'hour': '11hs',
+                    'value': '0.0'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'euro',
+                    'entity': 'galicia',
+                    'channel': 'electronico',
+                    'flow': 'venta',
+                    'hour': '13hs',
+                    'value': '0.0'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'euro',
+                    'entity': 'galicia',
+                    'channel': 'electronico',
+                    'flow': 'venta',
+                    'hour': '15hs',
+                    'value': '0.0'
+                }
+            ]
+
+    def test_parse_from_intermediate_panel(self):
+        """Probar parseo desde el archivo intermedio"""
+
+        start_date = '2019-04-22'
+        end_date = '2019-04-22'
+
+        coins = {
+            'dolar': 'DOLAR',
+            'euro': 'EURO'
+        }
+        url = ''
+
+        entities = {
+            "galicia": "BANCO DE GALICIA Y BUENOS AIRES S.A.U."
+        }
+
+        intermediate_panel_df = MagicMock()
+        intermediate_panel_df = {
+            'indice_tiempo': [
+                '2019-04-22', '2019-04-22', '2019-04-22',
+                '2019-04-22', '2019-04-22', '2019-04-22',
+                '2019-04-22', '2019-04-22', '2019-04-22',
+                '2019-04-22', '2019-04-22', '2019-04-22',
+                '2019-04-22', '2019-04-22', '2019-04-22',
+                '2019-04-22', '2019-04-22', '2019-04-22',
+                '2019-04-22', '2019-04-22', '2019-04-22',
+                '2019-04-22', '2019-04-22', '2019-04-22'
+            ],
+            'coin': [
+                'dolar', 'dolar', 'dolar',
+                'dolar', 'dolar', 'dolar',
+                'dolar', 'dolar', 'dolar',
+                'dolar', 'dolar', 'dolar',
+                'euro', 'euro', 'euro',
+                'euro', 'euro', 'euro',
+                'euro', 'euro', 'euro',
+                'euro', 'euro', 'euro'
+            ],
+            'entity': [
+                'galicia', 'galicia', 'galicia',
+                'galicia', 'galicia', 'galicia',
+                'galicia', 'galicia', 'galicia',
+                'galicia', 'galicia', 'galicia',
+                'galicia', 'galicia', 'galicia',
+                'galicia', 'galicia', 'galicia',
+                'galicia', 'galicia', 'galicia',
+                'galicia', 'galicia', 'galicia'
+            ],
+            'channel': [
+                'mostrador', 'mostrador', 'mostrador',
+                'electronico', 'electronico', 'electronico',
+                'mostrador', 'mostrador', 'mostrador',
+                'electronico', 'electronico', 'electronico',
+                'mostrador', 'mostrador', 'mostrador',
+                'electronico', 'electronico', 'electronico',
+                'mostrador', 'mostrador', 'mostrador',
+                'electronico', 'electronico', 'electronico'
+            ],
+            'flow': [
+                'compra', 'compra', 'compra',
+                'compra', 'compra', 'compra',
+                'venta', 'venta', 'venta',
+                'venta', 'venta', 'venta',
+                'compra', 'compra', 'compra',
+                'compra', 'compra', 'compra',
+                'venta', 'venta', 'venta',
+                'venta', 'venta', 'venta'
+            ],
+            'hour': [
+                '11hs', '13hs', '15hs',
+                '11hs', '13hs', '15hs',
+                '11hs', '13hs', '15hs',
+                '11hs', '13hs', '15hs',
+                '11hs', '13hs', '15hs',
+                '11hs', '13hs', '15hs',
+                '11hs', '13hs', '15hs',
+                '11hs', '13hs', '15hs'
+            ],
+            'value': [
+                '41.800', '41.900', '41.900',
+                '41.800', '41.900', '41.900',
+                '43.800', '43.900', '43.900',
+                '43.800', '43.900', '43.900',
+                '46.600', '46.600', '46.600',
+                '0.0', '0.0', '0.0',
+                '49.000', '49.000', '49.000',
+                '0.0', '0.0', '0.0'
+            ]
+        }
+
+        with patch.object(
+            BCRATCEScraper,
+            'read_intermediate_panel_dataframe',
+            return_value=pd.DataFrame(data=intermediate_panel_df)
+        ):
+
+            scraper = BCRATCEScraper(url, coins, entities, True)
+            content = scraper.parse_from_intermediate_panel(
+                start_date, end_date,
+                )
+
+            assert content == {
+                    'dolar':
+                    [
+                        {
+                            'indice_tiempo': '2019-04-22',
+                            'tc_ars_dolar_galicia_' +
+                            'mostrador_compra_11hs': '41.800',
+                            'tc_ars_dolar_galicia_' +
+                            'mostrador_compra_13hs': '41.900',
+                            'tc_ars_dolar_galicia_' +
+                            'mostrador_compra_15hs': '41.900',
+                            'tc_ars_dolar_galicia_' +
+                            'electronico_compra_11hs': '41.800',
+                            'tc_ars_dolar_galicia_' +
+                            'electronico_compra_13hs': '41.900',
+                            'tc_ars_dolar_galicia_' +
+                            'electronico_compra_15hs': '41.900',
+                            'tc_ars_dolar_galicia_' +
+                            'mostrador_venta_11hs': '43.800',
+                            'tc_ars_dolar_galicia_' +
+                            'mostrador_venta_13hs': '43.900',
+                            'tc_ars_dolar_galicia_' +
+                            'mostrador_venta_15hs': '43.900',
+                            'tc_ars_dolar_galicia_' +
+                            'electronico_venta_11hs': '43.800',
+                            'tc_ars_dolar_galicia_' +
+                            'electronico_venta_13hs': '43.900',
+                            'tc_ars_dolar_galicia_' +
+                            'electronico_venta_15hs': '43.900'
+                        }
+                    ],
+                    'euro':
+                    [
+                        {
+                            'indice_tiempo': '2019-04-22',
+                            'tc_ars_euro_galicia_' +
+                            'mostrador_compra_11hs': '46.600',
+                            'tc_ars_euro_galicia_' +
+                            'mostrador_compra_13hs': '46.600',
+                            'tc_ars_euro_galicia_' +
+                            'mostrador_compra_15hs': '46.600',
+                            'tc_ars_euro_galicia_' +
+                            'electronico_compra_11hs': '0.0',
+                            'tc_ars_euro_galicia_' +
+                            'electronico_compra_13hs': '0.0',
+                            'tc_ars_euro_galicia_' +
+                            'electronico_compra_15hs': '0.0',
+                            'tc_ars_euro_galicia_' +
+                            'mostrador_venta_11hs': '49.000',
+                            'tc_ars_euro_galicia_' +
+                            'mostrador_venta_13hs': '49.000',
+                            'tc_ars_euro_galicia_' +
+                            'mostrador_venta_15hs': '49.000',
+                            'tc_ars_euro_galicia_' +
+                            'electronico_venta_11hs': '0.0',
+                            'tc_ars_euro_galicia_' +
+                            'electronico_venta_13hs': '0.0',
+                            'tc_ars_euro_galicia_' +
+                            'electronico_venta_15hs': '0.0'
+                        }
+                    ]
+                }
+
+    def test_parse_from_intermediate_panel_empty_values(self):
+        """Probar parseo desde el archivo intermedio"""
+
+        start_date = '2019-04-22'
+        end_date = '2019-04-22'
+
+        coins = {
+            'dolar': 'DOLAR',
+            'euro': 'EURO'
+        }
+        url = ''
+
+        entities = {
+            "galicia": "BANCO DE GALICIA Y BUENOS AIRES S.A.U.",
+            "frances": "BBVA BANCO FRANCES S.A."
+        }
+
+        intermediate_panel_df = MagicMock()
+        intermediate_panel_df = {
+            'indice_tiempo': [
+                '2019-04-22', '2019-04-22', '2019-04-22',
+                '2019-04-22', '2019-04-22', '2019-04-22',
+                '2019-04-22', '2019-04-22', '2019-04-22',
+                '2019-04-22', '2019-04-22', '2019-04-22',
+                '2019-04-22', '2019-04-22', '2019-04-22',
+                '2019-04-22', '2019-04-22', '2019-04-22',
+                '2019-04-22', '2019-04-22', '2019-04-22',
+                '2019-04-22', '2019-04-22', '2019-04-22'
+            ],
+            'coin': [
+                'dolar', 'dolar', 'dolar',
+                'dolar', 'dolar', 'dolar',
+                'dolar', 'dolar', 'dolar',
+                'dolar', 'dolar', 'dolar',
+                'euro', 'euro', 'euro',
+                'euro', 'euro', 'euro',
+                'euro', 'euro', 'euro',
+                'euro', 'euro', 'euro'
+            ],
+            'entity': [
+                'galicia', 'galicia', 'galicia',
+                'galicia', 'galicia', 'galicia',
+                'galicia', 'galicia', 'galicia',
+                'galicia', 'galicia', 'galicia',
+                'galicia', 'galicia', 'galicia',
+                'galicia', 'galicia', 'galicia',
+                'galicia', 'galicia', 'galicia',
+                'galicia', 'galicia', 'galicia'
+            ],
+            'channel': [
+                'mostrador', 'mostrador', 'mostrador',
+                'electronico', 'electronico', 'electronico',
+                'mostrador', 'mostrador', 'mostrador',
+                'electronico', 'electronico', 'electronico',
+                'mostrador', 'mostrador', 'mostrador',
+                'electronico', 'electronico', 'electronico',
+                'mostrador', 'mostrador', 'mostrador',
+                'electronico', 'electronico', 'electronico'
+            ],
+            'flow': [
+                'compra', 'compra', 'compra',
+                'compra', 'compra', 'compra',
+                'venta', 'venta', 'venta',
+                'venta', 'venta', 'venta',
+                'compra', 'compra', 'compra',
+                'compra', 'compra', 'compra',
+                'venta', 'venta', 'venta',
+                'venta', 'venta', 'venta'
+            ],
+            'hour': [
+                '11hs', '13hs', '15hs',
+                '11hs', '13hs', '15hs',
+                '11hs', '13hs', '15hs',
+                '11hs', '13hs', '15hs',
+                '11hs', '13hs', '15hs',
+                '11hs', '13hs', '15hs',
+                '11hs', '13hs', '15hs',
+                '11hs', '13hs', '15hs'
+            ],
+            'value': [
+                '41.800', '41.900', '41.900',
+                '41.800', '41.900', '41.900',
+                '43.800', '43.900', '43.900',
+                '43.800', '43.900', '43.900',
+                '46.600', '46.600', '46.600',
+                '0.0', '0.0', '0.0',
+                '49.000', '49.000', '49.000',
+                '0.0', '0.0', '0.0'
+            ]
+        }
+
+        with patch.object(
+            BCRATCEScraper,
+            'read_intermediate_panel_dataframe',
+            return_value=pd.DataFrame(data=intermediate_panel_df)
+        ):
+
+            scraper = BCRATCEScraper(url, coins, entities, True)
+            content = scraper.parse_from_intermediate_panel(
+                start_date, end_date,
+                )
+
+            assert content == {
+                    'dolar':
+                    [
+                        {
+                            'indice_tiempo': '2019-04-22',
+                            'tc_ars_dolar_galicia_' +
+                            'mostrador_compra_11hs': '41.800',
+                            'tc_ars_dolar_galicia_' +
+                            'mostrador_compra_13hs': '41.900',
+                            'tc_ars_dolar_galicia_' +
+                            'mostrador_compra_15hs': '41.900',
+                            'tc_ars_dolar_galicia_' +
+                            'electronico_compra_11hs': '41.800',
+                            'tc_ars_dolar_galicia_' +
+                            'electronico_compra_13hs': '41.900',
+                            'tc_ars_dolar_galicia_' +
+                            'electronico_compra_15hs': '41.900',
+                            'tc_ars_dolar_galicia_' +
+                            'mostrador_venta_11hs': '43.800',
+                            'tc_ars_dolar_galicia_' +
+                            'mostrador_venta_13hs': '43.900',
+                            'tc_ars_dolar_galicia_' +
+                            'mostrador_venta_15hs': '43.900',
+                            'tc_ars_dolar_galicia_' +
+                            'electronico_venta_11hs': '43.800',
+                            'tc_ars_dolar_galicia_' +
+                            'electronico_venta_13hs': '43.900',
+                            'tc_ars_dolar_galicia_' +
+                            'electronico_venta_15hs': '43.900'
+                        }
+                    ],
+                    'euro':
+                    [
+                        {
+                            'indice_tiempo': '2019-04-22',
+                            'tc_ars_euro_galicia_' +
+                            'mostrador_compra_11hs': '46.600',
+                            'tc_ars_euro_galicia_' +
+                            'mostrador_compra_13hs': '46.600',
+                            'tc_ars_euro_galicia_' +
+                            'mostrador_compra_15hs': '46.600',
+                            'tc_ars_euro_galicia_' +
+                            'electronico_compra_11hs': '0.0',
+                            'tc_ars_euro_galicia_' +
+                            'electronico_compra_13hs': '0.0',
+                            'tc_ars_euro_galicia_' +
+                            'electronico_compra_15hs': '0.0',
+                            'tc_ars_euro_galicia_' +
+                            'mostrador_venta_11hs': '49.000',
+                            'tc_ars_euro_galicia_' +
+                            'mostrador_venta_13hs': '49.000',
+                            'tc_ars_euro_galicia_' +
+                            'mostrador_venta_15hs': '49.000',
+                            'tc_ars_euro_galicia_' +
+                            'electronico_venta_11hs': '0.0',
+                            'tc_ars_euro_galicia_' +
+                            'electronico_venta_13hs': '0.0',
+                            'tc_ars_euro_galicia_' +
+                            'electronico_venta_15hs': '0.0'
+                        }
+                    ]
+                }
+
+    def test_preprocessed_rows(self):
+        coins = {
+            'dolar': 'DOLAR',
+            'euro': 'EURO'
+        }
+        url = ''
+
+        entities = {
+            "galicia": "BANCO DE GALICIA Y BUENOS AIRES S.A.U."
+        }
+        rows = [
+            {
+                'indice_tiempo': '2019-04-12',
+                'tc_ars_dolar_galicia_mostrador_compra_11hs': '41.500',
+                'tc_ars_dolar_galicia_mostrador_compra_13hs': '41.300',
+                'tc_ars_dolar_galicia_mostrador_compra_15hs': '41.300',
+                'tc_ars_dolar_galicia_electronico_compra_11hs': '41.500',
+                'tc_ars_dolar_galicia_electronico_compra_13hs': '41.300',
+                'tc_ars_dolar_galicia_electronico_compra_15hs': '41.300',
+                'tc_ars_dolar_galicia_mostrador_venta_11hs': '43.500',
+                'tc_ars_dolar_galicia_mostrador_venta_13hs': '43.300',
+                'tc_ars_dolar_galicia_mostrador_venta_15hs': '43.300',
+                'tc_ars_dolar_galicia_electronico_venta_11hs': '43.500',
+                'tc_ars_dolar_galicia_electronico_venta_13hs': '43.300',
+                'tc_ars_dolar_galicia_electronico_venta_15hs': '43.300'
+            },
+            {
+                'indice_tiempo': '2019-04-12',
+                'tc_ars_euro_galicia_mostrador_compra_11hs': '47.000',
+                'tc_ars_euro_galicia_mostrador_compra_13hs': '47.000',
+                'tc_ars_euro_galicia_mostrador_compra_15hs': '47.000',
+                'tc_ars_euro_galicia_electronico_compra_11hs': '0.0',
+                'tc_ars_euro_galicia_electronico_compra_13hs': '0.0',
+                'tc_ars_euro_galicia_electronico_compra_15hs': '0.0',
+                'tc_ars_euro_galicia_mostrador_venta_11hs': '49.400',
+                'tc_ars_euro_galicia_mostrador_venta_13hs': '49.400',
+                'tc_ars_euro_galicia_mostrador_venta_15hs': '49.400',
+                'tc_ars_euro_galicia_electronico_venta_11hs': '0.0',
+                'tc_ars_euro_galicia_electronico_venta_13hs': '0.0',
+                'tc_ars_euro_galicia_electronico_venta_15hs': '0.0'
+            }
+        ]
+
+        scraper = BCRATCEScraper(url, coins, entities, True)
+        result = scraper.preprocess_rows(rows)
+
+        assert result == [
+            {
+                'indice_tiempo': date(2019, 4, 12),
+                'tc_ars_dolar_galicia_' +
+                'mostrador_compra_11hs': Decimal('41.500'),
+                'tc_ars_dolar_galicia_' +
+                'mostrador_compra_13hs': Decimal('41.300'),
+                'tc_ars_dolar_galicia_' +
+                'mostrador_compra_15hs': Decimal('41.300'),
+                'tc_ars_dolar_galicia_' +
+                'electronico_compra_11hs': Decimal('41.500'),
+                'tc_ars_dolar_galicia_' +
+                'electronico_compra_13hs': Decimal('41.300'),
+                'tc_ars_dolar_galicia_' +
+                'electronico_compra_15hs': Decimal('41.300'),
+                'tc_ars_dolar_galicia_' +
+                'mostrador_venta_11hs': Decimal('43.500'),
+                'tc_ars_dolar_galicia_' +
+                'mostrador_venta_13hs': Decimal('43.300'),
+                'tc_ars_dolar_galicia_' +
+                'mostrador_venta_15hs': Decimal('43.300'),
+                'tc_ars_dolar_galicia_' +
+                'electronico_venta_11hs': Decimal('43.500'),
+                'tc_ars_dolar_galicia_' +
+                'electronico_venta_13hs': Decimal('43.300'),
+                'tc_ars_dolar_galicia_' +
+                'electronico_venta_15hs': Decimal('43.300')
+            },
+            {
+                'indice_tiempo': date(2019, 4, 12),
+                'tc_ars_euro_galicia_' +
+                'mostrador_compra_11hs': Decimal('47.000'),
+                'tc_ars_euro_galicia_' +
+                'mostrador_compra_13hs': Decimal('47.000'),
+                'tc_ars_euro_galicia_' +
+                'mostrador_compra_15hs': Decimal('47.000'),
+                'tc_ars_euro_galicia_' +
+                'electronico_compra_11hs': Decimal('0.0'),
+                'tc_ars_euro_galicia_' +
+                'electronico_compra_13hs': Decimal('0.0'),
+                'tc_ars_euro_galicia_' +
+                'electronico_compra_15hs': Decimal('0.0'),
+                'tc_ars_euro_galicia_' +
+                'mostrador_venta_11hs': Decimal('49.400'),
+                'tc_ars_euro_galicia_' +
+                'mostrador_venta_13hs': Decimal('49.400'),
+                'tc_ars_euro_galicia_' +
+                'mostrador_venta_15hs': Decimal('49.400'),
+                'tc_ars_euro_galicia_' +
+                'electronico_venta_11hs': Decimal('0.0'),
+                'tc_ars_euro_galicia_' +
+                'electronico_venta_13hs': Decimal('0.0'),
+                'tc_ars_euro_galicia_' +
+                'electronico_venta_15hs': Decimal('0.0')
+            }
+        ]
+
+    def test_preprocessed_rows_variants(self):
+        coins = {
+            'dolar': 'DOLAR',
+            'euro': 'EURO'
+        }
+        url = ''
+
+        entities = {
+            "galicia": "BANCO DE GALICIA Y BUENOS AIRES S.A.U."
+        }
+
+        rows = rows = [
+            {
+                'indice_tiempo': '12/04/2019',
+                'tc_ars_dolar_galicia_mostrador_compra_11hs': '41.500',
+                'tc_ars_dolar_galicia_mostrador_compra_13hs': '41.300',
+                'tc_ars_dolar_galicia_mostrador_compra_15hs': '41.300',
+                'tc_ars_dolar_galicia_electronico_compra_11hs': '41.500',
+                'tc_ars_dolar_galicia_electronico_compra_13hs': '41.300',
+                'tc_ars_dolar_galicia_electronico_compra_15hs': '41.300',
+                'tc_ars_dolar_galicia_mostrador_venta_11hs': '43.500',
+                'tc_ars_dolar_galicia_mostrador_venta_13hs': '43.300',
+                'tc_ars_dolar_galicia_mostrador_venta_15hs': '43.300',
+                'tc_ars_dolar_galicia_electronico_venta_11hs': '43.500',
+                'tc_ars_dolar_galicia_electronico_venta_13hs': '43.300',
+                'tc_ars_dolar_galicia_electronico_venta_15hs': '43.300'
+            },
+            {
+                'indice_tiempo': '12/04/2019',
+                'tc_ars_euro_galicia_mostrador_compra_11hs': '47.000',
+                'tc_ars_euro_galicia_mostrador_compra_13hs': '47.000',
+                'tc_ars_euro_galicia_mostrador_compra_15hs': '47.000',
+                'tc_ars_euro_galicia_electronico_compra_11hs': '0.0',
+                'tc_ars_euro_galicia_electronico_compra_13hs': '0.0',
+                'tc_ars_euro_galicia_electronico_compra_15hs': '0.0',
+                'tc_ars_euro_galicia_mostrador_venta_11hs': '49.400',
+                'tc_ars_euro_galicia_mostrador_venta_13hs': '49.400',
+                'tc_ars_euro_galicia_mostrador_venta_15hs': '49.400',
+                'tc_ars_euro_galicia_electronico_venta_11hs': '0.0',
+                'tc_ars_euro_galicia_electronico_venta_13hs': '0.0',
+                'tc_ars_euro_galicia_electronico_venta_15hs': '0.0'
+            }
+        ]
+        scraper = BCRATCEScraper(url, coins, entities, True)
+
+        result = scraper.preprocess_rows(rows)
+
+        assert result == [
+            {
+                'indice_tiempo': date(2019, 4, 12),
+                'tc_ars_dolar_galicia_' +
+                'mostrador_compra_11hs': Decimal('41.500'),
+                'tc_ars_dolar_galicia_' +
+                'mostrador_compra_13hs': Decimal('41.300'),
+                'tc_ars_dolar_galicia_' +
+                'mostrador_compra_15hs': Decimal('41.300'),
+                'tc_ars_dolar_galicia_' +
+                'electronico_compra_11hs': Decimal('41.500'),
+                'tc_ars_dolar_galicia_' +
+                'electronico_compra_13hs': Decimal('41.300'),
+                'tc_ars_dolar_galicia_' +
+                'electronico_compra_15hs': Decimal('41.300'),
+                'tc_ars_dolar_galicia_' +
+                'mostrador_venta_11hs': Decimal('43.500'),
+                'tc_ars_dolar_galicia_' +
+                'mostrador_venta_13hs': Decimal('43.300'),
+                'tc_ars_dolar_galicia_' +
+                'mostrador_venta_15hs': Decimal('43.300'),
+                'tc_ars_dolar_galicia_' +
+                'electronico_venta_11hs': Decimal('43.500'),
+                'tc_ars_dolar_galicia_' +
+                'electronico_venta_13hs': Decimal('43.300'),
+                'tc_ars_dolar_galicia_' +
+                'electronico_venta_15hs': Decimal('43.300')
+            },
+            {
+                'indice_tiempo': date(2019, 4, 12),
+                'tc_ars_euro_galicia_' +
+                'mostrador_compra_11hs': Decimal('47.000'),
+                'tc_ars_euro_galicia_' +
+                'mostrador_compra_13hs': Decimal('47.000'),
+                'tc_ars_euro_galicia_' +
+                'mostrador_compra_15hs': Decimal('47.000'),
+                'tc_ars_euro_galicia_' +
+                'electronico_compra_11hs': Decimal('0.0'),
+                'tc_ars_euro_galicia_' +
+                'electronico_compra_13hs': Decimal('0.0'),
+                'tc_ars_euro_galicia_' +
+                'electronico_compra_15hs': Decimal('0.0'),
+                'tc_ars_euro_galicia_' +
+                'mostrador_venta_11hs': Decimal('49.400'),
+                'tc_ars_euro_galicia_' +
+                'mostrador_venta_13hs': Decimal('49.400'),
+                'tc_ars_euro_galicia_' +
+                'mostrador_venta_15hs': Decimal('49.400'),
+                'tc_ars_euro_galicia_' +
+                'electronico_venta_11hs': Decimal('0.0'),
+                'tc_ars_euro_galicia_' +
+                'electronico_venta_13hs': Decimal('0.0'),
+                'tc_ars_euro_galicia_' +
+                'electronico_venta_15hs': Decimal('0.0')
             }
         ]

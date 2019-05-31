@@ -20,6 +20,7 @@ from bcra_scraper import (
 
 # TODO: test me!
 def write_file(file_name, header, rows):
+
     with open(file_name, 'w') as archivo:
         writer = DictWriter(archivo, fieldnames=header)
         writer.writeheader()
@@ -158,7 +159,6 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel,
         csv_name = 'tasas-libor.csv'
 
         processed_header = scraper.preprocess_header(scraper.rates)
-
         write_file(csv_name, processed_header, parsed)
 
     except InvalidConfigurationError as err:
@@ -349,7 +349,7 @@ def tce(ctx, config, start_date, end_date, use_intermediate_panel):
 
         if parsed:
             for coin in ['dolar', 'euro']:
-                csv_header = ['indice_tiempo', 'coin']
+                csv_header = ['indice_tiempo']
                 for entity in config.get('entities'):
                     for channel in ['mostrador', 'electronico']:
                         for flow in ['compra', 'venta']:
