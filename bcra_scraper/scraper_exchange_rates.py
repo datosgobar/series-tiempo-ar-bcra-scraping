@@ -1,5 +1,5 @@
 from csv import DictWriter
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from functools import reduce
 
@@ -120,6 +120,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
             raise InvalidConfigurationError(
                 'La conexion de internet ha fallado'
             )
+
         elem.send_keys(start_date.strftime("%d/%m/%Y"))
         element = browser_driver.find_element_by_name('Moneda')
         options = element.find_elements_by_tag_name('option')
@@ -131,6 +132,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
                 'btn-primary')
             submit_button.click()
             content = browser_driver.page_source
+
             return content
 
     def parse_contents(self, content, start_date, end_date):
@@ -228,6 +230,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
                 parsed['tp_usd'] = cols[1].text[5:].strip()
                 parsed['tc_local'] = cols[2].text[5:].strip()
                 parsed_contents.append(parsed)
+
         return parsed_contents
 
     def _preprocess_rows(self, parsed):
@@ -415,3 +418,16 @@ class BCRAExchangeRateScraper(BCRAScraper):
             )
 
         return intermediate_panel_dataframe
+
+    def preprocess_start_date(self, start_date):
+        browser_driver = self.get_browser_driver()
+        browser_driver.get(self.url)
+        element_present = EC.presence_of_element_located(
+            (By.NAME, 'Fecha')
+        )
+        elem = WebDriverWait(browser_driver, 0).until(element_present)
+
+        while (not (start_date.strftime("%d/%m/%Y") in elem.text) and start_date < datetime.today()):
+            start_date = start_date + timedelta(days=1)
+
+        return start_date

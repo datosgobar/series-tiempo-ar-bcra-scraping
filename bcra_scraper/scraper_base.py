@@ -112,23 +112,11 @@ class BCRAScraper:
 
         raise NotImplementedError
 
-    # def run(self, start_date, end_date):
-    #     """
-    #     Obtiene los contenidos a ser parseados y devuelve un iterable con la
-    #     información scrapeada
+    def preprocess_start_date(self, start_date):
+        return start_date
 
-    #     Parameters
-    #     ----------
-    #     start_date : date
-    #         fecha de inicio que va a tomar como referencia el scraper
-    #     end_date: date
-    #         fecha de fin que va a tomar como referencia el scraper
-    #     """
-
-    #     contents = self.fetch_contents(start_date, end_date)
-    #     parsed = self.parse_contents(contents)
-
-    #     return parsed
+    def preprocess_end_date(self, end_date):
+        return end_date
 
     def run(self, start_date, end_date):
         """
@@ -147,6 +135,8 @@ class BCRAScraper:
             fecha de fin que va a tomar como referencia el scraper
         """
         parsed = []
+        start_date = self.preprocess_start_date(start_date)
+        end_date = self.preprocess_end_date(end_date)
 
         if self.use_intermediate_panel:
             first_date = start_date.strftime("%Y-%m-%d")

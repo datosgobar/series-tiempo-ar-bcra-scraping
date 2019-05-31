@@ -170,14 +170,15 @@ class BCRALiborScraper(BCRAScraper):
         for row in rows:
             validation_list = {}
             cols = row.find_all('td')
-            validation_list[cols[0].text] = cols[1].text
+            if cols[0].text in self.rates.keys():
+                validation_list[cols[0].text] = cols[1].text
 
-            for r in validation_list.keys():
-                valid = self.rates_config_validator(r, self.rates)
-                if valid:
-                    parsed[cols[0].text] = cols[1].text
-                else:
-                    continue
+                for r in validation_list.keys():
+                    valid = self.rates_config_validator(r, self.rates)
+                    if valid:
+                        parsed[cols[0].text] = cols[1].text
+                    else:
+                        continue
 
         return parsed
 
@@ -227,9 +228,12 @@ class BCRALiborScraper(BCRAScraper):
             )
 
             for rate in rates:
-                preprocessed_row[rates[rate]] = Decimal(
-                    str(row[rate]).replace(',', '.')
-                )/100
+                if rate in row:
+                    preprocessed_row[rates[rate]] = Decimal(
+                        str(row[rate]).replace(',', '.')
+                    )/100
+                else:
+                    preprocessed_row[rates[rate]] = None
 
             preprocessed_rows.append(preprocessed_row)
         return preprocessed_rows
