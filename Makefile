@@ -1,97 +1,18 @@
-.PHONY: clean clean-test clean-pyc clean-build docs help dist
-.DEFAULT_GOAL := help
-define BROWSER_PYSCRIPT
-import os, webbrowser, sys
-try:
-	from urllib import pathname2url
-except:
-	from urllib.request import pathname2url
+clean:
+	rm -rf bcra_scraper.egg-info
+	rm -rf .cache
+	rm -rf .pytest_cache
 
-webbrowser.open("file://" + pathname2url(os.path.abspath(sys.argv[1])))
-endef
-export BROWSER_PYSCRIPT
+all: libor exchange-rates sml tce
 
-define PRINT_HELP_PYSCRIPT
-import re, sys
+libor:
+	bcra_scraper libor --start-date=01/04/2019
 
-for line in sys.stdin:
-	match = re.match(r'^([a-zA-Z_-]+):.*?## (.*)$$', line)
-	if match:
-		target, help = match.groups()
-		print("%-20s %s" % (target, help))
-endef
-export PRINT_HELP_PYSCRIPT
-BROWSER := python -c "$$BROWSER_PYSCRIPT"
+exchange-rates:
+	bcra_scraper exchange-rates --start-date=01/04/2019
 
-help:
-	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
+sml:
+	bcra_scraper sml --start-date=01/04/2019
 
-clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
-
-
-clean-build: ## remove build artifacts
-	rm -fr build/
-	rm -fr dist/
-	rm -fr .eggs/
-	find . -name '*.egg-info' -exec rm -fr {} +
-	find . -name '*.egg' -exec rm -f {} +
-
-clean-pyc: ## remove Python file artifacts
-	find . -name '*.pyc' -exec rm -f {} +
-	find . -name '*.pyo' -exec rm -f {} +
-	find . -name '*~' -exec rm -f {} +
-	find . -name '__pycache__' -exec rm -fr {} +
-
-clean-test: ## remove test and coverage artifacts
-	rm -fr .tox/
-	rm -f .coverage
-	rm -fr htmlcov/
-
-lint: ## check style with flake8
-	flake8 bcra_scraper tests
-
-test: ## run tests quickly with the default Python
-	py.test
-	
-
-test-all: ## run tests on every Python version with tox
-	tox
-
-coverage: ## check code coverage quickly with the default Python
-	coverage run --source bcra_scraper -m pytest
-	
-		coverage report -m
-		coverage html
-		$(BROWSER) htmlcov/index.html
-
-docs: ## generate Sphinx HTML documentation, including API docs
-	cp README.md docs/README.md
-	cp HISTORY.md docs/HISTORY.md
-	rm -f docs/bcra_scraper.rst
-	rm -f docs/modules.rst
-	sphinx-apidoc -o docs/ bcra_scraper
-	$(MAKE) -C docs clean
-	$(MAKE) -C docs html
-	$(BROWSER) docs/_build/html/index.html
-
-servedocs: docs ## compile the docs watching for changes
-	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
-
-dist: clean ## builds source and wheel package
-	python setup.py sdist
-	python setup.py bdist_wheel
-	ls -l dist
-
-install: clean ## install the package to the active Python's site-packages
-	python setup.py install
-
-pypi: dist ## register the package to PyPi get travis ready to deploy to pip
-	twine upload dist/*
-	python travis_pypi_setup.py
-
-release: dist ## package and upload a release
-	twine upload dist/*
-
-doctoc: ## generate table of contents, doctoc command line tool required
-        ## https://github.com/thlorenz/doctoc
-	doctoc --title "## Indice" README.md
+tce:
+	bcra_scraper tce --start-date=01/04/2019

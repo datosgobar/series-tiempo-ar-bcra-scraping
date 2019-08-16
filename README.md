@@ -48,6 +48,8 @@ Usar https://github.com/pyenv/pyenv-installer
 * Para ejecutar el scraper es necesario tener chromedriver en el PATH, de manera que el script pueda ejecutarlo.
 
     brew cask install chromedriver
+o
+    brew cask reinstall chromedriver
 
 ## Uso
 ### Básico
