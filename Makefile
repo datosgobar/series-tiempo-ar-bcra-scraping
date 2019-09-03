@@ -1,3 +1,11 @@
+# Makefile para Ubuntu 16.04
+SHELL = /bin/bash
+SERIES_TIEMPO_PIP ?= pip
+SERIES_TIEMPO_PYTHON ?= python
+VIRTUALENV = series-tiempo-ar-bcra-scraping
+CONDA_ENV = series-tiempo-ar-bcra-scraping
+ACTIVATE = /home/seriesbcra/miniconda3/bin/activate
+
 clean:
 	rm -rf bcra_scraper.egg-info
 	rm -rf .cache
@@ -5,29 +13,30 @@ clean:
 
 all_short: libor_short exchange_rates_short sml_short tce_short
 all: libor exchange_rates sml tce
+all_local: libor_local exchange_rates_local sml_local tce_local
 
 # desde una fecha cercana (para pruebas rápidas)
-libor_short:
+libor_short_local:
 	bcra_scraper libor --start-date=01/08/2019
 
-exchange_rates_short:
+exchange_rates_short_local:
 	bcra_scraper exchange-rates --start-date=01/08/2019
 
-sml_short:
+sml_short_local:
 	bcra_scraper sml --start-date=01/08/2019
 
-tce_short:
+tce_short_local:
 	bcra_scraper tce --start-date=01/08/2019
 
 # desde la fecha más lejana posible en cada caso
 libor:
-	bcra_scraper libor --start-date=05/01/2018
+	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper libor --start-date=05/01/2018
 
 exchange_rates:
-	bcra_scraper exchange-rates --start-date=31/01/1935
+	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper exchange-rates --start-date=31/01/1935
 
 sml:
-	bcra_scraper sml --start-date=03/10/2008
+	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper sml --start-date=03/10/2008
 
 tce:
-	bcra_scraper tce --start-date=05/01/2018
+	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper tce --start-date=05/01/2018
