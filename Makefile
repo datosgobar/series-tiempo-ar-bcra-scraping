@@ -21,13 +21,13 @@ tce_short:
 
 # desde la fecha más lejana posible en cada caso
 libor:
-	bcra_scraper libor --start-date=01/04/2019
+	bcra_scraper libor --start-date=05/01/2018
 
 exchange_rates:
-	bcra_scraper exchange-rates --start-date=01/04/2019
+	bcra_scraper exchange-rates --start-date=31/01/1935
 
 sml:
-	bcra_scraper sml --start-date=01/04/2019
+	bcra_scraper sml --start-date=03/10/2008
 
 tce:
-	bcra_scraper tce --start-date=01/04/2019
+	bcra_scraper tce --start-date=05/01/2018
