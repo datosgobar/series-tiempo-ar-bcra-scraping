@@ -11,21 +11,20 @@ clean:
 	rm -rf .cache
 	rm -rf .pytest_cache
 
-all_short: libor_short exchange_rates_short sml_short tce_short
-all: libor exchange_rates sml tce
 all_local: libor_local exchange_rates_local sml_local tce_local
+all: libor exchange_rates sml tce
 
 # desde una fecha cercana (para pruebas rápidas)
-libor_short_local:
+libor_local:
 	bcra_scraper libor --start-date=01/08/2019
 
-exchange_rates_short_local:
+exchange_rates_local:
 	bcra_scraper exchange-rates --start-date=01/08/2019
 
-sml_short_local:
+sml_local:
 	bcra_scraper sml --start-date=01/08/2019
 
-tce_short_local:
+tce_local:
 	bcra_scraper tce --start-date=01/08/2019
 
 # desde la fecha más lejana posible en cada caso
