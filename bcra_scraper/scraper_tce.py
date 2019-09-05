@@ -2,6 +2,7 @@ from csv import DictWriter
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from functools import reduce
+import os
 
 from bs4 import BeautifulSoup
 from pandas import pandas as pd
@@ -52,7 +53,7 @@ class BCRATCEScraper(BCRAScraper):
         y los devuelve en un iterable
     """
 
-    def __init__(self, url, coins, entities, *args, **kwargs):
+    def __init__(self, url, coins, entities, intermediate_panel_path, *args, **kwargs):
         """
         Parameters
         ----------
@@ -67,6 +68,7 @@ class BCRATCEScraper(BCRAScraper):
         """
         self.coins = coins
         self.entities = entities
+        self.intermediate_panel_path = intermediate_panel_path
         super(BCRATCEScraper, self)\
             .__init__(url, *args, **kwargs)
 
@@ -278,7 +280,7 @@ class BCRATCEScraper(BCRAScraper):
                             parsed[coin].append(parsed_row)
         return parsed
 
-    def write_intermediate_panel(self, rows):
+    def write_intermediate_panel(self, rows, intermediate_panel_path):
         """
         Escribe el panel intermedio.
 
@@ -296,7 +298,7 @@ class BCRATCEScraper(BCRAScraper):
             'value'
         ]
 
-        with open('.tce-intermediate-panel.csv', 'w') as intermediate_panel:
+        with open(intermediate_panel_path, 'w') as intermediate_panel:
             writer = DictWriter(intermediate_panel, fieldnames=header)
             writer.writeheader()
             writer.writerows(rows)
@@ -339,7 +341,7 @@ class BCRATCEScraper(BCRAScraper):
         intermediate_panel_data = self.get_intermediate_panel_data_from_parsed(
             _parsed
         )
-        self.write_intermediate_panel(intermediate_panel_data)
+        self.write_intermediate_panel(intermediate_panel_data, self.intermediate_panel_path)
 
     def parse_contents(self, contents, start_date, end_date):
         """

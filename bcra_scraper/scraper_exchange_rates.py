@@ -2,6 +2,7 @@ from csv import DictWriter
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from functools import reduce
+import os
 
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -48,7 +49,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
         y los devuelve en un iterable
     """
 
-    def __init__(self, url, coins, *args, **kwargs):
+    def __init__(self, url, coins, intermediate_panel_path, *args, **kwargs):
         """
         Parameters
         ----------
@@ -60,6 +61,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
             Diccionario que contiene los plazos en días de la tasa Libor
         """
         self.coins = coins
+        self.intermediate_panel_path = intermediate_panel_path
         super(BCRAExchangeRateScraper, self)\
             .__init__(url, *args, **kwargs)
 
@@ -279,7 +281,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
         return preprocessed_rows
 
-    def write_intermediate_panel(self, rows):
+    def write_intermediate_panel(self, rows, intermediate_panel_path):
         """
         Escribe el panel intermedio.
 
@@ -288,9 +290,8 @@ class BCRAExchangeRateScraper(BCRAScraper):
         rows: Iterable
         """
         header = ['indice_tiempo', 'coin', 'type', 'value']
-        file_name = '.exchange-rates-intermediate-panel.csv'
 
-        with open(file_name, 'w') as intermediate_panel:
+        with open(intermediate_panel_path, 'w') as intermediate_panel:
             writer = DictWriter(intermediate_panel, fieldnames=header)
             writer.writeheader()
             writer.writerows(rows)
@@ -335,7 +336,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
         intermediate_panel_data = self.get_intermediate_panel_data_from_parsed(
             parsed
         )
-        self.write_intermediate_panel(intermediate_panel_data)
+        self.write_intermediate_panel(intermediate_panel_data, self.intermediate_panel_path)
 
     def parse_from_intermediate_panel(self, start_date, end_date):
         """
