@@ -139,12 +139,8 @@ def cli(ctx):
     help=('Use este flag para forzar la lectura de datos desde un'
           'archivo intermedio')
 )
-@click.option(
-    '--file-path',
-    type=str
-)
 @click.pass_context
-def libor(ctx, start_date, end_date, config, use_intermediate_panel, file_path,
+def libor(ctx, start_date, end_date, config, use_intermediate_panel,
           *args, **kwargs):
     validate_dates(start_date, end_date)
     start_date = date(start_date.year, start_date.month, start_date.day)
