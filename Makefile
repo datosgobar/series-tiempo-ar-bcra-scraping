@@ -14,6 +14,34 @@ clean:
 all_local: libor_local exchange_rates_local sml_local tce_local
 all: libor exchange_rates sml tce
 
+install_anaconda:
+	wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+	bash Miniconda3-latest-Linux-x86_64.sh
+	rm Miniconda3-latest-Linux-x86_64.sh
+	export PATH=$$PATH:/home/series/miniconda3/bin
+
+setup_anaconda:
+	conda create -n $(CONDA_ENV) python=3.7 --no-default-packages
+	source $(ACTIVATE) $(CONDA_ENV); $(SERIES_TIEMPO_PIP) install -e .
+
+setup_anaconda_local:
+	conda create -n $(CONDA_ENV) python=3.7 --no-default-packages
+	source activate $(CONDA_ENV); $(SERIES_TIEMPO_PIP) install -e .
+
+setup_virtualenv:
+	test -d $(VIRTUALENV)/bin/activate || $(SERIES_TIEMPO_PYTHON) -m venv $(VIRTUALENV)
+	source $(VIRTUALENV)/bin/activate; \
+		$(SERIES_TIEMPO_PIP) install -r requirements.txt
+
+update_environment:
+	git pull
+	source $(ACTIVATE) $(CONDA_ENV); $(SERIES_TIEMPO_PIP) install -r requirements.txt --upgrade
+
+update_environment_local:
+	git pull
+	source activate $(CONDA_ENV); $(SERIES_TIEMPO_PIP) install -r requirements.txt --upgrade
+
+
 # desde una fecha cercana (para pruebas rápidas)
 libor_local:
 	bcra_scraper libor --start-date=05/01/2018
