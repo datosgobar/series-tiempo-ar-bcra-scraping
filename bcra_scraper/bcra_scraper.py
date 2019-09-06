@@ -301,10 +301,7 @@ def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel, tp
 
             write_file(csv_header, parsed['tp_usd'], tp_file_path)
 
-            csv_header = ['indice_tiempo']
-            csv_header.extend([v for v in coins.keys()])
-
-            write_file(csv_header, parsed['tp_usd'], tc_file_path)
+            write_file(csv_header, parsed['tc_local'], tc_file_path)
 
         else:
             click.echo("No se encontraron resultados")
