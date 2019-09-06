@@ -18,7 +18,7 @@ install_anaconda:
 	wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
 	bash Miniconda3-latest-Linux-x86_64.sh
 	rm Miniconda3-latest-Linux-x86_64.sh
-	export PATH=$$PATH:/home/series/miniconda3/bin
+	export PATH=$$PATH:/home/seriesbcra/miniconda3/bin
 
 setup_anaconda:
 	conda create -n $(CONDA_ENV) python=3.7 --no-default-packages
