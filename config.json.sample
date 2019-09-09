@@ -1,6 +1,6 @@
 {
     "libor": {
-        "file_path": "/home/tmp/tasas-libor.csv",
+        "libor_file_path": "/home/tmp/tasas-libor.csv",
         "intermediate_panel_path": "tmp/libor-intermediate-panel.csv",
         "url": "http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp",
         "rates": {

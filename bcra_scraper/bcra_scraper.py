@@ -155,28 +155,22 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel, libor_csv_p
     end_date = date(end_date.year, end_date.month, end_date.day)
     try:
         config = read_config(file_path=config, command=ctx.command.name)
-        if libor_csv_path:
-            file_path = (
-                         libor_csv_path
-                         if libor_csv_path.startswith('/')
-                         else os.path.join(ROOT_DIR, libor_csv_path)
-                        )
-        else:
-            file_path = (
-                config['file_path']
-                if config['file_path'].startswith('/')
-                else os.path.join(ROOT_DIR, config['file_path'])
-            )
+
+        libor_file_path = libor_csv_path or config['libor_file_path']
+        libor_file_path = (
+            libor_file_path
+            if libor_file_path.startswith('/')
+            else os.path.join(ROOT_DIR, libor_file_path)
+        )
 
         intermediate_panel_path = intermediate_panel_path or config['intermediate_panel_path']
-
         intermediate_panel_path = (
             intermediate_panel_path
             if intermediate_panel_path.startswith('/')
             else os.path.join(ROOT_DIR, intermediate_panel_path)
         )
 
-        if os.path.isdir(file_path):
+        if os.path.isdir(libor_file_path):
             click.echo('Error: el path ingresado para tasas libor es un directorio')
             exit()
         elif os.path.isdir(intermediate_panel_path):
@@ -184,7 +178,7 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel, libor_csv_p
             exit()
 
         ensure_dir_exists(os.path.split(intermediate_panel_path)[0])
-        ensure_dir_exists(os.path.split(file_path)[0])
+        ensure_dir_exists(os.path.split(libor_file_path)[0])
 
         validate_url_config(config)
         validate_url_has_value(config)
@@ -202,7 +196,7 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel, libor_csv_p
 
         processed_header = scraper.preprocess_header(scraper.rates)
 
-        write_file(processed_header, parsed, file_path)
+        write_file(processed_header, parsed, libor_file_path)
 
     except InvalidConfigurationError as err:
         click.echo(err)
