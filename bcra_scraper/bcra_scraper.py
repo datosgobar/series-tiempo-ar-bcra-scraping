@@ -109,6 +109,18 @@ def validate_entities_key_has_values(config):
     if entities == {}:
         raise InvalidConfigurationError("No existen valores para entities")
 
+def validate_file_path(file_path, config, file_path_key):
+    try:
+        file_path = file_path or config.get(file_path_key)
+        file_path = (
+            file_path
+            if file_path.startswith('/')
+            else os.path.join(ROOT_DIR, file_path)
+        )
+    except:
+        raise InvalidConfigurationError(f"Error: No hay configuración para {file_path_key}")
+    return file_path
+
 
 @click.group()
 @click.pass_context
@@ -155,20 +167,8 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel, libor_csv_p
     end_date = date(end_date.year, end_date.month, end_date.day)
     try:
         config = read_config(file_path=config, command=ctx.command.name)
-
-        libor_file_path = libor_csv_path or config['libor_file_path']
-        libor_file_path = (
-            libor_file_path
-            if libor_file_path.startswith('/')
-            else os.path.join(ROOT_DIR, libor_file_path)
-        )
-
-        intermediate_panel_path = intermediate_panel_path or config['intermediate_panel_path']
-        intermediate_panel_path = (
-            intermediate_panel_path
-            if intermediate_panel_path.startswith('/')
-            else os.path.join(ROOT_DIR, intermediate_panel_path)
-        )
+        libor_file_path = validate_file_path(libor_csv_path, config, file_path_key='libor_file_path')
+        intermediate_panel_path = validate_file_path(intermediate_panel_path, config, file_path_key='intermediate_panel_path')
 
         if os.path.isdir(libor_file_path):
             click.echo('Error: el path ingresado para tasas libor es un directorio')
@@ -249,26 +249,9 @@ def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel,
         validate_coins_key_has_values(config)
         validate_dates(start_date, end_date)
 
-        tp_file_path = tp_csv_path or config['tp_file_path']
-        tp_file_path = (
-            tp_file_path
-            if tp_file_path.startswith('/')
-            else os.path.join(ROOT_DIR, tp_file_path)
-        )
-
-        tc_file_path = tc_csv_path or config['tc_file_path']
-        tc_file_path = (
-            tc_file_path
-            if tc_file_path.startswith('/')
-            else os.path.join(ROOT_DIR, tc_file_path)
-        )
-
-        intermediate_panel_path = intermediate_panel_path or config['intermediate_panel_path']
-        intermediate_panel_path = (
-            intermediate_panel_path
-            if intermediate_panel_path.startswith('/')
-            else os.path.join(ROOT_DIR, intermediate_panel_path)
-        )
+        tp_file_path = validate_file_path(tp_csv_path, config, file_path_key='tp_file_path')
+        tc_file_path = validate_file_path(tc_csv_path, config, file_path_key='tc_file_path')
+        intermediate_panel_path = validate_file_path(intermediate_panel_path, config, file_path_key='intermediate_panel_path')
 
         if os.path.isdir(tp_file_path):
             click.echo('Error: el path ingresado para tipo de pase usd es un directorio')
@@ -355,26 +338,9 @@ def sml(ctx, config, start_date, end_date, use_intermediate_panel, uruguayo_csv_
         validate_coins_key_has_values(config)
         validate_dates(start_date, end_date)
 
-        peso_uruguayo_file_path = uruguayo_csv_path or config['peso_uruguayo_file_path']
-        peso_uruguayo_file_path = (
-            peso_uruguayo_file_path
-            if peso_uruguayo_file_path.startswith('/')
-            else os.path.join(ROOT_DIR, peso_uruguayo_file_path)
-        )
-
-        real_file_path = real_csv_path or config['real_file_path']
-        real_file_path = (
-            real_file_path
-            if real_file_path.startswith('/')
-            else os.path.join(ROOT_DIR, real_file_path)
-        )
-
-        intermediate_panel_path = intermediate_panel_path or config['intermediate_panel_path']
-        intermediate_panel_path = (
-            intermediate_panel_path
-            if intermediate_panel_path.startswith('/')
-            else os.path.join(ROOT_DIR, intermediate_panel_path)
-        )
+        peso_uruguayo_file_path = validate_file_path(uruguayo_csv_path, config, file_path_key='peso_uruguayo_file_path')
+        real_file_path = validate_file_path(real_csv_path, config, file_path_key='real_file_path')
+        intermediate_panel_path = validate_file_path(intermediate_panel_path, config, file_path_key='intermediate_panel_path')
 
         if os.path.isdir(peso_uruguayo_file_path):
             click.echo('Error: el path ingresado para peso uruguayo es un directorio')
@@ -481,26 +447,9 @@ def tce(ctx, config, start_date, end_date, use_intermediate_panel, dolar_csv_pat
         validate_entities_key_config(config)
         validate_entities_key_has_values(config)
 
-        dolar_file_path = dolar_csv_path or config['dolar_file_path']
-        dolar_file_path = (
-            dolar_file_path
-            if dolar_file_path.startswith('/')
-            else os.path.join(ROOT_DIR, dolar_file_path)
-        )
-
-        euro_file_path = euro_csv_path or config['euro_file_path']
-        euro_file_path = (
-            euro_file_path
-            if euro_file_path.startswith('/')
-            else os.path.join()
-        )
-
-        intermediate_panel_path = intermediate_panel_path or config['intermediate_panel_path']
-        intermediate_panel_path = (
-            intermediate_panel_path
-            if intermediate_panel_path.startswith('/')
-            else os.path.join(ROOT_DIR, intermediate_panel_path)
-        )
+        dolar_file_path = validate_file_path(dolar_csv_path, config, file_path_key='dolar_file_path')
+        euro_file_path = validate_file_path(euro_csv_path, config, file_path_key='euro_file_path')
+        intermediate_panel_path = validate_file_path(intermediate_panel_path, config, file_path_key='intermediate_panel_path')
 
         if os.path.isdir(dolar_file_path):
             click.echo('Error: el path ingresado para dolar es un directorio')
