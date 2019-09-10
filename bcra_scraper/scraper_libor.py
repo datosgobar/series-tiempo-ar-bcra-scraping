@@ -2,6 +2,7 @@ from csv import DictWriter
 from datetime import date, timedelta
 from decimal import Decimal
 from functools import reduce
+import os
 
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.keys import Keys
@@ -58,7 +59,7 @@ class BCRALiborScraper(BCRAScraper):
         y los devuelve en un iterable
     """
 
-    def __init__(self, url, rates, *args, **kwargs):
+    def __init__(self, url, rates, intermediate_panel_path, *args, **kwargs):
         """
         Parameters
         ----------
@@ -70,6 +71,7 @@ class BCRALiborScraper(BCRAScraper):
             Diccionario que contiene los plazos en días de la tasa Libor
         """
         self.rates = rates
+        self.intermediate_panel_path = intermediate_panel_path
 
         super(BCRALiborScraper, self).__init__(url, *args, **kwargs)
 
@@ -299,7 +301,7 @@ class BCRALiborScraper(BCRAScraper):
         ]
         return intermediate_panel_data
 
-    def write_intermediate_panel(self, rows):
+    def write_intermediate_panel(self, rows, intermediate_panel_path):
         """
         Escribe el panel intermedio.
 
@@ -309,7 +311,7 @@ class BCRALiborScraper(BCRAScraper):
         """
         header = ['indice_tiempo', 'type', 'value']
 
-        with open('.libor-intermediate-panel.csv', 'w') as intermediate_panel:
+        with open(os.path.join(intermediate_panel_path), 'w') as intermediate_panel:
             writer = DictWriter(intermediate_panel, fieldnames=header)
             writer.writeheader()
             writer.writerows(rows)
@@ -326,7 +328,7 @@ class BCRALiborScraper(BCRAScraper):
         intermediate_panel_data = self.get_intermediate_panel_data_from_parsed(
             parsed
         )
-        self.write_intermediate_panel(intermediate_panel_data)
+        self.write_intermediate_panel(intermediate_panel_data, self.intermediate_panel_path)
 
     def parse_from_intermediate_panel(self, start_date, end_date):
         """

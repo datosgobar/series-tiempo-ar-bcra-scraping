@@ -1,97 +1,69 @@
-.PHONY: clean clean-test clean-pyc clean-build docs help dist
-.DEFAULT_GOAL := help
-define BROWSER_PYSCRIPT
-import os, webbrowser, sys
-try:
-	from urllib import pathname2url
-except:
-	from urllib.request import pathname2url
+# Makefile para Ubuntu 16.04
+SHELL = /bin/bash
+SERIES_TIEMPO_PIP ?= pip
+SERIES_TIEMPO_PYTHON ?= python
+VIRTUALENV = series-tiempo-ar-bcra-scraping
+CONDA_ENV = series-tiempo-ar-bcra-scraping
+ACTIVATE = /home/seriesbcra/miniconda3/bin/activate
 
-webbrowser.open("file://" + pathname2url(os.path.abspath(sys.argv[1])))
-endef
-export BROWSER_PYSCRIPT
+clean:
+	rm -rf bcra_scraper.egg-info
+	rm -rf .cache
+	rm -rf .pytest_cache
 
-define PRINT_HELP_PYSCRIPT
-import re, sys
+all_local: libor_local exchange_rates_local sml_local tce_local
+all: libor exchange_rates sml tce
 
-for line in sys.stdin:
-	match = re.match(r'^([a-zA-Z_-]+):.*?## (.*)$$', line)
-	if match:
-		target, help = match.groups()
-		print("%-20s %s" % (target, help))
-endef
-export PRINT_HELP_PYSCRIPT
-BROWSER := python -c "$$BROWSER_PYSCRIPT"
+install_anaconda:
+	wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+	bash Miniconda3-latest-Linux-x86_64.sh
+	rm Miniconda3-latest-Linux-x86_64.sh
+	export PATH=$$PATH:/home/seriesbcra/miniconda3/bin
 
-help:
-	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
+setup_anaconda:
+	conda create -n $(CONDA_ENV) python=3.7 --no-default-packages
+	source $(ACTIVATE) $(CONDA_ENV); $(SERIES_TIEMPO_PIP) install -e .
 
-clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
+setup_anaconda_local:
+	conda create -n $(CONDA_ENV) python=3.7 --no-default-packages
+	source activate $(CONDA_ENV); $(SERIES_TIEMPO_PIP) install -e .
+
+setup_virtualenv:
+	test -d $(VIRTUALENV)/bin/activate || $(SERIES_TIEMPO_PYTHON) -m venv $(VIRTUALENV)
+	source $(VIRTUALENV)/bin/activate; \
+		$(SERIES_TIEMPO_PIP) install -r requirements.txt
+
+update_environment:
+	git pull
+	source $(ACTIVATE) $(CONDA_ENV); $(SERIES_TIEMPO_PIP) install -r requirements.txt --upgrade
+
+update_environment_local:
+	git pull
+	source activate $(CONDA_ENV); $(SERIES_TIEMPO_PIP) install -r requirements.txt --upgrade
 
 
-clean-build: ## remove build artifacts
-	rm -fr build/
-	rm -fr dist/
-	rm -fr .eggs/
-	find . -name '*.egg-info' -exec rm -fr {} +
-	find . -name '*.egg' -exec rm -f {} +
+# desde una fecha cercana (para pruebas rápidas)
+libor_local:
+	bcra_scraper libor --start-date=05/01/2018
 
-clean-pyc: ## remove Python file artifacts
-	find . -name '*.pyc' -exec rm -f {} +
-	find . -name '*.pyo' -exec rm -f {} +
-	find . -name '*~' -exec rm -f {} +
-	find . -name '__pycache__' -exec rm -fr {} +
+exchange_rates_local:
+	bcra_scraper exchange-rates --start-date=01/08/2019
 
-clean-test: ## remove test and coverage artifacts
-	rm -fr .tox/
-	rm -f .coverage
-	rm -fr htmlcov/
+sml_local:
+	bcra_scraper sml --start-date=01/08/2019
 
-lint: ## check style with flake8
-	flake8 bcra_scraper tests
+tce_local:
+	bcra_scraper tce --start-date=05/01/2018
 
-test: ## run tests quickly with the default Python
-	py.test
-	
+# desde la fecha más lejana posible en cada caso
+libor:
+	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper libor --start-date=03/01/2001
 
-test-all: ## run tests on every Python version with tox
-	tox
+exchange_rates:
+	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper exchange-rates --start-date=31/01/1935
 
-coverage: ## check code coverage quickly with the default Python
-	coverage run --source bcra_scraper -m pytest
-	
-		coverage report -m
-		coverage html
-		$(BROWSER) htmlcov/index.html
+sml:
+	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper sml --start-date=03/10/2008
 
-docs: ## generate Sphinx HTML documentation, including API docs
-	cp README.md docs/README.md
-	cp HISTORY.md docs/HISTORY.md
-	rm -f docs/bcra_scraper.rst
-	rm -f docs/modules.rst
-	sphinx-apidoc -o docs/ bcra_scraper
-	$(MAKE) -C docs clean
-	$(MAKE) -C docs html
-	$(BROWSER) docs/_build/html/index.html
-
-servedocs: docs ## compile the docs watching for changes
-	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
-
-dist: clean ## builds source and wheel package
-	python setup.py sdist
-	python setup.py bdist_wheel
-	ls -l dist
-
-install: clean ## install the package to the active Python's site-packages
-	python setup.py install
-
-pypi: dist ## register the package to PyPi get travis ready to deploy to pip
-	twine upload dist/*
-	python travis_pypi_setup.py
-
-release: dist ## package and upload a release
-	twine upload dist/*
-
-doctoc: ## generate table of contents, doctoc command line tool required
-        ## https://github.com/thlorenz/doctoc
-	doctoc --title "## Indice" README.md
+tce:
+	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper tce --start-date=10/03/2010

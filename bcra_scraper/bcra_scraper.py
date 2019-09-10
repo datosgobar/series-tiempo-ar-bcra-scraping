@@ -5,6 +5,7 @@ from csv import DictWriter
 from datetime import date, datetime
 from json import JSONDecodeError
 import json
+import os
 
 import click
 
@@ -17,14 +18,20 @@ from bcra_scraper import (
     BCRATCEScraper,
 )
 
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 
 # TODO: test me!
-def write_file(file_name, header, rows):
-
-    with open(file_name, 'w') as archivo:
+def write_file(header, rows, file_path):
+    with open(file_path, 'w') as archivo:
         writer = DictWriter(archivo, fieldnames=header)
         writer.writeheader()
         writer.writerows(rows)
+
+
+def ensure_dir_exists(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
 
 def get_default_start_date():
@@ -102,6 +109,18 @@ def validate_entities_key_has_values(config):
     if entities == {}:
         raise InvalidConfigurationError("No existen valores para entities")
 
+def validate_file_path(file_path, config, file_path_key):
+    try:
+        file_path = file_path or config.get(file_path_key)
+        file_path = (
+            file_path
+            if file_path.startswith('/')
+            else os.path.join(ROOT_DIR, file_path)
+        )
+    except:
+        raise InvalidConfigurationError(f"Error: No hay configuración para {file_path_key}")
+    return file_path
+
 
 @click.group()
 @click.pass_context
@@ -132,16 +151,34 @@ def cli(ctx):
     help=('Use este flag para forzar la lectura de datos desde un'
           'archivo intermedio')
 )
+@click.option(
+    '--libor-csv-path',
+    type=str
+)
+@click.option(
+    '--intermediate-panel-path',
+    type=str
+)
 @click.pass_context
-def libor(ctx, start_date, end_date, config, use_intermediate_panel,
-          *args, **kwargs):
-
+def libor(ctx, start_date, end_date, config, use_intermediate_panel, libor_csv_path,
+          intermediate_panel_path, *args, **kwargs):
     validate_dates(start_date, end_date)
     start_date = date(start_date.year, start_date.month, start_date.day)
     end_date = date(end_date.year, end_date.month, end_date.day)
-
     try:
         config = read_config(file_path=config, command=ctx.command.name)
+        libor_file_path = validate_file_path(libor_csv_path, config, file_path_key='libor_file_path')
+        intermediate_panel_path = validate_file_path(intermediate_panel_path, config, file_path_key='intermediate_panel_path')
+
+        if os.path.isdir(libor_file_path):
+            click.echo('Error: el path ingresado para tasas libor es un directorio')
+            exit()
+        elif os.path.isdir(intermediate_panel_path):
+            click.echo('Error: el path ingresado para el panel intermedio es un directorio')
+            exit()
+
+        ensure_dir_exists(os.path.split(intermediate_panel_path)[0])
+        ensure_dir_exists(os.path.split(libor_file_path)[0])
 
         validate_url_config(config)
         validate_url_has_value(config)
@@ -151,15 +188,15 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel,
         scraper = BCRALiborScraper(
             url=config.get('url'),
             rates=config.get('rates'),
-            use_intermediate_panel=use_intermediate_panel
+            use_intermediate_panel=use_intermediate_panel,
+            intermediate_panel_path=intermediate_panel_path,
         )
 
         parsed = scraper.run(start_date, end_date)
 
-        csv_name = 'tasas-libor.csv'
-
         processed_header = scraper.preprocess_header(scraper.rates)
-        write_file(csv_name, processed_header, parsed)
+
+        write_file(processed_header, parsed, libor_file_path)
 
     except InvalidConfigurationError as err:
         click.echo(err)
@@ -188,8 +225,21 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel,
     help=('Use este flag para forzar la lectura de datos desde un'
           'archivo intermedio')
 )
+@click.option(
+    '--tp-csv-path',
+    type=str
+)
+@click.option(
+    '--tc-csv-path',
+    type=str
+)
+@click.option(
+    '--intermediate-panel-path',
+    type=str
+)
 @click.pass_context
-def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel):
+def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel,
+                   tp_csv_path, tc_csv_path, intermediate_panel_path):
 
     try:
         config = read_config(file_path=config, command=ctx.command.name)
@@ -199,27 +249,40 @@ def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel):
         validate_coins_key_has_values(config)
         validate_dates(start_date, end_date)
 
+        tp_file_path = validate_file_path(tp_csv_path, config, file_path_key='tp_file_path')
+        tc_file_path = validate_file_path(tc_csv_path, config, file_path_key='tc_file_path')
+        intermediate_panel_path = validate_file_path(intermediate_panel_path, config, file_path_key='intermediate_panel_path')
+
+        if os.path.isdir(tp_file_path):
+            click.echo('Error: el path ingresado para tipo de pase usd es un directorio')
+            exit()
+        elif os.path.isdir(tc_file_path):
+            click.echo('Error: el path ingresado para tipo de cambio local es un directorio')
+            exit()
+        elif os.path.isdir(intermediate_panel_path):
+            click.echo('Error: el path ingresado para el panel intermedio es un directorio')
+            exit()
+
+        ensure_dir_exists(os.path.split(tp_file_path)[0])
+        ensure_dir_exists(os.path.split(tc_file_path)[0])
+        ensure_dir_exists(os.path.split(intermediate_panel_path)[0])
+
         scraper = BCRAExchangeRateScraper(
             url=config.get('url'),
             coins=config.get('coins'),
-            use_intermediate_panel=use_intermediate_panel
+            use_intermediate_panel=use_intermediate_panel,
+            intermediate_panel_path=intermediate_panel_path
         )
         parsed = scraper.run(start_date, end_date)
 
         if parsed:
             coins = config.get('coins')
-
-            csv_name = 'tipos-pase-usd-series.csv'
             csv_header = ['indice_tiempo']
             csv_header.extend([v for v in coins.keys()])
 
-            write_file(csv_name, csv_header, parsed['tp_usd'])
+            write_file(csv_header, parsed['tp_usd'], tp_file_path)
 
-            csv_name = 'tipos-cambio-local-series.csv'
-            csv_header = ['indice_tiempo']
-            csv_header.extend([v for v in coins.keys()])
-
-            write_file(csv_name, csv_header, parsed['tc_local'])
+            write_file(csv_header, parsed['tc_local'], tc_file_path)
 
         else:
             click.echo("No se encontraron resultados")
@@ -251,8 +314,21 @@ def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel):
     help=('Use este flag para forzar la lectura de datos desde un'
           'archivo intermedio')
     )
+@click.option(
+    '--uruguayo-csv-path',
+    type=str
+)
+@click.option(
+    '--real-csv-path',
+    type=str
+)
+@click.option(
+    '--intermediate-panel-path',
+    type=str
+)
 @click.pass_context
-def sml(ctx, config, start_date, end_date, use_intermediate_panel):
+def sml(ctx, config, start_date, end_date, use_intermediate_panel, uruguayo_csv_path,
+        real_csv_path, intermediate_panel_path):
 
     try:
         config = read_config(file_path=config, command=ctx.command.name)
@@ -262,12 +338,31 @@ def sml(ctx, config, start_date, end_date, use_intermediate_panel):
         validate_coins_key_has_values(config)
         validate_dates(start_date, end_date)
 
+        peso_uruguayo_file_path = validate_file_path(uruguayo_csv_path, config, file_path_key='peso_uruguayo_file_path')
+        real_file_path = validate_file_path(real_csv_path, config, file_path_key='real_file_path')
+        intermediate_panel_path = validate_file_path(intermediate_panel_path, config, file_path_key='intermediate_panel_path')
+
+        if os.path.isdir(peso_uruguayo_file_path):
+            click.echo('Error: el path ingresado para peso uruguayo es un directorio')
+            exit()
+        elif os.path.isdir(real_file_path):
+            click.echo('Error: el path ingresado para real es un directorio')
+            exit()
+        elif os.path.isdir(intermediate_panel_path):
+            click.echo('Error: el path ingresado para el panel intermedio es un directorio')
+            exit()
+
+        ensure_dir_exists(os.path.split(peso_uruguayo_file_path)[0])
+        ensure_dir_exists(os.path.split(real_file_path)[0])
+        ensure_dir_exists(os.path.split(intermediate_panel_path)[0])
+
         scraper = BCRASMLScraper(
             url=config.get('url'),
             coins=config.get('coins'),
-            use_intermediate_panel=use_intermediate_panel
-
+            use_intermediate_panel=use_intermediate_panel,
+            intermediate_panel_path=intermediate_panel_path
         )
+
         parsed = scraper.run(start_date, end_date)
 
         if parsed:
@@ -281,9 +376,9 @@ def sml(ctx, config, start_date, end_date, use_intermediate_panel):
                         'Tipo de cambio SML Peso Uruguayo',
                         'Tipo de cambio SML Uruguayo Peso'
                     ]
-                    csv_name = 'tipos-cambio-peso-uruguayo-series.csv'
 
-                    write_file(csv_name, csv_header, parsed['peso_uruguayo'])
+                    write_file(csv_header, parsed['peso_uruguayo'], peso_uruguayo_file_path)
+
 
                 elif k == 'real':
                     csv_header = [
@@ -293,9 +388,9 @@ def sml(ctx, config, start_date, end_date, use_intermediate_panel):
                         'Tipo de cambio SML Peso Real',
                         'Tipo de cambio SML Real Peso'
                     ]
-                    csv_name = 'tipos-cambio-real-series.csv'
 
-                    write_file(csv_name, csv_header, parsed['real'])
+                    write_file(csv_header, parsed['real'], real_file_path)
+
         else:
             click.echo("No se encontraron resultados")
 
@@ -326,8 +421,21 @@ def sml(ctx, config, start_date, end_date, use_intermediate_panel):
     help=('Use este flag para forzar la lectura de datos desde un'
           'archivo intermedio')
     )
+@click.option(
+    '--dolar-csv-path',
+    type=str
+)
+@click.option(
+    '--euro-csv-path',
+    type=str
+)
+@click.option(
+    '--intermediate-panel-path',
+    type=str
+)
 @click.pass_context
-def tce(ctx, config, start_date, end_date, use_intermediate_panel):
+def tce(ctx, config, start_date, end_date, use_intermediate_panel, dolar_csv_path,
+        euro_csv_path, intermediate_panel_path):
 
     try:
         config = read_config(file_path=config, command=ctx.command.name)
@@ -339,11 +447,30 @@ def tce(ctx, config, start_date, end_date, use_intermediate_panel):
         validate_entities_key_config(config)
         validate_entities_key_has_values(config)
 
+        dolar_file_path = validate_file_path(dolar_csv_path, config, file_path_key='dolar_file_path')
+        euro_file_path = validate_file_path(euro_csv_path, config, file_path_key='euro_file_path')
+        intermediate_panel_path = validate_file_path(intermediate_panel_path, config, file_path_key='intermediate_panel_path')
+
+        if os.path.isdir(dolar_file_path):
+            click.echo('Error: el path ingresado para dolar es un directorio')
+            exit()
+        elif os.path.isdir(euro_file_path):
+            click.echo('Error: el path ingresado para euro es un directorio')
+            exit()
+        elif os.path.isdir(intermediate_panel_path):
+            click.echo('Error: el path ingresado para el panel intermedio es un directorio')
+            exit()
+
+        ensure_dir_exists(os.path.split(dolar_file_path)[0])
+        ensure_dir_exists(os.path.split(euro_file_path)[0])
+        ensure_dir_exists(os.path.split(intermediate_panel_path)[0])
+
         scraper = BCRATCEScraper(
             url=config.get('url'),
             coins=config.get('coins'),
             entities=config.get('entities'),
             use_intermediate_panel=use_intermediate_panel,
+            intermediate_panel_path=intermediate_panel_path
         )
         parsed = scraper.run(start_date, end_date)
 
@@ -358,8 +485,12 @@ def tce(ctx, config, start_date, end_date, use_intermediate_panel):
                                     f'tc_ars_{coin}_{entity}_{channel}_{flow}_{hour}hs'
                                 )
 
-                csv_name = f'tipos-cambio-{coin}-entidades-financieras-series.csv'
-                write_file(csv_name, csv_header, parsed[coin])
+                if coin == 'dolar':
+                    csv_name = dolar_file_path
+                else:
+                    csv_name = euro_file_path
+
+                write_file(csv_header, parsed[coin], csv_name)
 
         else:
             click.echo("No se encontraron resultados")

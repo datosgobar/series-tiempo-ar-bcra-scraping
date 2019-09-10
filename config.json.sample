@@ -1,5 +1,7 @@
 {
     "libor": {
+        "libor_file_path": "/home/tmp/tasas-libor.csv",
+        "intermediate_panel_path": "tmp/libor-intermediate-panel.csv",
         "url": "http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp",
         "rates": {
             "30": "libor_30_dias",
@@ -10,6 +12,9 @@
         }
     },
     "exchange-rates": {
+        "tc_file_path": "/home/tmp/tipos-cambio-local-series.csv",
+        "tp_file_path": "/home/tmp/tipos-pase-usd-series.csv",
+        "intermediate_panel_path": "tmp/exchange-rates-intermediate-panel.csv",
         "url": "http://www.bcra.gov.ar/PublicacionesEstadisticas/Evolucion_moneda.asp",
         "coins": {
             "bolivar_venezolano": "Bolívar Venezolano",
@@ -81,6 +86,9 @@
         }
     },
     "sml": {
+        "peso_uruguayo_file_path": "/home/tmp/tipos-cambio-peso-uruguayo-series.csv",
+        "real_file_path": "/home/tmp/tipos-cambio-real-series.csv",
+        "intermediate_panel_path": "tmp/sml-intermediate-panel.csv",
         "url": "http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_sml.asp",
         "coins": {
             "peso_uruguayo": "Peso Uruguayo",
@@ -88,6 +96,9 @@
         }
     },
     "tce": {
+        "dolar_file_path": "/home/tmp/tipos-cambio-dolar-entidades-financieras-series.csv",
+        "euro_file_path": "/home/tmp/tipos-cambio-euro-entidades-financieras-series.csv",
+        "intermediate_panel_path": "tmp/tce-intermediate-panel.csv",
         "url": "http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_minorista.asp",
         "coins": {
             "dolar": "DOLAR",
