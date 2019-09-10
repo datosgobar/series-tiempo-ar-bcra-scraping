@@ -44,7 +44,7 @@ update_environment_local:
 
 # desde una fecha cercana (para pruebas rápidas)
 libor_local:
-	bcra_scraper libor --start-date=03/01/2019
+	bcra_scraper libor --start-date=19/06/2019
 
 exchange_rates_local:
 	bcra_scraper exchange-rates --start-date=03/01/2019
@@ -58,7 +58,7 @@ tce_local:
 # desde la fecha más lejana posible en cada caso
 libor:
 # 	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper libor --start-date=03/01/2001
-	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper libor --start-date=03/01/2019
+	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper libor --start-date=19/06/2019
 
 exchange_rates:
 # 	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper exchange-rates --start-date=31/01/1935
