@@ -45,9 +45,8 @@ class BCRAScraper:
         """
         self.browser_driver = None
         self.url = url
+        self.timeout = kwargs.get('timeout', None)
         self.use_intermediate_panel = use_intermediate_panel
-
-        super(BCRAScraper, self).__init__(*args, **kwargs)
 
     def _create_browser_driver(self):
         """
@@ -59,6 +58,8 @@ class BCRAScraper:
             options.headless = True
 
             browser_driver = webdriver.Chrome(options=options)
+            if self.timeout:
+                browser_driver.set_page_load_timeout(self.timeout)
 
             return browser_driver
         else:
