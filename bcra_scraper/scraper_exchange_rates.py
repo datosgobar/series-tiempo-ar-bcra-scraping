@@ -2,7 +2,7 @@ from csv import DictWriter
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from functools import reduce
-import os
+import logging
 
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -12,7 +12,7 @@ from bcra_scraper.exceptions import InvalidConfigurationError
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 
 class BCRAExchangeRateScraper(BCRAScraper):
@@ -111,31 +111,52 @@ class BCRAExchangeRateScraper(BCRAScraper):
         coin: str
             Nombre de cada moneda
         """
-        try:
-            browser_driver = self.get_browser_driver()
-            browser_driver.get(self.url)
-            element_present = EC.presence_of_element_located(
-                (By.NAME, 'Fecha')
-            )
-            elem = WebDriverWait(browser_driver, 0).until(element_present)
-        except TimeoutException:
-            raise InvalidConfigurationError(
-                'La conexion de internet ha fallado'
-            )
+        content = ''
+        counter = 1
+        tries = self.tries
 
-        elem.send_keys(start_date.strftime("%d/%m/%Y"))
-        element = browser_driver.find_element_by_name('Moneda')
-        options = element.find_elements_by_tag_name('option')
+        while counter <= tries:
+            try:
+                browser_driver = self.get_browser_driver()
+                browser_driver.get(self.url)
+                element_present = EC.presence_of_element_located(
+                    (By.NAME, 'Fecha')
+                )
+                elem = WebDriverWait(browser_driver, 0).until(element_present)
 
-        valid = self.validate_coin_in_configuration_file(coin, options)
-        if valid:
-            element.send_keys(coin)
-            submit_button = browser_driver.find_element_by_class_name(
-                'btn-primary')
-            submit_button.click()
-            content = browser_driver.page_source
+                elem.send_keys(start_date.strftime("%d/%m/%Y"))
+                element = browser_driver.find_element_by_name('Moneda')
+                options = element.find_elements_by_tag_name('option')
 
-            return content
+                valid = self.validate_coin_in_configuration_file(coin, options)
+                if valid:
+                    element.send_keys(coin)
+                    submit_button = browser_driver.find_element_by_class_name(
+                        'btn-primary')
+                    submit_button.click()
+                    content = browser_driver.page_source
+
+            except TimeoutException:
+                if counter < tries:
+                    logging.warning(
+                        f'La conexion de internet ha fallado para la fecha {start_date}. Reintentando...'
+                    )
+                    counter = counter + 1
+                else:
+                    logging.warning(
+                        f'La conexion de internet ha fallado para la fecha {start_date}'
+                    )
+                    raise InvalidConfigurationError(
+                        f'La conexion de internet ha fallado para la fecha {start_date}'
+                    )
+            except NoSuchElementException:
+                raise InvalidConfigurationError(
+                    f'La conexion de internet ha fallado para la fecha {start_date}'
+                )
+
+            break
+
+        return content
 
     def parse_contents(self, content, start_date, end_date):
         """

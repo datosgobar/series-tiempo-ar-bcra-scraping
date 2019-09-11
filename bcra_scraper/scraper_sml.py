@@ -2,7 +2,7 @@ from csv import DictWriter
 from datetime import date, datetime
 from decimal import Decimal
 from functools import reduce
-import os
+import logging
 
 from bs4 import BeautifulSoup
 
@@ -13,7 +13,7 @@ from bcra_scraper.scraper_base import BCRAScraper
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 
 class BCRASMLScraper(BCRAScraper):
@@ -108,24 +108,45 @@ class BCRASMLScraper(BCRAScraper):
         coins : String
             String que contiene el nombre de la moneda
         """
-        try:
-            browser_driver = self.get_browser_driver()
-            browser_driver.get(self.url)
-            element_present = EC.presence_of_element_located(
-                (By.NAME, 'moneda')
-            )
-            element = WebDriverWait(browser_driver, 0).until(element_present)
-        except TimeoutException:
-            raise InvalidConfigurationError(
-                'La conexion de internet ha fallado'
-            )
+        content = ''
+        counter = 1
+        tries = self.tries
 
-        options = element.find_elements_by_tag_name('option')
-        valid = self.validate_coin_in_configuration_file(coin, options)
-        if valid:
-            element.send_keys(coin)
-            content = browser_driver.page_source
-            return content
+        while counter <= tries:
+            try:
+                browser_driver = self.get_browser_driver()
+                browser_driver.get(self.url)
+                element_present = EC.presence_of_element_located(
+                    (By.NAME, 'moneda')
+                )
+                element = WebDriverWait(browser_driver, 0).until(element_present)
+
+                options = element.find_elements_by_tag_name('option')
+                valid = self.validate_coin_in_configuration_file(coin, options)
+                if valid:
+                    element.send_keys(coin)
+                    content = browser_driver.page_source
+            except TimeoutException:
+                if counter < tries:
+                    logging.warning(
+                        f'La conexion de internet ha fallado para la moneda {coin}. Reintentando...'
+                    )
+                    counter = counter + 1
+                else:
+                    logging.warning(
+                        f'La conexion de internet ha fallado para la moneda {coin}'
+                    )
+                    raise InvalidConfigurationError(
+                        f'La conexion de internet ha fallado para la moneda {coin}'
+                    )
+            except NoSuchElementException:
+                raise InvalidConfigurationError(
+                    f'La conexion de internet ha fallado para la moneda {coin}'
+                )
+
+            break
+
+        return content
 
     def parse_contents(self, contents, start_date, end_date):
         """

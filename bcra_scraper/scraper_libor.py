@@ -2,6 +2,7 @@ from csv import DictWriter
 from datetime import date, timedelta
 from decimal import Decimal
 from functools import reduce
+import logging
 import os
 
 from bs4 import BeautifulSoup
@@ -107,19 +108,40 @@ class BCRALiborScraper(BCRAScraper):
         single_date : date
             fecha que va a tomar como referencia el scraper
         """
-        try:
-            browser_driver = self.get_browser_driver()
-            browser_driver.get(self.url)
-            element_present = EC.presence_of_element_located(
-                (By.NAME, 'fecha')
-            )
-            element = WebDriverWait(browser_driver, 0).until(element_present)
-        except TimeoutException:
-            raise InvalidConfigurationError(
-                'La conexion de internet ha fallado'
-            )
-        element.send_keys(single_date.strftime("%d/%m/%Y") + Keys.RETURN)
-        content = browser_driver.page_source
+        content = ''
+        counter = 1
+        tries = self.tries
+
+        while counter <= tries:
+            try:
+                browser_driver = self.get_browser_driver()
+                browser_driver.get(self.url)
+                element_present = EC.presence_of_element_located(
+                    (By.NAME, 'fecha')
+                )
+                element = WebDriverWait(browser_driver, 0).until(element_present)
+                element.send_keys(single_date.strftime("%d/%m/%Y") + Keys.RETURN)
+
+                content = browser_driver.page_source
+            except TimeoutException:
+                if counter < tries:
+                    logging.warning(
+                        f'La conexion de internet ha fallado para la fecha {single_date}. Reintentando...'
+                    )
+                    counter = counter + 1
+                else:
+                    logging.warning(
+                        f'La conexion de internet ha fallado para la fecha {single_date}'
+                    )
+                    raise InvalidConfigurationError(
+                        f'La conexion de internet ha fallado para la fecha {single_date}'
+                    )
+            except NoSuchElementException:
+                raise InvalidConfigurationError(
+                    f'La conexion de internet ha fallado para la fecha {single_date}'
+                )
+
+            break
 
         return content
 

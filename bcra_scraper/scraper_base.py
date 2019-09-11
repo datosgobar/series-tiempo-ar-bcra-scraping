@@ -46,6 +46,7 @@ class BCRAScraper:
         self.browser_driver = None
         self.url = url
         self.timeout = kwargs.get('timeout', None)
+        self.tries = kwargs.get('tries', 1)
         self.use_intermediate_panel = use_intermediate_panel
 
     def _create_browser_driver(self):

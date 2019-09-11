@@ -192,10 +192,12 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel, libor_csv_p
             int(config.get('timeout'))
             if 'timeout' in config.keys() else None
         )
+        tries = int(config.get('tries', 1))
 
         scraper = BCRALiborScraper(
             url=config.get('url'),
             timeout=timeout,
+            tries=tries,
             rates=config.get('rates'),
             use_intermediate_panel=use_intermediate_panel,
             intermediate_panel_path=intermediate_panel_path,
@@ -281,10 +283,12 @@ def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel,
             int(config.get('timeout'))
             if 'timeout' in config.keys() else None
         )
+        tries = int(config.get('tries', 1))
 
         scraper = BCRAExchangeRateScraper(
             url=config.get('url'),
             timeout=timeout,
+            tries=tries,
             coins=config.get('coins'),
             use_intermediate_panel=use_intermediate_panel,
             intermediate_panel_path=intermediate_panel_path
@@ -377,10 +381,12 @@ def sml(ctx, config, start_date, end_date, use_intermediate_panel, uruguayo_csv_
             int(config.get('timeout'))
             if 'timeout' in config.keys() else None
         )
+        tries = int(config.get('tries', 1))
 
         scraper = BCRASMLScraper(
             url=config.get('url'),
             timeout=timeout,
+            tries=tries,
             coins=config.get('coins'),
             use_intermediate_panel=use_intermediate_panel,
             intermediate_panel_path=intermediate_panel_path
@@ -493,10 +499,12 @@ def tce(ctx, config, start_date, end_date, use_intermediate_panel, dolar_csv_pat
             int(config.get('timeout'))
             if 'timeout' in config.keys() else None
         )
+        tries = int(config.get('tries', 1))
 
         scraper = BCRATCEScraper(
             url=config.get('url'),
             timeout=timeout,
+            tries=tries,
             coins=config.get('coins'),
             entities=config.get('entities'),
             use_intermediate_panel=use_intermediate_panel,
