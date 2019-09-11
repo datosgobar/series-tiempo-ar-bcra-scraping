@@ -417,104 +417,106 @@ class BCRATCEScraper(BCRAScraper):
             Diccionario que contiene el nombre de los bancos
         """
         soup = BeautifulSoup(content, "html.parser")
-
-        table = soup.find(
-            class_='table table-BCRA table-bordered table-hover ' +
-                   'table-responsive'
-        )
-
-        if not table:
-            return []
-
-        head = table.find('thead')
-
-        if not head:
-            return []
-
-        body = table.find('tbody')
-
-        if not body:
-            return []
-
-        header = head.find_all('tr')
-        rows = body.find_all('tr')
-
-        parsed_contents = []
-
-        result = {}
-
         try:
-            for k, v in entities.items():
-                for row in rows:
-                    cols = row.find_all('td')
-                    row_indice_tiempo = \
-                        datetime.strptime(
-                            header[0].text[27:].strip(), '%d/%m/%Y'
-                        )
-                    parsed = {}
+            table = soup.find(
+                class_='table table-BCRA table-bordered table-hover ' +
+                    'table-responsive'
+            )
 
-                    if (start_date <= row_indice_tiempo and
-                            row_indice_tiempo <= end_date):
-                        if cols[0].text.strip() == v:
-                            parsed[
-                                'indice_tiempo'
-                                ] = header[0].text[27:].strip()
-                            parsed[
-                                f'tc_ars_{coin}_{k}_mostrador_compra_11hs'
-                                ] =\
-                                (cols[1].text.strip())
-                            parsed[
-                                f'tc_ars_{coin}_{k}_mostrador_compra_13hs'
-                                ] =\
-                                (cols[5].text.strip())
-                            parsed[
-                                f'tc_ars_{coin}_{k}_mostrador_compra_15hs'
-                                ] =\
-                                (cols[9].text.strip())
-                            parsed[
-                                f'tc_ars_{coin}_{k}_electronico_compra_11hs'
-                                ] =\
-                                (cols[3].text.strip())
-                            parsed[
-                                f'tc_ars_{coin}_{k}_electronico_compra_13hs'
-                                ] =\
-                                (cols[7].text.strip())
-                            parsed[
-                                f'tc_ars_{coin}_{k}_electronico_compra_15hs'
-                                ] =\
-                                (cols[11].text.strip())
-                            parsed[
-                                f'tc_ars_{coin}_{k}_mostrador_venta_11hs'
-                                ] =\
-                                (cols[2].text.strip())
-                            parsed[
-                                f'tc_ars_{coin}_{k}_mostrador_venta_13hs'
-                                ] =\
-                                (cols[6].text.strip())
-                            parsed[
-                                f'tc_ars_{coin}_{k}_mostrador_venta_15hs'
-                                ] =\
-                                (cols[10].text.strip())
-                            parsed[
-                                f'tc_ars_{coin}_{k}_electronico_venta_11hs'
-                                ] =\
-                                (cols[4].text.strip())
-                            parsed[
-                                f'tc_ars_{coin}_{k}_electronico_venta_13hs'
-                                ] =\
-                                (cols[8].text.strip())
-                            parsed[
-                                f'tc_ars_{coin}_{k}_electronico_venta_15hs'
-                                ] =\
-                                (cols[12].text.strip())
+            if not table:
+                return []
 
-                            result.update(parsed)
+            head = table.find('thead')
 
-            parsed_contents.append(result)
-            return parsed_contents
+            if not head:
+                return []
 
-        except InvalidConfigurationError:
-            raise('Error en el content a scrapear')
+            body = table.find('tbody')
+
+            if not body:
+                return []
+
+            header = head.find_all('tr')
+            rows = body.find_all('tr')
+
+            parsed_contents = []
+
+            result = {}
+
+            try:
+                for k, v in entities.items():
+                    for row in rows:
+                        cols = row.find_all('td')
+                        row_indice_tiempo = \
+                            datetime.strptime(
+                                header[0].text[27:].strip(), '%d/%m/%Y'
+                            )
+                        parsed = {}
+
+                        if (start_date <= row_indice_tiempo and
+                                row_indice_tiempo <= end_date):
+                            if cols[0].text.strip() == v:
+                                parsed[
+                                    'indice_tiempo'
+                                    ] = header[0].text[27:].strip()
+                                parsed[
+                                    f'tc_ars_{coin}_{k}_mostrador_compra_11hs'
+                                    ] =\
+                                    (cols[1].text.strip())
+                                parsed[
+                                    f'tc_ars_{coin}_{k}_mostrador_compra_13hs'
+                                    ] =\
+                                    (cols[5].text.strip())
+                                parsed[
+                                    f'tc_ars_{coin}_{k}_mostrador_compra_15hs'
+                                    ] =\
+                                    (cols[9].text.strip())
+                                parsed[
+                                    f'tc_ars_{coin}_{k}_electronico_compra_11hs'
+                                    ] =\
+                                    (cols[3].text.strip())
+                                parsed[
+                                    f'tc_ars_{coin}_{k}_electronico_compra_13hs'
+                                    ] =\
+                                    (cols[7].text.strip())
+                                parsed[
+                                    f'tc_ars_{coin}_{k}_electronico_compra_15hs'
+                                    ] =\
+                                    (cols[11].text.strip())
+                                parsed[
+                                    f'tc_ars_{coin}_{k}_mostrador_venta_11hs'
+                                    ] =\
+                                    (cols[2].text.strip())
+                                parsed[
+                                    f'tc_ars_{coin}_{k}_mostrador_venta_13hs'
+                                    ] =\
+                                    (cols[6].text.strip())
+                                parsed[
+                                    f'tc_ars_{coin}_{k}_mostrador_venta_15hs'
+                                    ] =\
+                                    (cols[10].text.strip())
+                                parsed[
+                                    f'tc_ars_{coin}_{k}_electronico_venta_11hs'
+                                    ] =\
+                                    (cols[4].text.strip())
+                                parsed[
+                                    f'tc_ars_{coin}_{k}_electronico_venta_13hs'
+                                    ] =\
+                                    (cols[8].text.strip())
+                                parsed[
+                                    f'tc_ars_{coin}_{k}_electronico_venta_15hs'
+                                    ] =\
+                                    (cols[12].text.strip())
+
+                                result.update(parsed)
+
+                parsed_contents.append(result)
+                return parsed_contents
+            except InvalidConfigurationError:
+                raise('Error en el content a scrapear')
+        except:
+            return []
+
 
     def _preprocess_rows(self, parsed):
 

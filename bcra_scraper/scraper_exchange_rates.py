@@ -220,41 +220,43 @@ class BCRAExchangeRateScraper(BCRAScraper):
         """
 
         soup = BeautifulSoup(content, "html.parser")
+        try:
+            table = soup.find('table')
 
-        table = soup.find('table')
+            if not table:
+                return []
 
-        if not table:
+            head = table.find('thead')
+
+            if not head:
+                return []
+
+            body = table.find('tbody')
+
+            if not body:
+                return []
+
+            rows = body.find_all('tr')
+            parsed_contents = []
+
+            for row in rows:
+                cols = row.find_all('td')
+                parsed = {}
+
+                row_indice_tiempo = \
+                    datetime.strptime(cols[0].text.strip(), '%d/%m/%Y')
+
+                if (start_date <= row_indice_tiempo and
+                        row_indice_tiempo <= end_date):
+                    parsed['moneda'] = coin
+                    parsed['indice_tiempo'] = cols[0].text.strip()
+                    parsed['tp_usd'] = cols[1].text[5:].strip()
+                    parsed['tc_local'] = cols[2].text[5:].strip()
+                    parsed_contents.append(parsed)
+
+            return parsed_contents
+        except:
             return []
-
-        head = table.find('thead')
-
-        if not head:
-            return []
-
-        body = table.find('tbody')
-
-        if not body:
-            return []
-
-        rows = body.find_all('tr')
-        parsed_contents = []
-
-        for row in rows:
-            cols = row.find_all('td')
-            parsed = {}
-
-            row_indice_tiempo = \
-                datetime.strptime(cols[0].text.strip(), '%d/%m/%Y')
-
-            if (start_date <= row_indice_tiempo and
-                    row_indice_tiempo <= end_date):
-                parsed['moneda'] = coin
-                parsed['indice_tiempo'] = cols[0].text.strip()
-                parsed['tp_usd'] = cols[1].text[5:].strip()
-                parsed['tc_local'] = cols[2].text[5:].strip()
-                parsed_contents.append(parsed)
-
-        return parsed_contents
 
     def _preprocess_rows(self, parsed):
 

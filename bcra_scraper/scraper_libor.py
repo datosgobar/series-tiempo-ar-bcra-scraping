@@ -14,7 +14,7 @@ from bcra_scraper.exceptions import InvalidConfigurationError
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 
 class BCRALiborScraper(BCRAScraper):
@@ -121,7 +121,6 @@ class BCRALiborScraper(BCRAScraper):
                 )
                 element = WebDriverWait(browser_driver, 0).until(element_present)
                 element.send_keys(single_date.strftime("%d/%m/%Y") + Keys.RETURN)
-
                 content = browser_driver.page_source
             except TimeoutException:
                 if counter < tries:
@@ -176,35 +175,34 @@ class BCRALiborScraper(BCRAScraper):
         """
         soup = BeautifulSoup(content, "html.parser")
         parsed = {}
-        table = soup.find('table')
-        head = table.find('thead')
-        body = table.find('tbody')
+        try:
+            table = soup.find('table')
+            head = table.find('thead')
+            body = table.find('tbody')
 
-        if not body:
+            rows = body.find_all('tr')
+
+            parsed['indice_tiempo'] = head.findAll('th')[0].text[14:].strip()
+            splited = parsed['indice_tiempo'].split('/')
+            parsed['indice_tiempo'] = '-'.join(
+                [splited[2], splited[1], splited[0]]
+            )
+
+            for row in rows:
+                validation_list = {}
+                cols = row.find_all('td')
+                if cols[0].text in self.rates.keys():
+                    validation_list[cols[0].text] = cols[1].text
+
+                    for r in validation_list.keys():
+                        valid = self.rates_config_validator(r, self.rates)
+                        if valid:
+                            parsed[cols[0].text] = cols[1].text
+                        else:
+                            continue
             return parsed
-
-        rows = body.find_all('tr')
-
-        parsed['indice_tiempo'] = head.findAll('th')[0].text[14:].strip()
-        splited = parsed['indice_tiempo'].split('/')
-        parsed['indice_tiempo'] = '-'.join(
-            [splited[2], splited[1], splited[0]]
-        )
-
-        for row in rows:
-            validation_list = {}
-            cols = row.find_all('td')
-            if cols[0].text in self.rates.keys():
-                validation_list[cols[0].text] = cols[1].text
-
-                for r in validation_list.keys():
-                    valid = self.rates_config_validator(r, self.rates)
-                    if valid:
-                        parsed[cols[0].text] = cols[1].text
-                    else:
-                        continue
-
-        return parsed
+        except:
+            return parsed
 
     def rates_config_validator(self, parsed, rates):
         """Valida que parsed exista dentro de
