@@ -5,6 +5,7 @@ from csv import DictWriter
 from datetime import date, datetime
 from json import JSONDecodeError
 import json
+import logging
 import os
 
 import click
@@ -109,6 +110,7 @@ def validate_entities_key_has_values(config):
     if entities == {}:
         raise InvalidConfigurationError("No existen valores para entities")
 
+
 def validate_file_path(file_path, config, file_path_key):
     try:
         file_path = file_path or config.get(file_path_key)
@@ -117,7 +119,7 @@ def validate_file_path(file_path, config, file_path_key):
             if file_path.startswith('/')
             else os.path.join(ROOT_DIR, file_path)
         )
-    except:
+    except Exception:
         raise InvalidConfigurationError(f"Error: No hay configuración para {file_path_key}")
     return file_path
 
@@ -166,6 +168,7 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel, libor_csv_p
     start_date = date(start_date.year, start_date.month, start_date.day)
     end_date = date(end_date.year, end_date.month, end_date.day)
     try:
+        logging.basicConfig(level=logging.WARNING)
         config = read_config(file_path=config, command=ctx.command.name)
         libor_file_path = validate_file_path(libor_csv_path, config, file_path_key='libor_file_path')
         intermediate_panel_path = validate_file_path(intermediate_panel_path, config, file_path_key='intermediate_panel_path')
@@ -185,8 +188,16 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel, libor_csv_p
         validate_libor_rates_config(config)
         validate_libor_rates_has_values(config)
 
+        timeout = (
+            int(config.get('timeout'))
+            if 'timeout' in config.keys() else None
+        )
+        tries = int(config.get('tries', 1))
+
         scraper = BCRALiborScraper(
             url=config.get('url'),
+            timeout=timeout,
+            tries=tries,
             rates=config.get('rates'),
             use_intermediate_panel=use_intermediate_panel,
             intermediate_panel_path=intermediate_panel_path,
@@ -242,6 +253,7 @@ def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel,
                    tp_csv_path, tc_csv_path, intermediate_panel_path):
 
     try:
+        logging.basicConfig(level=logging.WARNING)
         config = read_config(file_path=config, command=ctx.command.name)
         validate_url_config(config)
         validate_url_has_value(config)
@@ -267,8 +279,16 @@ def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel,
         ensure_dir_exists(os.path.split(tc_file_path)[0])
         ensure_dir_exists(os.path.split(intermediate_panel_path)[0])
 
+        timeout = (
+            int(config.get('timeout'))
+            if 'timeout' in config.keys() else None
+        )
+        tries = int(config.get('tries', 1))
+
         scraper = BCRAExchangeRateScraper(
             url=config.get('url'),
+            timeout=timeout,
+            tries=tries,
             coins=config.get('coins'),
             use_intermediate_panel=use_intermediate_panel,
             intermediate_panel_path=intermediate_panel_path
@@ -331,6 +351,7 @@ def sml(ctx, config, start_date, end_date, use_intermediate_panel, uruguayo_csv_
         real_csv_path, intermediate_panel_path):
 
     try:
+        logging.basicConfig(level=logging.WARNING)
         config = read_config(file_path=config, command=ctx.command.name)
         validate_url_config(config)
         validate_url_has_value(config)
@@ -356,8 +377,16 @@ def sml(ctx, config, start_date, end_date, use_intermediate_panel, uruguayo_csv_
         ensure_dir_exists(os.path.split(real_file_path)[0])
         ensure_dir_exists(os.path.split(intermediate_panel_path)[0])
 
+        timeout = (
+            int(config.get('timeout'))
+            if 'timeout' in config.keys() else None
+        )
+        tries = int(config.get('tries', 1))
+
         scraper = BCRASMLScraper(
             url=config.get('url'),
+            timeout=timeout,
+            tries=tries,
             coins=config.get('coins'),
             use_intermediate_panel=use_intermediate_panel,
             intermediate_panel_path=intermediate_panel_path
@@ -438,6 +467,7 @@ def tce(ctx, config, start_date, end_date, use_intermediate_panel, dolar_csv_pat
         euro_csv_path, intermediate_panel_path):
 
     try:
+        logging.basicConfig(level=logging.WARNING)
         config = read_config(file_path=config, command=ctx.command.name)
         validate_url_config(config)
         validate_url_has_value(config)
@@ -465,8 +495,16 @@ def tce(ctx, config, start_date, end_date, use_intermediate_panel, dolar_csv_pat
         ensure_dir_exists(os.path.split(euro_file_path)[0])
         ensure_dir_exists(os.path.split(intermediate_panel_path)[0])
 
+        timeout = (
+            int(config.get('timeout'))
+            if 'timeout' in config.keys() else None
+        )
+        tries = int(config.get('tries', 1))
+
         scraper = BCRATCEScraper(
             url=config.get('url'),
+            timeout=timeout,
+            tries=tries,
             coins=config.get('coins'),
             entities=config.get('entities'),
             use_intermediate_panel=use_intermediate_panel,

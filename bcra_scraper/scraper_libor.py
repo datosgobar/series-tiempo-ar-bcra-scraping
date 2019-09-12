@@ -2,6 +2,7 @@ from csv import DictWriter
 from datetime import date, timedelta
 from decimal import Decimal
 from functools import reduce
+import logging
 import os
 
 from bs4 import BeautifulSoup
@@ -13,7 +14,7 @@ from bcra_scraper.exceptions import InvalidConfigurationError
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 
 class BCRALiborScraper(BCRAScraper):
@@ -107,19 +108,39 @@ class BCRALiborScraper(BCRAScraper):
         single_date : date
             fecha que va a tomar como referencia el scraper
         """
-        try:
-            browser_driver = self.get_browser_driver()
-            browser_driver.get(self.url)
-            element_present = EC.presence_of_element_located(
-                (By.NAME, 'fecha')
-            )
-            element = WebDriverWait(browser_driver, 0).until(element_present)
-        except TimeoutException:
-            raise InvalidConfigurationError(
-                'La conexion de internet ha fallado'
-            )
-        element.send_keys(single_date.strftime("%d/%m/%Y") + Keys.RETURN)
-        content = browser_driver.page_source
+        content = ''
+        counter = 1
+        tries = self.tries
+
+        while counter <= tries:
+            try:
+                browser_driver = self.get_browser_driver()
+                browser_driver.get(self.url)
+                element_present = EC.presence_of_element_located(
+                    (By.NAME, 'fecha')
+                )
+                element = WebDriverWait(browser_driver, 0).until(element_present)
+                element.send_keys(single_date.strftime("%d/%m/%Y") + Keys.RETURN)
+                content = browser_driver.page_source
+            except TimeoutException:
+                if counter < tries:
+                    logging.warning(
+                        f'La conexion de internet ha fallado para la fecha {single_date}. Reintentando...'
+                    )
+                    counter = counter + 1
+                else:
+                    logging.warning(
+                        f'La conexion de internet ha fallado para la fecha {single_date}'
+                    )
+                    raise InvalidConfigurationError(
+                        f'La conexion de internet ha fallado para la fecha {single_date}'
+                    )
+            except NoSuchElementException:
+                raise InvalidConfigurationError(
+                    f'La conexion de internet ha fallado para la fecha {single_date}'
+                )
+
+            break
 
         return content
 
@@ -154,35 +175,34 @@ class BCRALiborScraper(BCRAScraper):
         """
         soup = BeautifulSoup(content, "html.parser")
         parsed = {}
-        table = soup.find('table')
-        head = table.find('thead')
-        body = table.find('tbody')
+        try:
+            table = soup.find('table')
+            head = table.find('thead')
+            body = table.find('tbody')
 
-        if not body:
+            rows = body.find_all('tr')
+
+            parsed['indice_tiempo'] = head.findAll('th')[0].text[14:].strip()
+            splited = parsed['indice_tiempo'].split('/')
+            parsed['indice_tiempo'] = '-'.join(
+                [splited[2], splited[1], splited[0]]
+            )
+
+            for row in rows:
+                validation_list = {}
+                cols = row.find_all('td')
+                if cols[0].text in self.rates.keys():
+                    validation_list[cols[0].text] = cols[1].text
+
+                    for r in validation_list.keys():
+                        valid = self.rates_config_validator(r, self.rates)
+                        if valid:
+                            parsed[cols[0].text] = cols[1].text
+                        else:
+                            continue
             return parsed
-
-        rows = body.find_all('tr')
-
-        parsed['indice_tiempo'] = head.findAll('th')[0].text[14:].strip()
-        splited = parsed['indice_tiempo'].split('/')
-        parsed['indice_tiempo'] = '-'.join(
-            [splited[2], splited[1], splited[0]]
-        )
-
-        for row in rows:
-            validation_list = {}
-            cols = row.find_all('td')
-            if cols[0].text in self.rates.keys():
-                validation_list[cols[0].text] = cols[1].text
-
-                for r in validation_list.keys():
-                    valid = self.rates_config_validator(r, self.rates)
-                    if valid:
-                        parsed[cols[0].text] = cols[1].text
-                    else:
-                        continue
-
-        return parsed
+        except:
+            return parsed
 
     def rates_config_validator(self, parsed, rates):
         """Valida que parsed exista dentro de

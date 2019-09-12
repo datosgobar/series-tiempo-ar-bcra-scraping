@@ -18,6 +18,7 @@ selenium = "*"
 bs4 = "*"
 bcra-scraper = {path = ".",editable = true}
 pandas = "*"
+requests = "*"
 
 [requires]
 python_version = "3.7"

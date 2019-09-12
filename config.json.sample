@@ -3,6 +3,9 @@
         "libor_file_path": "/home/tmp/tasas-libor.csv",
         "intermediate_panel_path": "tmp/libor-intermediate-panel.csv",
         "url": "http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp",
+        "tries": "3",
+        "timeout": "10000",
+        "rates": {
         "rates": {
             "30": "libor_30_dias",
             "60": "libor_60_dias",
@@ -16,6 +19,8 @@
         "tp_file_path": "/home/tmp/tipos-pase-usd-series.csv",
         "intermediate_panel_path": "tmp/exchange-rates-intermediate-panel.csv",
         "url": "http://www.bcra.gov.ar/PublicacionesEstadisticas/Evolucion_moneda.asp",
+        "tries": "3",
+        "timeout": "10000",
         "coins": {
             "bolivar_venezolano": "Bolívar Venezolano",
             "chelin_austriaco": "Chelín Austríaco",
@@ -90,6 +95,8 @@
         "real_file_path": "/home/tmp/tipos-cambio-real-series.csv",
         "intermediate_panel_path": "tmp/sml-intermediate-panel.csv",
         "url": "http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_sml.asp",
+        "tries": "3",
+        "timeout": "10000",
         "coins": {
             "peso_uruguayo": "Peso Uruguayo",
             "real": "Real"
@@ -100,6 +107,8 @@
         "euro_file_path": "/home/tmp/tipos-cambio-euro-entidades-financieras-series.csv",
         "intermediate_panel_path": "tmp/tce-intermediate-panel.csv",
         "url": "http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_minorista.asp",
+        "tries": "3",
+        "timeout": "10000",
         "coins": {
             "dolar": "DOLAR",
             "euro": "EURO"
