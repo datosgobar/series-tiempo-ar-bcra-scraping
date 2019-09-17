@@ -3,6 +3,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from functools import reduce
 import logging
+import re
 
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -238,25 +239,30 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
             rows = body.find_all('tr')
             parsed_contents = []
+            day_count = (end_date - start_date).days + 1
 
-            for row in rows:
-                cols = row.find_all('td')
+            for single_date in (start_date + timedelta(n)
+                            for n in range(day_count)):
+                day = single_date.strftime("%d/%m/%Y")
                 parsed = {}
-
-                row_indice_tiempo = \
-                    datetime.strptime(cols[0].text.strip(), '%d/%m/%Y')
-
-                if (start_date <= row_indice_tiempo and
-                        row_indice_tiempo <= end_date):
+                for row in rows:
+                    cols = row.find_all('td')
                     parsed['moneda'] = coin
-                    parsed['indice_tiempo'] = cols[0].text.strip()
-                    parsed['tp_usd'] = cols[1].text[5:].strip()
-                    parsed['tc_local'] = cols[2].text[5:].strip()
+                    parsed['indice_tiempo'] = day
+                    parsed['tp_usd'] = ''
+                    parsed['tc_local'] = ''
+                    
+                    if body.find('td', text=re.compile(day)):
+                        row = body.find('td', text=re.compile(day)).parent
+                        cols = row.find_all('td')
+                        parsed['moneda'] = coin
+                        parsed['indice_tiempo'] = cols[0].text.strip()
+                        parsed['tp_usd'] = cols[1].text[5:].strip()
+                        parsed['tc_local'] = cols[2].text[5:].strip()
                     parsed_contents.append(parsed)
-
             return parsed_contents
         except:
-            return []
+            return parsed_contents
 
     def _preprocess_rows(self, parsed):
 
@@ -294,11 +300,14 @@ class BCRAExchangeRateScraper(BCRAScraper):
                     else:
                         if '.' in row[k]:
                             row[k] = row[k].replace('.', '')
-                        preprocessed_row[k] = (
-                                Decimal((row[k]).replace(',', '.'))
-                                if isinstance(row[k], str)
-                                else row[k]
-                            )
+                        if row[k]:
+                            preprocessed_row[k] = (
+                                    Decimal((row[k]).replace(',', '.'))
+                                    if isinstance(row[k], str)
+                                    else row[k]
+                                )
+                        else:
+                            preprocessed_row[k] = row[k]
 
             preprocessed_rows.append(preprocessed_row)
 
@@ -345,6 +354,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
                             intermediate_panel_data.append(panel_row)
         else:
             return []
+        intermediate_panel_data.reverse()
         return intermediate_panel_data
 
     def save_intermediate_panel(self, parsed):
@@ -417,6 +427,8 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
                         if parsed_row:
                             parsed[type].append(parsed_row)
+        parsed['tp_usd'].reverse()
+        parsed['tc_local'].reverse()
         return parsed
 
     def read_intermediate_panel_dataframe(self):
@@ -427,7 +439,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
         try:
             intermediate_panel_dataframe = pd.read_csv(
-                '.exchange-rates-intermediate-panel.csv',
+                'exchange-rates-intermediate-panel.csv',
                 converters={
                     'serie_tiempo': lambda _: _,
                     'coin': lambda _: str(_),

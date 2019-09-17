@@ -108,7 +108,10 @@ class BCRALiborScraper(BCRAScraper):
         single_date : date
             fecha que va a tomar como referencia el scraper
         """
-        content = ''
+        content = {
+            'indice_tiempo': f'{single_date.strftime("%Y-%m-%d")}',
+            'content': '',
+        }
         counter = 1
         tries = self.tries
 
@@ -121,7 +124,7 @@ class BCRALiborScraper(BCRAScraper):
                 )
                 element = WebDriverWait(browser_driver, 0).until(element_present)
                 element.send_keys(single_date.strftime("%d/%m/%Y") + Keys.RETURN)
-                content = browser_driver.page_source
+                content['content'] = browser_driver.page_source
             except TimeoutException:
                 if counter < tries:
                     logging.warning(
@@ -156,14 +159,15 @@ class BCRALiborScraper(BCRAScraper):
         """
         parsed_contents = []
         for content in contents:
-            parsed = self.parse_day_content(content)
-
+            single_date = content.get('indice_tiempo')
+            day_content = content.get('content')
+            parsed = self.parse_day_content(single_date, day_content)
             if parsed:
                 parsed_contents.append(parsed)
 
         return parsed_contents
 
-    def parse_day_content(self, content):
+    def parse_day_content(self, single_date, content):
         """
         Retorna un iterable con el contenido scrapeado cuyo formato
         posee el indice de tiempo y los plazos en días de la tasa
@@ -173,20 +177,13 @@ class BCRALiborScraper(BCRAScraper):
         content : str
             Recibe un string con la información que será parseada
         """
-        soup = BeautifulSoup(content, "html.parser")
-        parsed = {}
+        parsed = {'indice_tiempo': single_date, '30': '', '60': '', '90': '', '180': '', '360': ''}
         try:
+            soup = BeautifulSoup(content, "html.parser")
             table = soup.find('table')
-            head = table.find('thead')
             body = table.find('tbody')
 
             rows = body.find_all('tr')
-
-            parsed['indice_tiempo'] = head.findAll('th')[0].text[14:].strip()
-            splited = parsed['indice_tiempo'].split('/')
-            parsed['indice_tiempo'] = '-'.join(
-                [splited[2], splited[1], splited[0]]
-            )
 
             for row in rows:
                 validation_list = {}
@@ -251,11 +248,12 @@ class BCRALiborScraper(BCRAScraper):
 
             for rate in rates:
                 if rate in row:
-                    preprocessed_row[rates[rate]] = Decimal(
-                        str(row[rate]).replace(',', '.')
-                    )/100
-                else:
-                    preprocessed_row[rates[rate]] = None
+                    if row[rate]:
+                        preprocessed_row[rates[rate]] = Decimal(
+                            str(row[rate]).replace(',', '.')
+                        )/100
+                    else:
+                        preprocessed_row[rates[rate]] = None
 
             preprocessed_rows.append(preprocessed_row)
         return preprocessed_rows
@@ -289,27 +287,25 @@ class BCRALiborScraper(BCRAScraper):
         """
         intermediate_panel_data = []
 
+        rate_dfs = {}
+        data = []
         if parsed:
-            rate_dfs = {}
             data = [[v for v in p.values()] for p in parsed]
-            columns = ['indice_tiempo']
-            columns.extend([v for v in self.rates.keys()])
+        columns = ['indice_tiempo']
+        columns.extend([v for v in self.rates.keys()])
 
-            rate_dfs_panel = pd.DataFrame(
-                data=[],
-                columns=['indice_tiempo', 'value', 'type']
-            )
+        rate_dfs_panel = pd.DataFrame(
+            data=[],
+            columns=['indice_tiempo', 'value', 'type']
+        )
 
-            df = pd.DataFrame(data, columns=columns)
+        df = pd.DataFrame(data, columns=columns)
 
-            for k in self.rates.keys():
-                rate_dfs[k] = df[['indice_tiempo', k]].copy()
-                rate_dfs[k]['type'] = k
-                rate_dfs[k].rename(columns={k: 'value'}, inplace=True)
-                rate_dfs_panel = rate_dfs_panel.append(rate_dfs[k])
-
-        else:
-            return []
+        for k in self.rates.keys():
+            rate_dfs[k] = df[['indice_tiempo', k]].copy()
+            rate_dfs[k]['type'] = k
+            rate_dfs[k].rename(columns={k: 'value'}, inplace=True)
+            rate_dfs_panel = rate_dfs_panel.append(rate_dfs[k])
 
         intermediate_panel_data = [
             {
@@ -319,6 +315,7 @@ class BCRALiborScraper(BCRAScraper):
             }
             for r in rate_dfs_panel.to_records()
         ]
+        intermediate_panel_data.reverse()
         return intermediate_panel_data
 
     def write_intermediate_panel(self, rows, intermediate_panel_path):
@@ -397,7 +394,7 @@ class BCRALiborScraper(BCRAScraper):
 
                     if parsed_row:
                         parsed.append(parsed_row)
-
+        parsed.reverse()
         return parsed
 
     def read_intermediate_panel_dataframe(self):
@@ -408,7 +405,7 @@ class BCRALiborScraper(BCRAScraper):
 
         try:
             intermediate_panel_dataframe = pd.read_csv(
-                '.libor-intermediate-panel.csv',
+                'libor-intermediate-panel.csv',
                 converters={
                     'serie_tiempo': lambda _: _,
                     'type': lambda _: str(_),
