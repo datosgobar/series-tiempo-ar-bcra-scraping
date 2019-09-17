@@ -222,6 +222,7 @@ class BCRATCEScraper(BCRAScraper):
         intermediate_panel_data.extend(
             parsed_contents['dolar'] + parsed_contents['euro']
         )
+        intermediate_panel_data.reverse()
         return intermediate_panel_data
 
     def parse_from_intermediate_panel(self, start_date, end_date):
@@ -304,6 +305,8 @@ class BCRATCEScraper(BCRAScraper):
 
                         if parsed_row:
                             parsed[coin].append(parsed_row)
+        parsed['dolar'].reverse()
+        parsed['euro'].reverse()
         return parsed
 
     def write_intermediate_panel(self, rows, intermediate_panel_path):
@@ -337,7 +340,7 @@ class BCRATCEScraper(BCRAScraper):
 
         try:
             intermediate_panel_dataframe = pd.read_csv(
-                '.tce-intermediate-panel.csv',
+                'tce-intermediate-panel.csv',
                 converters={
                     'serie_tiempo': lambda _: _,
                     'coin': lambda _: str(_),
