@@ -1,5 +1,5 @@
 from csv import DictWriter
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from functools import reduce
 import logging
@@ -256,26 +256,32 @@ class BCRASMLScraper(BCRAScraper):
                 return []
 
             head_rows = head.find_all('tr')
-            rows = body.find_all('tr')
             parsed_content = []
+            day_count = (end_date - start_date).days + 1
 
-            for header in head_rows:
-                headers = header.find_all('th')
-                for row in rows:
-                    cols = row.find_all('td')
-                    row_indice_tiempo = \
-                        datetime.strptime(cols[0].text, '%d/%m/%Y')
+            for single_date in (start_date + timedelta(n)
+                            for n in range(day_count)):
+                day = single_date.strftime("%d/%m/%Y")
+                for header in head_rows:
+                    headers = header.find_all('th')
+                    parsed = {}
+                    parsed['coin'] = coin
+                    parsed['indice_tiempo'] = day
+                    parsed[headers[1].text] = ''
+                    parsed[headers[2].text] = ''
+                    parsed[headers[3].text] = ''
+                    parsed[headers[4].text] = ''
 
-                    if (row_indice_tiempo <= end_date and
-                            row_indice_tiempo >= start_date):
-                        parsed = {}
+                    if body.find('td', text=day):
+                        row = body.find('td', text=day).parent
+                        cols = row.find_all('td')
                         parsed['coin'] = coin
                         parsed['indice_tiempo'] = cols[0].text
                         parsed[headers[1].text] = cols[1].text.strip()
                         parsed[headers[2].text] = cols[2].text.strip()
                         parsed[headers[3].text] = cols[3].text.strip()
                         parsed[headers[4].text] = cols[4].text.strip()
-                        parsed_content.append(parsed)
+                    parsed_content.append(parsed)
 
             return parsed_content
         except:
@@ -314,11 +320,14 @@ class BCRASMLScraper(BCRAScraper):
                         preprocessed_date = date.fromisoformat(row[k])
                     preprocessed_row['indice_tiempo'] = preprocessed_date
                 else:
-                    preprocessed_row[k] = (
-                        Decimal((row[k]).replace(',', '.'))
-                        if isinstance(row[k], str)
-                        else row[k]
-                    )
+                    if row[k]:
+                        preprocessed_row[k] = (
+                            Decimal((row[k]).replace(',', '.'))
+                            if isinstance(row[k], str)
+                            else row[k]
+                        )
+                    else:
+                        preprocessed_row[k] = row[k]
 
             preprocessed_rows.append(preprocessed_row)
 
