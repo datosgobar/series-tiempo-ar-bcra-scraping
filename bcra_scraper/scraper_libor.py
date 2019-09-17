@@ -315,6 +315,7 @@ class BCRALiborScraper(BCRAScraper):
             }
             for r in rate_dfs_panel.to_records()
         ]
+        intermediate_panel_data.reverse()
         return intermediate_panel_data
 
     def write_intermediate_panel(self, rows, intermediate_panel_path):
@@ -393,7 +394,7 @@ class BCRALiborScraper(BCRAScraper):
 
                     if parsed_row:
                         parsed.append(parsed_row)
-
+        parsed.reverse()
         return parsed
 
     def read_intermediate_panel_dataframe(self):
@@ -404,7 +405,7 @@ class BCRALiborScraper(BCRAScraper):
 
         try:
             intermediate_panel_dataframe = pd.read_csv(
-                '.libor-intermediate-panel.csv',
+                'libor-intermediate-panel.csv',
                 converters={
                     'serie_tiempo': lambda _: _,
                     'type': lambda _: str(_),
