@@ -108,8 +108,10 @@ class BCRALiborScraper(BCRAScraper):
         single_date : date
             fecha que va a tomar como referencia el scraper
         """
-        content_dict = {}
-        content = ''
+        content = {
+            'indice_tiempo': f'{single_date.strftime("%Y-%m-%d")}',
+            'content': '',
+        }
         counter = 1
         tries = self.tries
 
@@ -122,9 +124,7 @@ class BCRALiborScraper(BCRAScraper):
                 )
                 element = WebDriverWait(browser_driver, 0).until(element_present)
                 element.send_keys(single_date.strftime("%d/%m/%Y") + Keys.RETURN)
-                content = browser_driver.page_source
-                content_dict['indice_tiempo'] = f'{single_date.strftime("%Y-%m-%d")}'
-                content_dict['content'] = content
+                content['content'] = browser_driver.page_source
             except TimeoutException:
                 if counter < tries:
                     logging.warning(
@@ -145,7 +145,7 @@ class BCRALiborScraper(BCRAScraper):
 
             break
 
-        return content_dict
+        return content
 
     def parse_contents(self, contents, start_date, end_date):
         """
@@ -177,9 +177,9 @@ class BCRALiborScraper(BCRAScraper):
         content : str
             Recibe un string con la información que será parseada
         """
-        soup = BeautifulSoup(content, "html.parser")
         parsed = {'indice_tiempo': single_date, '30': '', '60': '', '90': '', '180': '', '360': ''}
         try:
+            soup = BeautifulSoup(content, "html.parser")
             table = soup.find('table')
             body = table.find('tbody')
 
