@@ -374,7 +374,6 @@ class BCRASMLScraper(BCRAScraper):
                             intermediate_panel_data.append(panel_row)
         else:
             return []
-        intermediate_panel_data.reverse()
         return intermediate_panel_data
 
     def parse_from_intermediate_panel(self, start_date, end_date):
@@ -392,6 +391,7 @@ class BCRASMLScraper(BCRAScraper):
         parsed = {'peso_uruguayo': [], 'real': []}
         coin_dfs = {}
         intermediate_panel_df = self.read_intermediate_panel_dataframe()
+
         intermediate_panel_df.set_index(['indice_tiempo'], inplace=True)
 
         if not intermediate_panel_df.empty:
@@ -453,8 +453,6 @@ class BCRASMLScraper(BCRAScraper):
 
                         if parsed_row:
                             parsed[type].append(parsed_row)
-        parsed['peso_uruguayo'].reverse()
-        parsed['real'].reverse()
         return parsed
 
     def write_intermediate_panel(self, rows, intermediate_panel_path):
@@ -480,7 +478,7 @@ class BCRASMLScraper(BCRAScraper):
 
         try:
             intermediate_panel_dataframe = pd.read_csv(
-                'sml-intermediate-panel.csv',
+                '.sml-intermediate-panel.csv',
                 converters={
                     'serie_tiempo': lambda _: _,
                     'coin': lambda _: str(_),
@@ -493,6 +491,7 @@ class BCRASMLScraper(BCRAScraper):
             raise InvalidConfigurationError(
                 "El archivo panel no existe"
             )
+
         return intermediate_panel_dataframe
 
     def save_intermediate_panel(self, parsed):

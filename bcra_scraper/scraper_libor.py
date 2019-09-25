@@ -108,10 +108,8 @@ class BCRALiborScraper(BCRAScraper):
         single_date : date
             fecha que va a tomar como referencia el scraper
         """
-        content = {
-            'indice_tiempo': f'{single_date.strftime("%Y-%m-%d")}',
-            'content': '',
-        }
+        content_dict = {}
+        content = ''
         counter = 1
         tries = self.tries
 
@@ -124,7 +122,9 @@ class BCRALiborScraper(BCRAScraper):
                 )
                 element = WebDriverWait(browser_driver, 0).until(element_present)
                 element.send_keys(single_date.strftime("%d/%m/%Y") + Keys.RETURN)
-                content['content'] = browser_driver.page_source
+                content = browser_driver.page_source
+                content_dict['indice_tiempo'] = f'{single_date.strftime("%Y-%m-%d")}'
+                content_dict['content'] = content
             except TimeoutException:
                 if counter < tries:
                     logging.warning(
@@ -145,7 +145,7 @@ class BCRALiborScraper(BCRAScraper):
 
             break
 
-        return content
+        return content_dict
 
     def parse_contents(self, contents, start_date, end_date):
         """
@@ -177,9 +177,9 @@ class BCRALiborScraper(BCRAScraper):
         content : str
             Recibe un string con la información que será parseada
         """
+        soup = BeautifulSoup(content, "html.parser")
         parsed = {'indice_tiempo': single_date, '30': '', '60': '', '90': '', '180': '', '360': ''}
         try:
-            soup = BeautifulSoup(content, "html.parser")
             table = soup.find('table')
             body = table.find('tbody')
 
@@ -315,7 +315,6 @@ class BCRALiborScraper(BCRAScraper):
             }
             for r in rate_dfs_panel.to_records()
         ]
-        intermediate_panel_data.reverse()
         return intermediate_panel_data
 
     def write_intermediate_panel(self, rows, intermediate_panel_path):
@@ -394,7 +393,7 @@ class BCRALiborScraper(BCRAScraper):
 
                     if parsed_row:
                         parsed.append(parsed_row)
-        parsed.reverse()
+
         return parsed
 
     def read_intermediate_panel_dataframe(self):
@@ -405,7 +404,7 @@ class BCRALiborScraper(BCRAScraper):
 
         try:
             intermediate_panel_dataframe = pd.read_csv(
-                'libor-intermediate-panel.csv',
+                '.libor-intermediate-panel.csv',
                 converters={
                     'serie_tiempo': lambda _: _,
                     'type': lambda _: str(_),

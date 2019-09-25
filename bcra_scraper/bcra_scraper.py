@@ -206,7 +206,7 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel, libor_csv_p
         parsed = scraper.run(start_date, end_date)
 
         processed_header = scraper.preprocess_header(scraper.rates)
-        parsed.reverse()
+
         write_file(processed_header, parsed, libor_file_path)
 
     except InvalidConfigurationError as err:
@@ -299,9 +299,9 @@ def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel,
             coins = config.get('coins')
             csv_header = ['indice_tiempo']
             csv_header.extend([v for v in coins.keys()])
-            parsed['tp_usd'].reverse()
-            parsed['tc_local'].reverse()
+
             write_file(csv_header, parsed['tp_usd'], tp_file_path)
+
             write_file(csv_header, parsed['tc_local'], tc_file_path)
 
         else:
@@ -405,7 +405,9 @@ def sml(ctx, config, start_date, end_date, use_intermediate_panel, uruguayo_csv_
                         'Tipo de cambio SML Peso Uruguayo',
                         'Tipo de cambio SML Uruguayo Peso'
                     ]
-                    file_path = peso_uruguayo_file_path
+
+                    write_file(csv_header, parsed['peso_uruguayo'], peso_uruguayo_file_path)
+
 
                 elif k == 'real':
                     csv_header = [
@@ -415,9 +417,8 @@ def sml(ctx, config, start_date, end_date, use_intermediate_panel, uruguayo_csv_
                         'Tipo de cambio SML Peso Real',
                         'Tipo de cambio SML Real Peso'
                     ]
-                    file_path = real_file_path
-                parsed[k].reverse()
-                write_file(csv_header, parsed[k], file_path)
+
+                    write_file(csv_header, parsed['real'], real_file_path)
 
         else:
             click.echo("No se encontraron resultados")
@@ -526,7 +527,7 @@ def tce(ctx, config, start_date, end_date, use_intermediate_panel, dolar_csv_pat
                     csv_name = dolar_file_path
                 else:
                     csv_name = euro_file_path
-                parsed[coin].reverse()
+
                 write_file(csv_header, parsed[coin], csv_name)
 
         else:

@@ -354,7 +354,6 @@ class BCRAExchangeRateScraper(BCRAScraper):
                             intermediate_panel_data.append(panel_row)
         else:
             return []
-        intermediate_panel_data.reverse()
         return intermediate_panel_data
 
     def save_intermediate_panel(self, parsed):
@@ -427,8 +426,6 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
                         if parsed_row:
                             parsed[type].append(parsed_row)
-        parsed['tp_usd'].reverse()
-        parsed['tc_local'].reverse()
         return parsed
 
     def read_intermediate_panel_dataframe(self):
@@ -439,7 +436,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
         try:
             intermediate_panel_dataframe = pd.read_csv(
-                'exchange-rates-intermediate-panel.csv',
+                '.exchange-rates-intermediate-panel.csv',
                 converters={
                     'serie_tiempo': lambda _: _,
                     'coin': lambda _: str(_),
