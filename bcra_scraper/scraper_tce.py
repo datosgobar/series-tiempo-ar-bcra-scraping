@@ -351,7 +351,7 @@ class BCRATCEScraper(BCRAScraper):
 
         try:
             intermediate_panel_dataframe = pd.read_csv(
-                '.tce-intermediate-panel.csv',
+                'tce-intermediate-panel.csv',
                 converters={
                     'serie_tiempo': lambda _: _,
                     'coin': lambda _: str(_),
