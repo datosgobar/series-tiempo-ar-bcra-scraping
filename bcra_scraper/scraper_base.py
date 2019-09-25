@@ -178,7 +178,6 @@ class BCRAScraper:
             _parsed = self.parse_contents(contents, start_date, end_date)
 
             parsed = self._preprocess_rows(_parsed)
-            self.save_intermediate_panel(parsed)
 
         return parsed
 
