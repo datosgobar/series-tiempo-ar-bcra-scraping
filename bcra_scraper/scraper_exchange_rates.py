@@ -356,6 +356,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
             return []
         return intermediate_panel_data
 
+
     def save_intermediate_panel(self, parsed):
         """
         Llama a un método para obtener la data del panel intermedio
@@ -384,6 +385,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
             fecha de fin que va a tomar como referencia el scraper
         """
         parsed = {'tc_local': [], 'tp_usd': []}
+        _parsed = {'tc_local': [], 'tp_usd': []}
         coin_dfs = {}
         intermediate_panel_df = self.read_intermediate_panel_dataframe()
         intermediate_panel_df.set_index(['indice_tiempo'], inplace=True)
@@ -426,7 +428,20 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
                         if parsed_row:
                             parsed[type].append(parsed_row)
-        return parsed
+
+            for type in ['tc_local', 'tp_usd']:
+                for r in coins_df[type].to_records():
+                    parsed_row = {}
+
+                    columns = ['indice_tiempo']
+                    columns.extend([v for v in coin_dfs[type].keys()])
+
+                    for index, column in enumerate(columns):
+                        parsed_row[column] = r[index]
+
+                    if parsed_row:
+                        _parsed[type].append(parsed_row)
+        return parsed, _parsed
 
     def read_intermediate_panel_dataframe(self):
         """

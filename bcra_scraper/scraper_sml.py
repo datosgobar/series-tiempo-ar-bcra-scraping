@@ -389,6 +389,7 @@ class BCRASMLScraper(BCRAScraper):
             fecha de fin que va a tomar como referencia el scraper
         """
         parsed = {'peso_uruguayo': [], 'real': []}
+        _parsed = {'peso_uruguayo': [], 'real': []}
         coin_dfs = {}
         intermediate_panel_df = self.read_intermediate_panel_dataframe()
 
@@ -453,7 +454,20 @@ class BCRASMLScraper(BCRAScraper):
 
                         if parsed_row:
                             parsed[type].append(parsed_row)
-        return parsed
+
+            for type in ['peso_uruguayo', 'real']:
+                for r in coins_df[type].to_records():
+                    parsed_row = {}
+
+                    columns = ['indice_tiempo']
+                    columns.extend([v for v in coin_dfs[type].keys()])
+
+                    for index, column in enumerate(columns):
+                        parsed_row[column] = r[index]
+
+                    if parsed_row:
+                        _parsed[type].append(parsed_row)
+        return parsed, _parsed
 
     def write_intermediate_panel(self, rows, intermediate_panel_path):
         """

@@ -206,7 +206,11 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel, libor_csv_p
         parsed = scraper.run(start_date, end_date)
 
         processed_header = scraper.preprocess_header(scraper.rates)
+<<<<<<< Updated upstream
 
+=======
+        # parsed.reverse()
+>>>>>>> Stashed changes
         write_file(processed_header, parsed, libor_file_path)
 
     except InvalidConfigurationError as err:

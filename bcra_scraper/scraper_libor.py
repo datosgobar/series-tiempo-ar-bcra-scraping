@@ -1,5 +1,5 @@
 from csv import DictWriter
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from decimal import Decimal
 from functools import reduce
 import logging
@@ -359,6 +359,7 @@ class BCRALiborScraper(BCRAScraper):
             fecha de fin que va a tomar como referencia el scraper
         """
         parsed = []
+        _parsed = []
         rate_dfs = {}
 
         columns = ['indice_tiempo']
@@ -394,7 +395,18 @@ class BCRALiborScraper(BCRAScraper):
                     if parsed_row:
                         parsed.append(parsed_row)
 
-        return parsed
+            for r in rates_df.to_records():
+                parsed_row = {}
+
+                columns = ['indice_tiempo']
+                columns.extend([v for v in self.rates.values()])
+
+                for index, column in enumerate(columns):
+                    parsed_row[column] = r[index]
+
+                if parsed_row:
+                    _parsed.append(parsed_row)
+        return parsed, _parsed
 
     def read_intermediate_panel_dataframe(self):
         """
