@@ -33,7 +33,7 @@ class BcraTceScraperTestCase(unittest.TestCase):
                 </table>
             '''
         ):
-            scraper = BCRATCEScraper(url, coins, entities, False)
+            scraper = BCRATCEScraper(url, coins, entities, intermediate_panel_path=None, use_intermediate_panel=False)
             content = scraper.fetch_content(single_date, coin)
 
             soup = BeautifulSoup(content, "html.parser")
@@ -60,7 +60,7 @@ class BcraTceScraperTestCase(unittest.TestCase):
             'fetch_content',
             return_value=''
         ):
-            scraper = BCRATCEScraper(url, coins, entities, False)
+            scraper = BCRATCEScraper(url, coins, entities, intermediate_panel_path=None, use_intermediate_panel=False)
             content = scraper.fetch_content(single_date, coin)
 
             soup = BeautifulSoup(content, "html.parser")
@@ -89,7 +89,7 @@ class BcraTceScraperTestCase(unittest.TestCase):
             'fetch_content',
             return_value=content
         ):
-            scraper = BCRATCEScraper(url, coins, entities, False)
+            scraper = BCRATCEScraper(url, coins, entities, intermediate_panel_path=None, use_intermediate_panel=False)
             result = scraper.fetch_contents(start_date, end_date)
 
             assert result == [
@@ -113,8 +113,8 @@ class BcraTceScraperTestCase(unittest.TestCase):
             'galicia': 'BANCO DE GALICIA Y BUENOS AIRES S.A.U.'
             }
         contents = [
-                {'dolar': 'foo'},
-                {'euro': 'foo'}
+                {'dolar': {'indice_tiempo': start_date.strftime('%Y-%m-%d'), 'content': 'foo'}},
+                {'euro': {'indice_tiempo': start_date.strftime('%Y-%m-%d'), 'content': 'foo'}}
             ]
         parsed_dolar = [
             {
@@ -159,7 +159,7 @@ class BcraTceScraperTestCase(unittest.TestCase):
             side_effect=[parsed_dolar, parsed_euro]
 
         ):
-            scraper = BCRATCEScraper(url, coins, entities, False)
+            scraper = BCRATCEScraper(url, coins, entities, intermediate_panel_path=None, use_intermediate_panel=False)
             result = scraper.parse_contents(
                 contents,
                 start_date,
@@ -312,7 +312,7 @@ class BcraTceScraperTestCase(unittest.TestCase):
                         'save_intermediate_panel',
                         return_value=''
                     ):
-                        scraper = BCRATCEScraper(url, coins, entities, False)
+                        scraper = BCRATCEScraper(url, coins, entities, intermediate_panel_path=None, use_intermediate_panel=False)
                         result = scraper.run(start_date, end_date)
                         assert result == [
                             {
@@ -447,7 +447,7 @@ class BcraTceScraperTestCase(unittest.TestCase):
                 'preprocess_rows',
                 side_effect=[dolar_preprocess, euro_preprocess]
             ):
-                scraper = BCRATCEScraper(url, coins, entities, True)
+                scraper = BCRATCEScraper(url, coins, entities, intermediate_panel_path=None, use_intermediate_panel=True)
                 result = scraper.run(start_date, end_date)
                 assert result == {
                     'dolar': [
@@ -531,9 +531,9 @@ class BcraTceScraperTestCase(unittest.TestCase):
                 'validate_coin_in_configuration_file',
                 return_value=True
             ):
-                scraper = BCRATCEScraper(url, coins, entities, False)
+                scraper = BCRATCEScraper(url, coins, entities, intermediate_panel_path=None, use_intermediate_panel=False)
                 content = scraper.fetch_content(single_date, coins)
-                assert content == "foo"
+                assert content['content'] == "foo"
 
     def test_fetch_content_invalid_url_patching_driver(self):
         """Probar fetch content con url invalida"""
@@ -555,9 +555,9 @@ class BcraTceScraperTestCase(unittest.TestCase):
                 'validate_coin_in_configuration_file',
                 return_value=True
             ):
-                scraper = BCRATCEScraper(url, coins, entities, False)
+                scraper = BCRATCEScraper(url, coins, entities, intermediate_panel_path=None, use_intermediate_panel=False)
                 content = scraper.fetch_content(single_date, coins)
-                assert content == 400
+                assert content['content'] == 400
 
     def test_validate_coin_in_configuration_file_false(self):
         coins = {}
@@ -573,7 +573,7 @@ class BcraTceScraperTestCase(unittest.TestCase):
             mock.text = option_text
             options.append(mock)
 
-        scraper = BCRATCEScraper(url, coins, entities, False)
+        scraper = BCRATCEScraper(url, coins, entities, intermediate_panel_path=None, use_intermediate_panel=False)
         coin_in_configuration_file = scraper.validate_coin_in_configuration_file(coin, options)
         assert coin_in_configuration_file is False
 
@@ -591,7 +591,7 @@ class BcraTceScraperTestCase(unittest.TestCase):
             mock.text = option_text
             options.append(mock)
 
-        scraper = BCRATCEScraper(url, coins, entities, False)
+        scraper = BCRATCEScraper(url, coins, entities, intermediate_panel_path=None, use_intermediate_panel=False)
         coin_in_configuration_file = scraper.validate_coin_in_configuration_file(coin, options)
         assert coin_in_configuration_file is True
 
@@ -662,26 +662,26 @@ class BcraTceScraperTestCase(unittest.TestCase):
             </tbody></table>
         '''
 
-        scraper = BCRATCEScraper(url, coins, entities, False)
+        scraper = BCRATCEScraper(url, coins, entities, intermediate_panel_path=None, use_intermediate_panel=False)
         result = scraper.parse_content(
-            content, start_date, end_date, coin, entities
+            content, start_date, coin, entities
         )
 
         assert result == [
             {
-                'indice_tiempo': '22/04/2019',
-                'tc_ars_dolar_galicia_mostrador_compra_11hs': '41,800',
-                'tc_ars_dolar_galicia_mostrador_compra_13hs': '41,900',
-                'tc_ars_dolar_galicia_mostrador_compra_15hs': '41,900',
-                'tc_ars_dolar_galicia_electronico_compra_11hs': '41,800',
-                'tc_ars_dolar_galicia_electronico_compra_13hs': '41,900',
-                'tc_ars_dolar_galicia_electronico_compra_15hs': '41,900',
-                'tc_ars_dolar_galicia_mostrador_venta_11hs': '43,800',
-                'tc_ars_dolar_galicia_mostrador_venta_13hs': '43,900',
-                'tc_ars_dolar_galicia_mostrador_venta_15hs': '43,900',
-                'tc_ars_dolar_galicia_electronico_venta_11hs': '43,800',
+                'tc_ars_dolar_galicia_electronico_venta_15hs': '43,900',
                 'tc_ars_dolar_galicia_electronico_venta_13hs': '43,900',
-                'tc_ars_dolar_galicia_electronico_venta_15hs': '43,900'
+                'tc_ars_dolar_galicia_electronico_venta_11hs': '43,800',
+                'tc_ars_dolar_galicia_mostrador_venta_15hs': '43,900',
+                'tc_ars_dolar_galicia_mostrador_venta_13hs': '43,900',
+                'tc_ars_dolar_galicia_mostrador_venta_11hs': '43,800',
+                'tc_ars_dolar_galicia_electronico_compra_15hs': '41,900',
+                'tc_ars_dolar_galicia_electronico_compra_13hs': '41,900',
+                'tc_ars_dolar_galicia_electronico_compra_11hs': '41,800',
+                'tc_ars_dolar_galicia_mostrador_compra_15hs': '41,900',
+                'tc_ars_dolar_galicia_mostrador_compra_13hs': '41,900',
+                'tc_ars_dolar_galicia_mostrador_compra_11hs': '41,800',
+                'indice_tiempo': datetime(2019, 4, 22, 0, 0)
             }
         ]
 
@@ -698,12 +698,28 @@ class BcraTceScraperTestCase(unittest.TestCase):
 
         content = ''
 
-        scraper = BCRATCEScraper(url, coins, entities, False)
+        scraper = BCRATCEScraper(url, coins, entities, intermediate_panel_path=None, use_intermediate_panel=False)
         result = scraper.parse_content(
-            content, start_date, end_date, coin, entities
+            content, start_date, coin, entities
         )
 
-        assert result == []
+        assert result == [
+            {
+                'indice_tiempo': datetime(2019, 4, 22, 0, 0),
+                'tc_ars_dolar_galicia_mostrador_compra_11hs': '',
+                'tc_ars_dolar_galicia_mostrador_compra_13hs': '',
+                'tc_ars_dolar_galicia_mostrador_compra_15hs': '',
+                'tc_ars_dolar_galicia_electronico_compra_11hs': '',
+                'tc_ars_dolar_galicia_electronico_compra_13hs': '',
+                'tc_ars_dolar_galicia_electronico_compra_15hs': '',
+                'tc_ars_dolar_galicia_mostrador_venta_11hs': '',
+                'tc_ars_dolar_galicia_mostrador_venta_13hs': '',
+                'tc_ars_dolar_galicia_mostrador_venta_15hs': '',
+                'tc_ars_dolar_galicia_electronico_venta_11hs': '',
+                'tc_ars_dolar_galicia_electronico_venta_13hs': '',
+                'tc_ars_dolar_galicia_electronico_venta_15hs': ''
+            }
+        ]
 
     def test_parse_content_not_head(self):
         start_date = datetime(2019, 4, 22)
@@ -719,12 +735,28 @@ class BcraTceScraperTestCase(unittest.TestCase):
                 table-responsive" colspan="3">
                 </table>'''
 
-        scraper = BCRATCEScraper(url, coins, entities, False)
+        scraper = BCRATCEScraper(url, coins, entities, intermediate_panel_path=None, use_intermediate_panel=False)
         result = scraper.parse_content(
-            content, start_date, end_date, coin, entities
+            content, start_date, coin, entities
         )
 
-        assert result == []
+        assert result == [
+            {
+                'indice_tiempo': datetime(2019, 4, 22, 0, 0),
+                'tc_ars_dolar_galicia_mostrador_compra_11hs': '',
+                'tc_ars_dolar_galicia_mostrador_compra_13hs': '',
+                'tc_ars_dolar_galicia_mostrador_compra_15hs': '',
+                'tc_ars_dolar_galicia_electronico_compra_11hs': '',
+                'tc_ars_dolar_galicia_electronico_compra_13hs': '',
+                'tc_ars_dolar_galicia_electronico_compra_15hs': '',
+                'tc_ars_dolar_galicia_mostrador_venta_11hs': '',
+                'tc_ars_dolar_galicia_mostrador_venta_13hs': '',
+                'tc_ars_dolar_galicia_mostrador_venta_15hs': '',
+                'tc_ars_dolar_galicia_electronico_venta_11hs': '',
+                'tc_ars_dolar_galicia_electronico_venta_13hs': '',
+                'tc_ars_dolar_galicia_electronico_venta_15hs': ''
+            }
+        ]
 
     def test_parse_content_not_body(self):
         start_date = datetime(2019, 4, 22)
@@ -743,12 +775,28 @@ class BcraTceScraperTestCase(unittest.TestCase):
                 </table>
                 '''
 
-        scraper = BCRATCEScraper(url, coins, entities, False)
+        scraper = BCRATCEScraper(url, coins, entities, intermediate_panel_path=None, use_intermediate_panel=False)
         result = scraper.parse_content(
-            content, start_date, end_date, coin, entities
+            content, start_date, coin, entities
         )
 
-        assert result == []
+        assert result == [
+            {
+                'indice_tiempo': datetime(2019, 4, 22, 0, 0),
+                'tc_ars_dolar_galicia_mostrador_compra_11hs': '',
+                'tc_ars_dolar_galicia_mostrador_compra_13hs': '',
+                'tc_ars_dolar_galicia_mostrador_compra_15hs': '',
+                'tc_ars_dolar_galicia_electronico_compra_11hs': '',
+                'tc_ars_dolar_galicia_electronico_compra_13hs': '',
+                'tc_ars_dolar_galicia_electronico_compra_15hs': '',
+                'tc_ars_dolar_galicia_mostrador_venta_11hs': '',
+                'tc_ars_dolar_galicia_mostrador_venta_13hs': '',
+                'tc_ars_dolar_galicia_mostrador_venta_15hs': '',
+                'tc_ars_dolar_galicia_electronico_venta_11hs': '',
+                'tc_ars_dolar_galicia_electronico_venta_13hs': '',
+                'tc_ars_dolar_galicia_electronico_venta_15hs': ''
+            }
+        ]
 
     def test_get_intermediate_panel_data_from_parsed(self):
         entities = {
@@ -793,64 +841,163 @@ class BcraTceScraperTestCase(unittest.TestCase):
             'euro': 'EURO'
         }
 
-        scraper = BCRATCEScraper(url, coins, entities, True)
+        scraper = BCRATCEScraper(url, coins, entities, intermediate_panel_path=None, use_intermediate_panel=True)
 
         result = scraper.get_intermediate_panel_data_from_parsed(parsed)
 
         assert result == [
                 {
                     'indice_tiempo': date(2019, 4, 22),
-                    'coin': 'dolar',
+                    'coin': 'euro',
                     'entity': 'galicia',
-                    'channel': 'mostrador',
-                    'flow': 'compra',
-                    'hour': '11hs',
-                    'value': '41.800'
+                    'channel': 'electronico',
+                    'flow': 'venta',
+                    'hour': '15hs',
+                    'value': '0.0'
                 },
                 {
                     'indice_tiempo': date(2019, 4, 22),
-                    'coin': 'dolar',
+                    'coin': 'euro',
+                    'entity': 'galicia',
+                    'channel': 'electronico',
+                    'flow': 'venta',
+                    'hour': '13hs',
+                    'value': '0.0'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'euro',
+                    'entity': 'galicia',
+                    'channel': 'electronico',
+                    'flow': 'venta',
+                    'hour': '11hs',
+                    'value': '0.0'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'euro',
                     'entity': 'galicia',
                     'channel': 'mostrador',
+                    'flow': 'venta',
+                    'hour': '15hs',
+                    'value': '49.000'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'euro',
+                    'entity': 'galicia',
+                    'channel': 'mostrador',
+                    'flow': 'venta',
+                    'hour': '13hs',
+                    'value': '49.000'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'euro',
+                    'entity': 'galicia',
+                    'channel': 'mostrador',
+                    'flow': 'venta',
+                    'hour': '11hs',
+                    'value': '49.000'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'euro',
+                    'entity': 'galicia',
+                    'channel': 'electronico',
+                    'flow': 'compra',
+                    'hour': '15hs',
+                    'value': '0.0'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'euro',
+                    'entity': 'galicia',
+                    'channel': 'electronico',
                     'flow': 'compra',
                     'hour': '13hs',
-                    'value': '41.900'
+                    'value': '0.0'
                 },
                 {
                     'indice_tiempo': date(2019, 4, 22),
-                    'coin': 'dolar',
+                    'coin': 'euro',
+                    'entity': 'galicia',
+                    'channel': 'electronico',
+                    'flow': 'compra',
+                    'hour': '11hs',
+                    'value': '0.0'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'euro',
                     'entity': 'galicia',
                     'channel': 'mostrador',
                     'flow': 'compra',
                     'hour': '15hs',
-                    'value': '41.900'
+                    'value': '46.600'
                 },
                 {
                     'indice_tiempo': date(2019, 4, 22),
-                    'coin': 'dolar',
+                    'coin': 'euro',
                     'entity': 'galicia',
-                    'channel': 'electronico',
-                    'flow': 'compra',
-                    'hour': '11hs',
-                    'value': '41.800'
-                },
-                {
-                    'indice_tiempo': date(2019, 4, 22),
-                    'coin': 'dolar',
-                    'entity': 'galicia',
-                    'channel': 'electronico',
+                    'channel': 'mostrador',
                     'flow': 'compra',
                     'hour': '13hs',
-                    'value': '41.900'
+                    'value': '46.600'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'euro',
+                    'entity': 'galicia',
+                    'channel': 'mostrador',
+                    'flow': 'compra',
+                    'hour': '11hs',
+                    'value': '46.600'
                 },
                 {
                     'indice_tiempo': date(2019, 4, 22),
                     'coin': 'dolar',
                     'entity': 'galicia',
                     'channel': 'electronico',
-                    'flow': 'compra',
+                    'flow': 'venta',
                     'hour': '15hs',
-                    'value': '41.900'
+                    'value': '43.900'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'dolar',
+                    'entity': 'galicia',
+                    'channel': 'electronico',
+                    'flow': 'venta',
+                    'hour': '13hs',
+                    'value': '43.900'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'dolar',
+                    'entity': 'galicia',
+                    'channel': 'electronico',
+                    'flow': 'venta',
+                    'hour': '11hs',
+                    'value': '43.800'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'dolar',
+                    'entity': 'galicia',
+                    'channel': 'mostrador',
+                    'flow': 'venta',
+                    'hour': '15hs',
+                    'value': '43.900'
+                },
+                {
+                    'indice_tiempo': date(2019, 4, 22),
+                    'coin': 'dolar',
+                    'entity': 'galicia',
+                    'channel': 'mostrador',
+                    'flow': 'venta',
+                    'hour': '13hs',
+                    'value': '43.900'
                 },
                 {
                     'indice_tiempo': date(2019, 4, 22),
@@ -865,154 +1012,55 @@ class BcraTceScraperTestCase(unittest.TestCase):
                     'indice_tiempo': date(2019, 4, 22),
                     'coin': 'dolar',
                     'entity': 'galicia',
-                    'channel': 'mostrador',
-                    'flow': 'venta',
-                    'hour': '13hs',
-                    'value': '43.900'
-                },
-                {
-                    'indice_tiempo': date(2019, 4, 22),
-                    'coin': 'dolar',
-                    'entity': 'galicia',
-                    'channel': 'mostrador',
-                    'flow': 'venta',
+                    'channel': 'electronico',
+                    'flow': 'compra',
                     'hour': '15hs',
-                    'value': '43.900'
+                    'value': '41.900'
                 },
                 {
                     'indice_tiempo': date(2019, 4, 22),
                     'coin': 'dolar',
                     'entity': 'galicia',
                     'channel': 'electronico',
-                    'flow': 'venta',
-                    'hour': '11hs',
-                    'value': '43.800'
+                    'flow': 'compra',
+                    'hour': '13hs',
+                    'value': '41.900'
                 },
                 {
                     'indice_tiempo': date(2019, 4, 22),
                     'coin': 'dolar',
                     'entity': 'galicia',
                     'channel': 'electronico',
-                    'flow': 'venta',
-                    'hour': '13hs',
-                    'value': '43.900'
+                    'flow': 'compra',
+                    'hour': '11hs',
+                    'value': '41.800'
                 },
                 {
                     'indice_tiempo': date(2019, 4, 22),
                     'coin': 'dolar',
                     'entity': 'galicia',
-                    'channel': 'electronico',
-                    'flow': 'venta',
-                    'hour': '15hs',
-                    'value': '43.900'
-                },
-                {
-                    'indice_tiempo': date(2019, 4, 22),
-                    'coin': 'euro',
-                    'entity': 'galicia',
                     'channel': 'mostrador',
                     'flow': 'compra',
-                    'hour': '11hs',
-                    'value': '46.600'
+                    'hour': '15hs',
+                    'value': '41.900'
                 },
                 {
                     'indice_tiempo': date(2019, 4, 22),
-                    'coin': 'euro',
+                    'coin': 'dolar',
                     'entity': 'galicia',
                     'channel': 'mostrador',
                     'flow': 'compra',
                     'hour': '13hs',
-                    'value': '46.600'
+                    'value': '41.900'
                 },
                 {
                     'indice_tiempo': date(2019, 4, 22),
-                    'coin': 'euro',
+                    'coin': 'dolar',
                     'entity': 'galicia',
                     'channel': 'mostrador',
-                    'flow': 'compra',
-                    'hour': '15hs',
-                    'value': '46.600'
-                },
-                {
-                    'indice_tiempo': date(2019, 4, 22),
-                    'coin': 'euro',
-                    'entity': 'galicia',
-                    'channel': 'electronico',
                     'flow': 'compra',
                     'hour': '11hs',
-                    'value': '0.0'
-                },
-                {
-                    'indice_tiempo': date(2019, 4, 22),
-                    'coin': 'euro',
-                    'entity': 'galicia',
-                    'channel': 'electronico',
-                    'flow': 'compra',
-                    'hour': '13hs',
-                    'value': '0.0'
-                },
-                {
-                    'indice_tiempo': date(2019, 4, 22),
-                    'coin': 'euro',
-                    'entity': 'galicia',
-                    'channel': 'electronico',
-                    'flow': 'compra',
-                    'hour': '15hs',
-                    'value': '0.0'
-                },
-                {
-                    'indice_tiempo': date(2019, 4, 22),
-                    'coin': 'euro',
-                    'entity': 'galicia',
-                    'channel': 'mostrador',
-                    'flow': 'venta',
-                    'hour': '11hs',
-                    'value': '49.000'
-                },
-                {
-                    'indice_tiempo': date(2019, 4, 22),
-                    'coin': 'euro',
-                    'entity': 'galicia',
-                    'channel': 'mostrador',
-                    'flow': 'venta',
-                    'hour': '13hs',
-                    'value': '49.000'
-                },
-                {
-                    'indice_tiempo': date(2019, 4, 22),
-                    'coin': 'euro',
-                    'entity': 'galicia',
-                    'channel': 'mostrador',
-                    'flow': 'venta',
-                    'hour': '15hs',
-                    'value': '49.000'
-                },
-                {
-                    'indice_tiempo': date(2019, 4, 22),
-                    'coin': 'euro',
-                    'entity': 'galicia',
-                    'channel': 'electronico',
-                    'flow': 'venta',
-                    'hour': '11hs',
-                    'value': '0.0'
-                },
-                {
-                    'indice_tiempo': date(2019, 4, 22),
-                    'coin': 'euro',
-                    'entity': 'galicia',
-                    'channel': 'electronico',
-                    'flow': 'venta',
-                    'hour': '13hs',
-                    'value': '0.0'
-                },
-                {
-                    'indice_tiempo': date(2019, 4, 22),
-                    'coin': 'euro',
-                    'entity': 'galicia',
-                    'channel': 'electronico',
-                    'flow': 'venta',
-                    'hour': '15hs',
-                    'value': '0.0'
+                    'value': '41.800'
                 }
             ]
 
@@ -1112,7 +1160,7 @@ class BcraTceScraperTestCase(unittest.TestCase):
             return_value=pd.DataFrame(data=intermediate_panel_df)
         ):
 
-            scraper = BCRATCEScraper(url, coins, entities, True)
+            scraper = BCRATCEScraper(url, coins, entities, intermediate_panel_path=None, use_intermediate_panel=True)
             content = scraper.parse_from_intermediate_panel(
                 start_date, end_date,
                 )
@@ -1277,7 +1325,7 @@ class BcraTceScraperTestCase(unittest.TestCase):
             return_value=pd.DataFrame(data=intermediate_panel_df)
         ):
 
-            scraper = BCRATCEScraper(url, coins, entities, True)
+            scraper = BCRATCEScraper(url, coins, entities, intermediate_panel_path=None, use_intermediate_panel=True)
             content = scraper.parse_from_intermediate_panel(
                 start_date, end_date,
                 )
@@ -1388,7 +1436,7 @@ class BcraTceScraperTestCase(unittest.TestCase):
             }
         ]
 
-        scraper = BCRATCEScraper(url, coins, entities, True)
+        scraper = BCRATCEScraper(url, coins, entities, intermediate_panel_path=None, use_intermediate_panel=True)
         result = scraper.preprocess_rows(rows)
 
         assert result == [
@@ -1491,7 +1539,7 @@ class BcraTceScraperTestCase(unittest.TestCase):
                 'tc_ars_euro_galicia_electronico_venta_15hs': '0.0'
             }
         ]
-        scraper = BCRATCEScraper(url, coins, entities, True)
+        scraper = BCRATCEScraper(url, coins, entities, intermediate_panel_path=None, use_intermediate_panel=True)
 
         result = scraper.preprocess_rows(rows)
 

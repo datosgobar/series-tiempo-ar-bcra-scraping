@@ -51,7 +51,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             return_value=['a', 'b', 'c', 'd', 'e', 'f', 'g']
         ):
 
-            scraper = BCRALiborScraper(url, rates, False)
+            scraper = BCRALiborScraper(url, rates, intermediate_panel_path=None, use_intermediate_panel=False)
             start_day = date(2019, 3, 4)
             end_day = date(2019, 3, 10)
 
@@ -72,7 +72,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             "360": "libor_360_dias"
         }
 
-        scraper = BCRALiborScraper(url, rates, False)
+        scraper = BCRALiborScraper(url, rates, intermediate_panel_path=None, use_intermediate_panel=False)
         start_day = date(2019, 3, 10)
         end_day = date(2019, 3, 4)
 
@@ -96,7 +96,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
                 </table>
             '''
         ):
-            scraper = BCRALiborScraper(url, rates, False)
+            scraper = BCRALiborScraper(url, rates, intermediate_panel_path=None, use_intermediate_panel=False)
             content_date = date.today()
             content = scraper.fetch_day_content(content_date)
 
@@ -127,7 +127,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
                 </table>
             '''
         ):
-            scraper = BCRALiborScraper(url, rates, False)
+            scraper = BCRALiborScraper(url, rates, intermediate_panel_path=None, use_intermediate_panel=False)
             content = scraper.fetch_day_content(single_date)
 
             soup = BeautifulSoup(content, "html.parser")
@@ -152,7 +152,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             'parse_day_content',
             return_value={}
         ):
-            scraper = BCRALiborScraper(url, rates, False)
+            scraper = BCRALiborScraper(url, rates, intermediate_panel_path=None, use_intermediate_panel=False)
             contents = []
             parsed = scraper.parse_contents(contents, start_date, end_date)
 
@@ -186,9 +186,10 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             'parse_day_content',
             return_value=rows
         ):
-            scraper = BCRALiborScraper(url, rates, False)
+            scraper = BCRALiborScraper(url, rates, intermediate_panel_path=None, use_intermediate_panel=False)
 
-            contents = ['''
+            contents = [{'indice_tiempo': start_date,
+            'content': '''
             <table class="table table-BCRA table-bordered table-hover
                 table-responsive">
             <thead>
@@ -224,7 +225,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             </tr>
             </tbody>
             </table>
-            ''']
+            '''}]
 
             parsed = scraper.parse_contents(contents, start_date, end_date)
 
@@ -240,6 +241,8 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             ]
 
     def test_scraper_with_empty_table(self):
+
+        single_date = datetime(2019, 4, 24)
 
         url = "http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp"
 
@@ -259,13 +262,22 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             </thead>
         </table>
         '''
-        scraper = BCRALiborScraper(url, rates, False)
+        scraper = BCRALiborScraper(url, rates, intermediate_panel_path=None, use_intermediate_panel=False)
 
-        result = scraper.parse_day_content(content)
+        result = scraper.parse_day_content(single_date, content)
 
-        assert result == {}
+        assert result == {
+            '360': '',
+            '180': '',
+            '90': '',
+            '60': '',
+            '30': '',
+            'indice_tiempo': datetime(2019, 4, 24, 0, 0)
+            }
 
     def test_scraper_with_valid_table(self):
+
+        single_date = datetime(2019, 3, 15)
 
         url = "http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp"
 
@@ -277,7 +289,8 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             "360": "libor_360_dias"
         }
 
-        content = '''
+        content = {'indice_tiempo': single_date,
+        'content': '''
             <table class="table table-BCRA table-bordered table-hover
                 table-responsive">
             <thead>
@@ -313,12 +326,12 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             </tr>
             </tbody>
             </table>
-        '''
-        scraper = BCRALiborScraper(url, rates, False)
+        '''}
+        scraper = BCRALiborScraper(url, rates, intermediate_panel_path=None, use_intermediate_panel=False)
 
-        result = scraper.parse_day_content(content)
+        result = scraper.parse_day_content(single_date, content['content'])
 
-        assert result.get('indice_tiempo') == '2019-03-15'
+        assert result.get('indice_tiempo') == single_date
         assert result.get('30') == '2,481750'
         assert result.get('60') == '2,558380'
         assert result.get('90') == '2,625250'
@@ -343,7 +356,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
                 '360': '2,734130'
             }
         ]
-        scraper = BCRALiborScraper(False, rates, False)
+        scraper = BCRALiborScraper(False, rates, intermediate_panel_path=None, use_intermediate_panel=False)
 
         result = scraper.preprocess_rows(rates, rows)
 
@@ -368,7 +381,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             "360": "libor_360_dias"
         }
 
-        scraper = BCRALiborScraper(False, rates, False)
+        scraper = BCRALiborScraper(False, rates, intermediate_panel_path=None, use_intermediate_panel=False)
 
         result = scraper.preprocess_header(rates)
 
@@ -402,22 +415,14 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             "360": "libor_360_dias"
         }
 
-        scraper = BCRALiborScraper(False, rates, False)
+        scraper = BCRALiborScraper(False, rates, intermediate_panel_path=None, use_intermediate_panel=False)
 
         result = scraper.get_intermediate_panel_data_from_parsed(parsed)
 
         assert result == [
             {
                 'indice_tiempo': date.fromisoformat('2019-04-11'),
-                'type': '30', 'value': Decimal('0.0247263')
-            },
-            {
-                'indice_tiempo': date.fromisoformat('2019-04-11'),
-                'type': '60', 'value': Decimal('0.0253675')
-            },
-            {
-                'indice_tiempo': date.fromisoformat('2019-04-11'),
-                'type': '90', 'value': Decimal('0.0259675')
+                'type': '360', 'value': Decimal('0.0273413')
             },
             {
                 'indice_tiempo': date.fromisoformat('2019-04-11'),
@@ -425,7 +430,15 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             },
             {
                 'indice_tiempo': date.fromisoformat('2019-04-11'),
-                'type': '360', 'value': Decimal('0.0273413')
+                'type': '90', 'value': Decimal('0.0259675')
+            },
+            {
+                'indice_tiempo': date.fromisoformat('2019-04-11'),
+                'type': '60', 'value': Decimal('0.0253675')
+            },
+            {
+                'indice_tiempo': date.fromisoformat('2019-04-11'),
+                'type': '30', 'value': Decimal('0.0247263')
             }
         ]
 
@@ -440,7 +453,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             "360": "libor_360_dias"
         }
 
-        scraper = BCRALiborScraper(False, rates, False)
+        scraper = BCRALiborScraper(False, rates, intermediate_panel_path=None, use_intermediate_panel=False)
 
         result = scraper.get_intermediate_panel_data_from_parsed(parsed)
 
@@ -491,7 +504,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
                         return_value=''
                     ):
 
-                        scraper = BCRALiborScraper(url, rates, False)
+                        scraper = BCRALiborScraper(url, rates, intermediate_panel_path=None, use_intermediate_panel=False)
                         result = scraper.run(start_date, end_date)
 
                         assert result == [
@@ -539,7 +552,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
                 'parse_from_intermediate_panel',
                 return_value=parsed
             ):
-                scraper = BCRALiborScraper(url, rates, True)
+                scraper = BCRALiborScraper(url, rates, intermediate_panel_path=None, use_intermediate_panel=True)
                 result = scraper.run(start_date, end_date)
 
                 assert result == [
@@ -577,7 +590,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             "360": "libor_360_dias"
         }
 
-        scraper = BCRALiborScraper(url, rates, False)
+        scraper = BCRALiborScraper(url, rates, intermediate_panel_path=None, use_intermediate_panel=False)
 
         with self.assertRaises(InvalidConfigurationError):
             scraper.rates_config_validator(parsed, rates)
@@ -651,9 +664,9 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             'get_browser_driver',
             return_value=mocked_driver
         ):
-            scraper = BCRALiborScraper(url, rates, False)
+            scraper = BCRALiborScraper(url, rates, intermediate_panel_path=None, use_intermediate_panel=False )
             content = scraper.fetch_day_content(single_date)
-            assert content == "foo"
+            assert content['content'] == "foo"
 
     def test_fetch_day_content_invalid_url_patching_driver(self):
         """Probar fetch day content con url invalida"""
@@ -669,9 +682,9 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             'get_browser_driver',
             return_value=mocked_driver
         ):
-            scraper = BCRALiborScraper(url, rates, False)
+            scraper = BCRALiborScraper(url, rates, intermediate_panel_path=None, use_intermediate_panel=False)
             content = scraper.fetch_day_content(single_date)
-            assert content == 400
+            assert content['content'] == 400
 
     def test_parse_from_intermediate_panel(self):
         start_date = '2019-03-15'
@@ -708,7 +721,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
             'read_intermediate_panel_dataframe',
             return_value=pd.DataFrame(data=intermediate_panel_df)
         ):
-            scraper = BCRALiborScraper(url, rates, True)
+            scraper = BCRALiborScraper(url, rates, intermediate_panel_path=None, use_intermediate_panel=True)
             content = scraper.parse_from_intermediate_panel(
                 start_date, end_date,
                 )
