@@ -58,6 +58,6 @@ o
 * bcra_scraper sml --start-date=01/04/2019
 * bcra_scraper tce --start-date=01/04/2019
 
-### Panel intermedio
+### Saltear uso del panel intermedio
 
-* bcra_scraper libor --start-date=01/04/2019 --use-intermediate-panel
+* bcra_scraper libor --start-date=01/04/2019 --skip-intermediate-panel-data
