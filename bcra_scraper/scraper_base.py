@@ -160,46 +160,6 @@ class BCRAScraper:
         
         return parsed
 
-    def get_missing_date_parsed(self, start_date, end_date):
-        contents = self.fetch_contents(start_date, end_date)
-        parsed = self.parse_contents(contents, start_date, end_date)
-        return parsed
-
-    def get_first_parsed_date(self, parsed):
-        first_parsed_date = (
-            parsed[[k for k in parsed.keys()][0]][0]['indice_tiempo']
-            if (type(parsed) == dict)
-            else parsed[0]['indice_tiempo']
-        )
-
-        return datetime.strptime(first_parsed_date, '%Y-%m-%d').date()
-
-    def get_last_parsed_date(self, parsed):
-        last_parsed_date = (
-            parsed[[k for k in parsed.keys()][0]][-1]['indice_tiempo']
-            if (type(parsed) == dict)
-            else parsed[-1]['indice_tiempo']
-        )
-
-        return datetime.strptime(last_parsed_date, '%Y-%m-%d').date()
-
-    def merge_three_parsed_sections(self, previous_section, existing_section, next_section):
-        merged_sections = {} if type(existing_section) == dict else []
-
-        if type(existing_section) == dict:
-            for key in existing_section.keys():
-                merged_sections[key] = (
-                    (previous_section[key] if type(previous_section) == dict else [])
-                    + (existing_section[key] if type(existing_section) == dict else [])
-                    + (next_section[key] if type(next_section) == dict else [])
-                )
-        else:
-            merged_sections = (
-                previous_section + existing_section + next_section
-            )
-
-        return merged_sections
-
     def merge_two_parsed_sections(self, section_one, section_two):
         merged_sections = {} if type(section_one) == dict else []
 

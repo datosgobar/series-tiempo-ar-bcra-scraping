@@ -535,7 +535,7 @@ class BCRASMLScraper(BCRAScraper):
 
         try:
             intermediate_panel_dataframe = pd.read_csv(
-                'sml-intermediate-panel.csv',
+                self.intermediate_panel_path,
                 converters={
                     'serie_tiempo': lambda _: _,
                     'coin': lambda _: str(_),

@@ -150,7 +150,7 @@ def cli(ctx):
     '--skip-intermediate-panel-data',
     default=False,
     is_flag=True,
-    help=('Use este flag para forzar la lectura de datos desde un'
+    help=('Use este flag para no utilizar la lectura de datos desde un'
           'archivo intermedio')
 )
 @click.option(
@@ -233,7 +233,7 @@ def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor
     '--skip-intermediate-panel-data',
     default=False,
     is_flag=True,
-    help=('Use este flag para forzar la lectura de datos desde un'
+    help=('Use este flag para no utilizar la lectura de datos desde un'
           'archivo intermedio')
 )
 @click.option(
@@ -332,7 +332,7 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
     '--skip-intermediate-panel-data',
     default=False,
     is_flag=True,
-    help=('Use este flag para forzar la lectura de datos desde un'
+    help=('Use este flag para no utilizar la lectura de datos desde un'
           'archivo intermedio')
     )
 @click.option(
@@ -448,7 +448,7 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
     '--skip-intermediate-panel-data',
     default=False,
     is_flag=True,
-    help=('Use este flag para forzar la lectura de datos desde un'
+    help=('Use este flag para no utilizar la lectura de datos desde un'
           'archivo intermedio')
     )
 @click.option(
