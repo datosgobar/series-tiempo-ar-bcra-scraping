@@ -46,18 +46,22 @@ Usar https://github.com/pyenv/pyenv-installer
 ### Dependencias
 
 * Para ejecutar el scraper es necesario tener chromedriver en el PATH, de manera que el script pueda ejecutarlo.
-
+```
     brew cask install chromedriver
+```
 o
+```
     brew cask reinstall chromedriver
-
+```
 ## Uso
 ### Básico
-* bcra_scraper libor --start-date=01/04/2019
-* bcra_scraper exchange-rates --start-date=01/04/2019
-* bcra_scraper sml --start-date=01/04/2019
-* bcra_scraper tce --start-date=01/04/2019
+* ``bcra_scraper libor --start-date=01/04/2019``
+* ``bcra_scraper exchange-rates --start-date=01/04/2019``
+* ``bcra_scraper sml --start-date=01/04/2019``
+* ``bcra_scraper tce --start-date=01/04/2019``
 
 ### Panel intermedio
 
-* bcra_scraper libor --start-date=01/04/2019 --use-intermediate-panel
+* ``bcra_scraper libor --start-date=01/04/2019 --use-intermediate-panel``
+
+Descripción corta del proyecto.
