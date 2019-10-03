@@ -76,7 +76,7 @@ class BCRALiborScraper(BCRAScraper):
 
         super(BCRALiborScraper, self).__init__(url, *args, **kwargs)
 
-    def fetch_contents(self, start_date, end_date):
+    def fetch_contents(self, start_date, end_date, intermediate_panel_data):
         """
         Recorre un rango de fechas y llama a un método.
         Retorna un iterable donde cada elemento es un String, o una lista
@@ -90,13 +90,25 @@ class BCRALiborScraper(BCRAScraper):
             fecha de fin que va a tomar como referencia el scraper
         """
         contents = []
+        _contents = []
         day_count = (end_date - start_date).days + 1
 
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
 
-            contents.append(self.fetch_day_content(single_date))
-        return contents
+            if not self.intermediate_panel_data_has_date(intermediate_panel_data, single_date):
+                contents.append(self.fetch_day_content(single_date))
+            else:
+                _contents.append(self.intermediate_panel_data_has_date(intermediate_panel_data, single_date))
+
+        return contents, _contents
+
+    def intermediate_panel_data_has_date(self, intermediate_panel_data, single_date):
+        content = []
+        for data in intermediate_panel_data:
+            if single_date.strftime("%Y-%m-%d") == data['indice_tiempo'].strftime("%Y-%m-%d"):
+                content = data
+        return content
 
     def fetch_day_content(self, single_date):
         """
@@ -123,8 +135,7 @@ class BCRALiborScraper(BCRAScraper):
                 element = WebDriverWait(browser_driver, 0).until(element_present)
                 element.send_keys(single_date.strftime("%d/%m/%Y") + Keys.RETURN)
                 content = browser_driver.page_source
-                content_dict['indice_tiempo'] = f'{single_date.strftime("%Y-%m-%d")}'
-                content_dict['content'] = content
+                content_dict[f'{single_date.strftime("%Y-%m-%d")}'] = content
             except TimeoutException:
                 if counter < tries:
                     logging.warning(
@@ -147,7 +158,7 @@ class BCRALiborScraper(BCRAScraper):
 
         return content_dict
 
-    def parse_contents(self, contents, start_date, end_date):
+    def parse_contents(self, contents, start_date, end_date, intermediate_panel_data):
         """
         Retorna un iterable donde cada elemento es un String, o una lista
             vacía si no hay contenidos.
@@ -158,13 +169,15 @@ class BCRALiborScraper(BCRAScraper):
             Contenidos que van a ser parseados
         """
         parsed_contents = []
-        for content in contents:
-            single_date = content.get('indice_tiempo')
-            day_content = content.get('content')
-            parsed = self.parse_day_content(single_date, day_content)
-            if parsed:
-                parsed_contents.append(parsed)
-
+        day_count = (end_date - start_date).days + 1
+        for single_date in (start_date + timedelta(n)
+                            for n in range(day_count)):
+            if not self.intermediate_panel_data_has_date(intermediate_panel_data, single_date):
+                for content in contents:
+                    if single_date.strftime("%Y-%m-%d") in content:
+                        parsed = self.parse_day_content(single_date.strftime("%Y-%m-%d"), content[single_date.strftime("%Y-%m-%d")])
+                        if parsed:
+                            parsed_contents.append(parsed)
         return parsed_contents
 
     def parse_day_content(self, single_date, content):
@@ -286,7 +299,6 @@ class BCRALiborScraper(BCRAScraper):
         parsed : lista de diccionarios por moneda
         """
         intermediate_panel_data = []
-
         rate_dfs = {}
         data = []
         if parsed:
@@ -300,6 +312,8 @@ class BCRALiborScraper(BCRAScraper):
         )
 
         df = pd.DataFrame(data, columns=columns)
+        df = df.sort_values(['indice_tiempo'])
+        df.drop_duplicates(subset="indice_tiempo", keep='first', inplace=True)
 
         for k in self.rates.keys():
             rate_dfs[k] = df[['indice_tiempo', k]].copy()
@@ -315,6 +329,7 @@ class BCRALiborScraper(BCRAScraper):
             }
             for r in rate_dfs_panel.to_records()
         ]
+
         return intermediate_panel_data
 
     def write_intermediate_panel(self, rows, intermediate_panel_path):
@@ -346,7 +361,7 @@ class BCRALiborScraper(BCRAScraper):
         )
         self.write_intermediate_panel(intermediate_panel_data, self.intermediate_panel_path)
 
-    def parse_from_intermediate_panel(self, start_date, end_date):
+    def parse_from_intermediate_panel(self):
         """
         Lee el dataframe del panel intermedio.
         Regresa una lista con un diccionario por cada fecha
@@ -358,22 +373,20 @@ class BCRALiborScraper(BCRAScraper):
         end_date : date
             fecha de fin que va a tomar como referencia el scraper
         """
-        parsed = []
         _parsed = []
         rate_dfs = {}
-
         columns = ['indice_tiempo']
-        columns.extend([v for v in self.rates.keys()])
+        columns.extend([v for v in self.rates.values()])
 
         intermediate_panel_df = self.read_intermediate_panel_dataframe()
         intermediate_panel_df.set_index(['indice_tiempo'], inplace=True)
 
         if not intermediate_panel_df.empty:
-            for k in self.rates.keys():
-                rate_dfs[k] = intermediate_panel_df.loc[
+            for k, v in self.rates.items():
+                rate_dfs[v] = intermediate_panel_df.loc[
                     intermediate_panel_df['type'] == k
                 ][['value']]
-                rate_dfs[k].rename(columns={'value': k}, inplace=True)
+                rate_dfs[v].rename(columns={'value': v}, inplace=True)
             rates_df = reduce(
                 lambda df1, df2: df1.merge(
                     df2, left_on='indice_tiempo', right_on='indice_tiempo'
@@ -382,31 +395,20 @@ class BCRALiborScraper(BCRAScraper):
             )
 
             for r in rates_df.to_records():
-                if (start_date <= r[0] and
-                   r[0] <= end_date):
-                    parsed_row = {}
-
-                    columns = ['indice_tiempo']
-                    columns.extend([v for v in self.rates.values()])
-
-                    for index, column in enumerate(columns):
-                        parsed_row[column] = r[index]
-
-                    if parsed_row:
-                        parsed.append(parsed_row)
-
-            for r in rates_df.to_records():
                 parsed_row = {}
 
                 columns = ['indice_tiempo']
                 columns.extend([v for v in self.rates.values()])
 
                 for index, column in enumerate(columns):
-                    parsed_row[column] = r[index]
+                    if column == 'indice_tiempo':
+                        parsed_row[column] = datetime.strptime(r[index], "%Y-%m-%d").date()
+                    else:
+                        parsed_row[column] = r[index]
 
                 if parsed_row:
                     _parsed.append(parsed_row)
-        return parsed, _parsed
+        return _parsed
 
     def read_intermediate_panel_dataframe(self):
         """

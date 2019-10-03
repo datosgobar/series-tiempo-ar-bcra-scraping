@@ -68,7 +68,7 @@ class BCRASMLScraper(BCRAScraper):
         super(BCRASMLScraper, self)\
             .__init__(url, *args, **kwargs)
 
-    def fetch_contents(self, start_date, end_date):
+    def fetch_contents(self, start_date, end_date, intermediate_panel_data):
         """
         Función que a traves de un loop llama a un método
         y regresa un diccionario con el html de cada moneda.
@@ -80,12 +80,39 @@ class BCRASMLScraper(BCRAScraper):
         """
 
         contents = {}
-        for k, v in self.coins.items():
+        _content = {'peso_uruguayo': [], 'real': []}
+        uruguayo_aux_list = []
+        real_aux_list = []
+        day_count = (end_date - start_date).days + 1
 
-            fetched = self.fetch_content(v)
-            if fetched:
-                contents[k] = fetched
-        return contents
+        for single_date in (start_date + timedelta(n)
+                            for n in range(day_count)):
+            if not self.intermediate_panel_data_has_date(intermediate_panel_data, single_date):
+                for k, v in self.coins.items():
+                    fetched = self.fetch_content(v)
+                    if fetched:
+                        contents[k] = fetched
+            else:
+                panel_data = self.intermediate_panel_data_has_date(intermediate_panel_data, single_date)
+                for content_type in _content.keys():
+                    for k, v in panel_data.items():
+                        if content_type == k:
+                            if k == 'peso_uruguayo':
+                                uruguayo_aux_list.append(panel_data[k])
+                            else:
+                                real_aux_list.append(panel_data[k])
+                _content['peso_uruguayo'] = uruguayo_aux_list
+                _content['real'] = real_aux_list
+        return contents, _content
+
+    def intermediate_panel_data_has_date(self, intermediate_panel_data, single_date):
+        _content = {}
+        if intermediate_panel_data:
+            for k, v in intermediate_panel_data.items():
+                for d in v:
+                    if single_date.date() == d['indice_tiempo']:
+                        _content[k] = d
+        return _content
 
     def validate_coin_in_configuration_file(self, coin, options):
         """
@@ -148,7 +175,7 @@ class BCRASMLScraper(BCRAScraper):
 
         return content
 
-    def parse_contents(self, contents, start_date, end_date):
+    def parse_contents(self, contents, start_date, end_date, intermediate_panel_data):
         """
         Recorre un iterable que posee los html y llama a un método.
         Retorna un diccionario con las monedas como clave y como valor
@@ -171,7 +198,7 @@ class BCRASMLScraper(BCRAScraper):
 
         for k, v in contents.items():
 
-            parsed = self.parse_content(v, k, start_date, end_date)
+            parsed = self.parse_content(v, k, start_date, end_date, intermediate_panel_data)
 
             if parsed:
                 for p in parsed:
@@ -220,7 +247,7 @@ class BCRASMLScraper(BCRAScraper):
 
         return parsed_contents
 
-    def parse_content(self, content, coin, start_date, end_date):
+    def parse_content(self, content, coin, start_date, end_date, intermediate_panel_data):
         """
         Retorna un iterable con el contenido scrapeado cuyo formato
         posee la moneda, el indice de tiempo, y los tipo de cambio
@@ -261,31 +288,41 @@ class BCRASMLScraper(BCRAScraper):
 
             for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
-                day = single_date.strftime("%d/%m/%Y")
-                for header in head_rows:
-                    headers = header.find_all('th')
-                    parsed = {}
-                    parsed['coin'] = coin
-                    parsed['indice_tiempo'] = day
-                    parsed[headers[1].text] = ''
-                    parsed[headers[2].text] = ''
-                    parsed[headers[3].text] = ''
-                    parsed[headers[4].text] = ''
-
-                    if body.find('td', text=day):
-                        row = body.find('td', text=day).parent
-                        cols = row.find_all('td')
+                if not single_date.date() == self.check_date(single_date, intermediate_panel_data):
+                    day = single_date.strftime("%d/%m/%Y")
+                    for header in head_rows:
+                        headers = header.find_all('th')
+                        parsed = {}
                         parsed['coin'] = coin
-                        parsed['indice_tiempo'] = cols[0].text
-                        parsed[headers[1].text] = cols[1].text.strip()
-                        parsed[headers[2].text] = cols[2].text.strip()
-                        parsed[headers[3].text] = cols[3].text.strip()
-                        parsed[headers[4].text] = cols[4].text.strip()
-                    parsed_content.append(parsed)
+                        parsed['indice_tiempo'] = day
+                        parsed[headers[1].text] = ''
+                        parsed[headers[2].text] = ''
+                        parsed[headers[3].text] = ''
+                        parsed[headers[4].text] = ''
+
+                        if body.find('td', text=day):
+                            row = body.find('td', text=day).parent
+                            cols = row.find_all('td')
+                            parsed['coin'] = coin
+                            parsed['indice_tiempo'] = cols[0].text
+                            parsed[headers[1].text] = cols[1].text.strip()
+                            parsed[headers[2].text] = cols[2].text.strip()
+                            parsed[headers[3].text] = cols[3].text.strip()
+                            parsed[headers[4].text] = cols[4].text.strip()
+                        parsed_content.append(parsed)
 
             return parsed_content
         except:
             return []
+
+    def check_date(self, single_date, intermediate_panel_data):
+        date = {}
+        if intermediate_panel_data:
+            for v in intermediate_panel_data.values():
+                for d in v:
+                    if single_date.date() == d['indice_tiempo']:
+                        date = single_date.date()
+        return date
 
     def _preprocess_rows(self, parsed):
 
@@ -363,20 +400,39 @@ class BCRASMLScraper(BCRAScraper):
                     ]
 
                 for r in parsed[c]:
-                    for type in types:
-                        if type in r.keys():
+                    for t in types:
+                        if t in r.keys():
                             panel_row = {
                                 'indice_tiempo': r['indice_tiempo'],
                                 'coin': c,
-                                'type': type,
-                                'value': r[type],
+                                'type': t,
+                                'value': r[t],
                             }
                             intermediate_panel_data.append(panel_row)
+            l = len(intermediate_panel_data)
+            for i in range(0, l):
+                for j in range(0, l-i-1):
+                    if (intermediate_panel_data[j]['indice_tiempo'] > intermediate_panel_data[j + 1]['indice_tiempo']):
+                        tempo = intermediate_panel_data[j]
+                        intermediate_panel_data[j]= intermediate_panel_data[j + 1]
+                        intermediate_panel_data[j + 1]= tempo
         else:
             return []
         return intermediate_panel_data
 
-    def parse_from_intermediate_panel(self, start_date, end_date):
+    def reorder_parsed(self, parsed):
+        l = len(parsed)
+        for v in parsed.values():
+            for i in range(0, l): 
+                for j in range(0, l-i-1):
+                    if v and len(v) > 1:
+                        if (v[j]['indice_tiempo'] > v[j + 1]['indice_tiempo']):
+                            tempo = v[j]
+                            v[j]= v[j + 1]
+                            v[j + 1]= tempo
+        return parsed
+
+    def parse_from_intermediate_panel(self):
         """
         Lee el dataframe del panel intermedio.
         Retorna un diccionario con las monedas como clave y como valor
@@ -388,7 +444,6 @@ class BCRASMLScraper(BCRAScraper):
         end_date : date
             fecha de fin que va a tomar como referencia el scraper
         """
-        parsed = {'peso_uruguayo': [], 'real': []}
         _parsed = {'peso_uruguayo': [], 'real': []}
         coin_dfs = {}
         intermediate_panel_df = self.read_intermediate_panel_dataframe()
@@ -442,32 +497,20 @@ class BCRASMLScraper(BCRAScraper):
 
             for type in ['peso_uruguayo', 'real']:
                 for r in coins_df[type].to_records():
-                    if (start_date <= r[0] and
-                       r[0] <= end_date):
-                        parsed_row = {}
-
-                        columns = ['indice_tiempo']
-                        columns.extend([v for v in coin_dfs[type].keys()])
-
-                        for index, column in enumerate(columns):
-                            parsed_row[column] = r[index]
-
-                        if parsed_row:
-                            parsed[type].append(parsed_row)
-
-            for type in ['peso_uruguayo', 'real']:
-                for r in coins_df[type].to_records():
                     parsed_row = {}
 
                     columns = ['indice_tiempo']
                     columns.extend([v for v in coin_dfs[type].keys()])
 
                     for index, column in enumerate(columns):
-                        parsed_row[column] = r[index]
+                        if column == 'indice_tiempo':
+                            parsed_row[column] = datetime.strptime(r[index], "%Y-%m-%d").date()
+                        else:
+                            parsed_row[column] = r[index]
 
                     if parsed_row:
                         _parsed[type].append(parsed_row)
-        return parsed, _parsed
+        return _parsed
 
     def write_intermediate_panel(self, rows, intermediate_panel_path):
         """

@@ -35,7 +35,7 @@ class BCRAScraper:
         y los devuelve en un iterable
     """
 
-    def __init__(self, url, use_intermediate_panel, *args, **kwargs):
+    def __init__(self, url, skip_intermediate_panel_data, *args, **kwargs):
         """
         Parameters
         ----------
@@ -43,15 +43,15 @@ class BCRAScraper:
             Una cadena que representa una url válida, usada para obtener
             el contenido a ser scrapeado. Una URL se considera válida cuando su
             contenido no está vacio.
-        use_intermediate_panel : bool
-            Flag para indicar si se debe generar o leer un archivo intermedio
+        skip_intermediate_panel_data : bool
+            Flag para indicar si se debe saltear o leer un archivo intermedio
             con formato panel
         """
         self.browser_driver = None
         self.url = url
         self.timeout = kwargs.get('timeout', None)
         self.tries = kwargs.get('tries', 1)
-        self.use_intermediate_panel = use_intermediate_panel
+        self.skip_intermediate_panel_data = skip_intermediate_panel_data
 
     def _create_browser_driver(self):
         """
@@ -141,44 +141,23 @@ class BCRAScraper:
             fecha de fin que va a tomar como referencia el scraper
         """
         parsed = []
-        _parsed = []
-        first_missing_part = []
-        last_missing_part = []
         start_date = self.preprocess_start_date(start_date)
-        start_date = start_date if type(start_date) == date else start_date.date()
         end_date = self.preprocess_end_date(end_date)
-        end_date = end_date if type(end_date) == date else end_date.date()
 
-        if self.use_intermediate_panel:
-            first_date = start_date.strftime("%Y-%m-%d")
-            last_date = end_date.strftime("%Y-%m-%d")
+        intermediate_panel_data = [] if self.skip_intermediate_panel_data else self.parse_from_intermediate_panel()
 
-            parsed, original_panel_data = self.parse_from_intermediate_panel(first_date, last_date)
+        contents, _contents = self.fetch_contents(start_date, end_date, intermediate_panel_data)
 
-            if start_date < self.get_first_parsed_date(parsed):
-                last_date_missing = self.get_first_parsed_date(parsed) - timedelta(days=1)
-                first_missing_part = self.get_missing_date_parsed(start_date, last_date_missing)
-                first_missing_part = self._preprocess_rows(first_missing_part)
-                parsed = self.merge_two_parsed_sections(first_missing_part, parsed)
+        _parsed = self.parse_contents(contents, start_date, end_date, intermediate_panel_data)
 
-            if end_date < self.get_last_parsed_date(parsed):
-                first_date_missing = self.get_last_parsed_date(parsed) + timedelta(days=1)
-                last_missing_part = self.get_missing_date_parsed(first_date_missing, end_date)
-                last_missing_part = self._preprocess_rows(last_missing_part)
+        parsed = self._preprocess_rows(_parsed)
+        parsed_parts = self.merge_two_parsed_sections(parsed, intermediate_panel_data)
+        if _contents:
+            parsed = self.merge_two_parsed_sections(parsed, _contents)
 
-                parsed = self.merge_two_parsed_sections(parsed, last_missing_part)
-
-            parsed_parts = self.merge_three_parsed_sections(
-                first_missing_part, original_panel_data, last_missing_part
-            )
+        if not self.skip_intermediate_panel_data:
             self.save_intermediate_panel(parsed_parts)
-            
-        else:
-            contents = self.fetch_contents(start_date, end_date)
-            _parsed = self.parse_contents(contents, start_date, end_date)
-
-            parsed = self._preprocess_rows(_parsed)
-
+        
         return parsed
 
     def get_missing_date_parsed(self, start_date, end_date):
@@ -192,7 +171,7 @@ class BCRAScraper:
             if (type(parsed) == dict)
             else parsed[0]['indice_tiempo']
         )
-        
+
         return datetime.strptime(first_parsed_date, '%Y-%m-%d').date()
 
     def get_last_parsed_date(self, parsed):
@@ -201,7 +180,7 @@ class BCRAScraper:
             if (type(parsed) == dict)
             else parsed[-1]['indice_tiempo']
         )
-        
+
         return datetime.strptime(last_parsed_date, '%Y-%m-%d').date()
 
     def merge_three_parsed_sections(self, previous_section, existing_section, next_section):
@@ -218,7 +197,7 @@ class BCRAScraper:
             merged_sections = (
                 previous_section + existing_section + next_section
             )
-        
+
         return merged_sections
 
     def merge_two_parsed_sections(self, section_one, section_two):
@@ -232,5 +211,5 @@ class BCRAScraper:
                 )
         else:
             merged_sections = section_one + section_two
-        
+
         return merged_sections
