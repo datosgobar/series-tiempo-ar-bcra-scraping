@@ -296,11 +296,11 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
         parsed = scraper.run(start_date, end_date)
 
         if parsed:
-            parsed = scraper.reorder_parsed(parsed)
+            parsed['tc_local'] = scraper.reorder_parsed(parsed['tc_local'])
+            parsed['tp_usd'] = scraper.reorder_parsed(parsed['tp_usd'])
             coins = config.get('coins')
             csv_header = ['indice_tiempo']
             csv_header.extend([v for v in coins.keys()])
-
             write_file(csv_header, parsed['tp_usd'], tp_file_path)
 
             write_file(csv_header, parsed['tc_local'], tc_file_path)
@@ -396,7 +396,8 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
         parsed = scraper.run(start_date, end_date)
 
         if parsed:
-            parsed = scraper.reorder_parsed(parsed)
+            parsed['peso_uruguayo'] = scraper.reorder_parsed(parsed['peso_uruguayo'])
+            parsed['real'] = scraper.reorder_parsed(parsed['real'])
             for k, v in parsed.items():
                 if k == 'peso_uruguayo':
                     csv_header = [

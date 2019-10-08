@@ -80,9 +80,6 @@ class BCRAExchangeRateScraper(BCRAScraper):
             fecha de fin que va a tomar como referencia el scraper
         """
         content = {}
-        _content = {'tc_local': [], 'tp_usd': []}
-        tc_aux_list = []
-        tp_aux_list = []
         day_count = (end_date - start_date).days + 1
 
         for single_date in (start_date + timedelta(n)
@@ -93,18 +90,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
                     fetched = self.fetch_content(start_date, v)
                     if fetched:
                         content[k] = fetched
-            else:
-                panel_data = self.intermediate_panel_data_has_date(intermediate_panel_data, single_date)
-                for content_type in _content.keys():
-                    for k, v in panel_data.items():
-                        if content_type == k:
-                            if k == 'tc_local':
-                                tc_aux_list.append(panel_data[k])
-                            else:
-                                tp_aux_list.append(panel_data[k])
-                _content['tc_local'] = tc_aux_list
-                _content['tp_usd'] = tp_aux_list
-        return content, _content
+        return content
 
     def intermediate_panel_data_has_date(self, intermediate_panel_data, single_date):
         _content = {}
@@ -206,33 +192,49 @@ class BCRAExchangeRateScraper(BCRAScraper):
         parsed_contents = []
         parsed_tc_local, parsed_tp_usd = {}, {}
         parsed_contents = {'tc_local': [], 'tp_usd': []}
+        day_count = (end_date - start_date).days + 1
 
-        for k, v in content.items():
-
-            parsed = self.parse_coin(v, start_date, end_date, k, intermediate_panel_data)
-
-            if parsed:
-                for p in parsed:
-                    if p['indice_tiempo'] not in parsed_tc_local.keys():
-                        parsed_tc_local[p['indice_tiempo']] = {}
-                    parsed_tc_local[p['indice_tiempo']][p['moneda']] =\
-                        p['tc_local']
-                    if p['indice_tiempo'] not in parsed_tp_usd.keys():
-                        parsed_tp_usd[p['indice_tiempo']] = {}
-                    parsed_tp_usd[p['indice_tiempo']][p['moneda']] =\
-                        p['tp_usd']
+        for single_date in (start_date + timedelta(n)
+                            for n in range(day_count)):
+            if not self.intermediate_panel_data_has_date(intermediate_panel_data, single_date):
+                for k, v in content.items():
+                    parsed = self.parse_coin(v, single_date, k)
+                    if parsed:
+                        for p in parsed:
+                            if p['indice_tiempo'] not in parsed_tc_local.keys():
+                                parsed_tc_local[p['indice_tiempo']] = {}
+                            parsed_tc_local[p['indice_tiempo']][p['moneda']] =\
+                                p['tc_local']
+                            if p['indice_tiempo'] not in parsed_tp_usd.keys():
+                                parsed_tp_usd[p['indice_tiempo']] = {}
+                            parsed_tp_usd[p['indice_tiempo']][p['moneda']] =\
+                                p['tp_usd']
+            else:
+                parsed = self.intermediate_panel_data_has_date(intermediate_panel_data, single_date)
+                parsed_contents['tc_local'].append(parsed['tc_local'])
+                parsed_contents['tp_usd'].append(parsed['tp_usd'])
 
         for k, v in parsed_tc_local.items():
+            preprocess_dict = {}
             v['indice_tiempo'] = k
-            parsed_contents['tc_local'].append(v)
+            preprocess_dict = self.preprocess_rows([v])
+            for p in preprocess_dict:
+                parsed_contents['tc_local'].append(p)
+                if not type(intermediate_panel_data) == list:
+                    intermediate_panel_data['tc_local'].append(p)
 
         for k, v in parsed_tp_usd.items():
+            preprocess_dict = {}
             v['indice_tiempo'] = k
-            parsed_contents['tp_usd'].append(v)
+            preprocess_dict = self.preprocess_rows([v])
+            for p in preprocess_dict:
+                parsed_contents['tp_usd'].append(p)
+                if not type(intermediate_panel_data) == list:
+                    intermediate_panel_data['tp_usd'].append(p)
 
-        return parsed_contents
+        return parsed_contents, intermediate_panel_data
 
-    def parse_coin(self, content, start_date, end_date, coin, intermediate_panel_data):
+    def parse_coin(self, content, single_date, coin):
         """
         Retorna un iterable con el contenido scrapeado cuyo formato
         posee el indice de tiempo y los tipos de pase y cambio de cada moneda
@@ -266,30 +268,24 @@ class BCRAExchangeRateScraper(BCRAScraper):
             if not body:
                 return []
 
-            rows = body.find_all('tr')
             parsed_contents = []
-            day_count = (end_date - start_date).days + 1
 
-            for single_date in (start_date + timedelta(n)
-                            for n in range(day_count)):
-                if not single_date.date() == self.check_date(single_date, intermediate_panel_data):
-                    day = single_date.strftime("%d/%m/%Y")
-                    parsed = {}
-                    for row in rows:
-                        cols = row.find_all('td')
-                        parsed['moneda'] = coin
-                        parsed['indice_tiempo'] = day
-                        parsed['tp_usd'] = ''
-                        parsed['tc_local'] = ''
-                        
-                        if body.find('td', text=re.compile(day)):
-                            row = body.find('td', text=re.compile(day)).parent
-                            cols = row.find_all('td')
-                            parsed['moneda'] = coin
-                            parsed['indice_tiempo'] = cols[0].text.strip()
-                            parsed['tp_usd'] = cols[1].text[5:].strip()
-                            parsed['tc_local'] = cols[2].text[5:].strip()
-                        parsed_contents.append(parsed)
+            day = single_date.strftime("%d/%m/%Y")
+            parsed = {}
+            parsed['moneda'] = coin
+            parsed['indice_tiempo'] = day
+            parsed['tp_usd'] = ''
+            parsed['tc_local'] = ''
+            
+            if body.find('td', text=re.compile(day)):
+                if day == body.find('td', text=re.compile(day)).text.strip():
+                    row = body.find('td', text=re.compile(day)).parent
+                    cols = row.find_all('td')
+                    parsed['moneda'] = coin
+                    parsed['indice_tiempo'] = cols[0].text.strip()
+                    parsed['tp_usd'] = cols[1].text[5:].strip()
+                    parsed['tc_local'] = cols[2].text[5:].strip()
+                parsed_contents.append(parsed)
             return parsed_contents
         except:
             return parsed_contents
@@ -324,27 +320,30 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
             for k in row.keys():
                 if k == 'indice_tiempo':
-                    if '/' in row[k]:
-                        _ = row[k].split('/')
-                        preprocessed_date = date.fromisoformat(
-                            '-'.join([_[2], _[1], _[0]])
-                        )
+                    if type(row[k]) == str:
+                        if '/' in row[k]:
+                            _ = row[k].split('/')
+                            preprocessed_date = date.fromisoformat(
+                                '-'.join([_[2], _[1], _[0]])
+                            )
+                        else:
+                            preprocessed_date = date.fromisoformat(row[k])
                     else:
-                        preprocessed_date = date.fromisoformat(row[k])
-
+                        preprocessed_date = row[k]
                     preprocessed_row['indice_tiempo'] = preprocessed_date
                 else:
                     if '-' in str(row[k]):
                         preprocessed_row[k] = None
                     else:
-                        if '.' in row[k]:
-                            row[k] = row[k].replace('.', '')
                         if row[k]:
-                            preprocessed_row[k] = (
-                                    Decimal((row[k]).replace(',', '.'))
-                                    if isinstance(row[k], str)
-                                    else row[k]
-                                )
+                            if not type(row[k]) == Decimal:
+                                if '.' in row[k]:
+                                    row[k] = row[k].replace('.', '')
+                                preprocessed_row[k] = (
+                                        Decimal((row[k]).replace(',', '.'))
+                                        if isinstance(row[k], str)
+                                        else row[k]
+                                    )
                         else:
                             preprocessed_row[k] = row[k]
 
@@ -378,6 +377,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
         parsed : lista de diccionarios por moneda
         """
         intermediate_panel_data = []
+
         if parsed:
             for type in ['tc_local', 'tp_usd']:
                 for r in parsed[type]:
@@ -404,14 +404,13 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
     def reorder_parsed(self, parsed):
         l = len(parsed)
-        for v in parsed.values():
-            for i in range(0, l): 
-                for j in range(0, l-i-1):
-                    if v and len(v) > 1:
-                        if (v[j]['indice_tiempo'] > v[j + 1]['indice_tiempo']):
-                            tempo = v[j]
-                            v[j]= v[j + 1]
-                            v[j + 1]= tempo
+        for i in range(0, l): 
+            for j in range(0, l-i-1):
+                if parsed and len(parsed) > 1:
+                    if (parsed[j]['indice_tiempo'] > parsed[j + 1]['indice_tiempo']):
+                        tempo = parsed[j]
+                        parsed[j] = parsed[j + 1]
+                        parsed[j + 1] = tempo
         return parsed
 
     def save_intermediate_panel(self, parsed):

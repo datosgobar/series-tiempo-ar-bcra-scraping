@@ -145,18 +145,11 @@ class BCRAScraper:
         end_date = self.preprocess_end_date(end_date)
 
         intermediate_panel_data = [] if self.skip_intermediate_panel_data else self.parse_from_intermediate_panel()
-
-        contents, _contents = self.fetch_contents(start_date, end_date, intermediate_panel_data)
-
-        _parsed = self.parse_contents(contents, start_date, end_date, intermediate_panel_data)
-
-        parsed = self._preprocess_rows(_parsed)
-        parsed_parts = self.merge_two_parsed_sections(parsed, intermediate_panel_data)
-        if _contents:
-            parsed = self.merge_two_parsed_sections(parsed, _contents)
+        contents = self.fetch_contents(start_date, end_date, intermediate_panel_data)
+        parsed, intermediate_panel_data = self.parse_contents(contents, start_date, end_date, intermediate_panel_data)
 
         if not self.skip_intermediate_panel_data:
-            self.save_intermediate_panel(parsed_parts)
+            self.save_intermediate_panel(intermediate_panel_data)
         
         return parsed
 
