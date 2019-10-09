@@ -313,17 +313,7 @@ class BCRASMLScraper(BCRAScraper):
         except:
             return []
 
-    def check_date(self, single_date, intermediate_panel_data):
-        date = {}
-        if intermediate_panel_data:
-            for v in intermediate_panel_data.values():
-                for d in v:
-                    if single_date.date() == d['indice_tiempo']:
-                        date = single_date.date()
-        return date
-
     def _preprocess_rows(self, parsed):
-
         parsed['peso_uruguayo'] = self.preprocess_rows(
             parsed['peso_uruguayo']
             )

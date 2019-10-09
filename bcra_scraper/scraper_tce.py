@@ -453,15 +453,6 @@ class BCRATCEScraper(BCRAScraper):
 
         return parsed_contents, intermediate_panel_data
 
-    def check_date(self, single_date, intermediate_panel_data):
-        date = {}
-        if intermediate_panel_data:
-            for v in intermediate_panel_data.values():
-                for d in v:
-                    if datetime.strptime(single_date, "%Y-%m-%d").date() == d['indice_tiempo']:
-                        date = single_date.date()
-        return date
-
     def parse_content(self, content, single_date, coin, entities):
         """
         Parsea el contenido y agrega los registros a un diccionario,
