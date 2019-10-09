@@ -152,17 +152,3 @@ class BCRAScraper:
             self.save_intermediate_panel(intermediate_panel_data)
         
         return parsed
-
-    def merge_two_parsed_sections(self, section_one, section_two):
-        merged_sections = {} if type(section_one) == dict else []
-
-        if type(section_one) == dict:
-            for key in section_one.keys():
-                merged_sections[key] = (
-                    (section_one[key] if type(section_one) == dict else [])
-                    + (section_two[key] if type(section_two) == dict else [])
-                )
-        else:
-            merged_sections = section_one + section_two
-
-        return merged_sections
