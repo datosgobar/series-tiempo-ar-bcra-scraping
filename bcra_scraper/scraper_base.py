@@ -1,5 +1,9 @@
+from datetime import date, datetime, timedelta
 from selenium import webdriver
 from shutil import which
+
+import string
+import random
 
 
 class BCRAScraper:
@@ -31,7 +35,7 @@ class BCRAScraper:
         y los devuelve en un iterable
     """
 
-    def __init__(self, url, use_intermediate_panel, *args, **kwargs):
+    def __init__(self, url, skip_intermediate_panel_data, *args, **kwargs):
         """
         Parameters
         ----------
@@ -39,15 +43,15 @@ class BCRAScraper:
             Una cadena que representa una url válida, usada para obtener
             el contenido a ser scrapeado. Una URL se considera válida cuando su
             contenido no está vacio.
-        use_intermediate_panel : bool
-            Flag para indicar si se debe generar o leer un archivo intermedio
+        skip_intermediate_panel_data : bool
+            Flag para indicar si se debe saltear o leer un archivo intermedio
             con formato panel
         """
         self.browser_driver = None
         self.url = url
         self.timeout = kwargs.get('timeout', None)
         self.tries = kwargs.get('tries', 1)
-        self.use_intermediate_panel = use_intermediate_panel
+        self.skip_intermediate_panel_data = skip_intermediate_panel_data
 
     def _create_browser_driver(self):
         """
@@ -140,16 +144,11 @@ class BCRAScraper:
         start_date = self.preprocess_start_date(start_date)
         end_date = self.preprocess_end_date(end_date)
 
-        if self.use_intermediate_panel:
-            first_date = start_date.strftime("%Y-%m-%d")
-            last_date = end_date.strftime("%Y-%m-%d")
+        intermediate_panel_data = [] if self.skip_intermediate_panel_data else self.parse_from_intermediate_panel()
+        contents = self.fetch_contents(start_date, end_date, intermediate_panel_data)
+        parsed, intermediate_panel_data = self.parse_contents(contents, start_date, end_date, intermediate_panel_data)
 
-            parsed = self.parse_from_intermediate_panel(first_date, last_date)
-        else:
-            contents = self.fetch_contents(start_date, end_date)
-            _parsed = self.parse_contents(contents, start_date, end_date)
-
-            parsed = self._preprocess_rows(_parsed)
-
-            self.save_intermediate_panel(parsed)
+        if not self.skip_intermediate_panel_data:
+            self.save_intermediate_panel(intermediate_panel_data)
+        
         return parsed

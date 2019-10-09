@@ -41,7 +41,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
                 </table>
             '''
         ):
-            scraper = BCRASMLScraper(url, coins, False)
+            scraper = BCRASMLScraper(url, coins, intermediate_panel_path=None, use_intermediate_panel=False)
             content = scraper.fetch_content(single_date)
 
             soup = BeautifulSoup(content, "html.parser")
@@ -65,7 +65,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
             'fetch_content',
             return_value=' '
         ):
-            scraper = BCRASMLScraper(url, coins, False)
+            scraper = BCRASMLScraper(url, coins, intermediate_panel_path=None, use_intermediate_panel=False)
             content = scraper.fetch_content(single_date)
 
             soup = BeautifulSoup(content, "html.parser")
@@ -95,7 +95,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
             'fetch_content',
             return_value=content
         ):
-            scraper = BCRASMLScraper(url, coins, False)
+            scraper = BCRASMLScraper(url, coins, intermediate_panel_path=None, use_intermediate_panel=False)
             result = scraper.fetch_contents(start_date, end_date)
 
             assert result == {
@@ -133,7 +133,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
         </table>
         '''
 
-        scraper = BCRASMLScraper(False, coin, False)
+        scraper = BCRASMLScraper(False, coin, intermediate_panel_path=None, use_intermediate_panel=False)
         result = scraper.parse_content(
                 content, coin, start_date, end_date
             )
@@ -165,7 +165,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
         </table>
         '''
 
-        scraper = BCRASMLScraper(False, coin, False)
+        scraper = BCRASMLScraper(False, coin, intermediate_panel_path=None, use_intermediate_panel=False)
         result = scraper.parse_content(
                 content, coin, start_date, end_date
             )
@@ -215,7 +215,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
             'parse_content',
             side_effect=[content_peso, content_real]
         ):
-            scraper = BCRASMLScraper(url, coins, False)
+            scraper = BCRASMLScraper(url, coins, intermediate_panel_path=None, use_intermediate_panel=False)
 
             result = scraper.parse_contents(contents, start_date, end_date)
 
@@ -251,7 +251,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
             'peso_uruguayo': '',
             'real': ''
         }
-        scraper = BCRASMLScraper(url, coins, False)
+        scraper = BCRASMLScraper(url, coins, intermediate_panel_path=None, use_intermediate_panel=False)
         result = scraper.parse_contents(contents, start_date, end_date)
 
         assert result == {
@@ -274,7 +274,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
                         table-responsive" colspan="3">
                 </table>'''
         }
-        scraper = BCRASMLScraper(url, coins, False)
+        scraper = BCRASMLScraper(url, coins, intermediate_panel_path=None, use_intermediate_panel=False)
         result = scraper.parse_contents(contents, start_date, end_date)
 
         assert result == {
@@ -299,7 +299,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
                         <thead></thead>
                 </table>'''
         }
-        scraper = BCRASMLScraper(url, coins, False)
+        scraper = BCRASMLScraper(url, coins, intermediate_panel_path=None, use_intermediate_panel=False)
         result = scraper.parse_contents(contents, start_date, end_date)
 
         assert result == {
@@ -380,7 +380,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
                 'validate_coin_in_configuration_file',
                 return_value=True
             ):
-                scraper = BCRASMLScraper(url, coins, False)
+                scraper = BCRASMLScraper(url, coins, intermediate_panel_path=None, use_intermediate_panel=False)
                 content = scraper.fetch_content(coins)
                 assert content == "foo"
 
@@ -402,7 +402,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
                 'validate_coin_in_configuration_file',
                 return_value=True
             ):
-                scraper = BCRASMLScraper(url, coins, False)
+                scraper = BCRASMLScraper(url, coins, intermediate_panel_path=None, use_intermediate_panel=False)
                 content = scraper.fetch_content(coins)
                 assert content == 400
 
@@ -420,7 +420,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
             mock.text = option_text
             options.append(mock)
 
-        scraper = BCRASMLScraper(url, coins, False)
+        scraper = BCRASMLScraper(url, coins, intermediate_panel_path=None, use_intermediate_panel=False)
         coin_in_configuration_file = scraper.validate_coin_in_configuration_file(coin, options)
 
         assert coin_in_configuration_file is True
@@ -436,7 +436,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
             mock.text = option_text
             options.append(mock)
 
-        scraper = BCRASMLScraper(url, coins, False)
+        scraper = BCRASMLScraper(url, coins, intermediate_panel_path=None, use_intermediate_panel=False)
         coin_in_configuration_file = scraper.validate_coin_in_configuration_file(coin, options)
         assert coin_in_configuration_file is False
 
@@ -471,46 +471,16 @@ class BcraSmlScraperTestCase(unittest.TestCase):
             'real': 'Real'
         }
 
-        scraper = BCRASMLScraper(url, coins, True)
+        scraper = BCRASMLScraper(url, coins, intermediate_panel_path=None, use_intermediate_panel=True)
 
         result = scraper.get_intermediate_panel_data_from_parsed(parsed)
 
         assert result == [
             {
                 'indice_tiempo': date(2019, 5, 6),
-                'coin': 'peso_uruguayo',
-                'type': 'Tipo de cambio de Referencia',
-                'value': Decimal('44.89670')
-            },
-            {
-                'indice_tiempo': date(2019, 5, 6),
-                'coin': 'peso_uruguayo',
-                'type': 'Tipo de cambio URINUSCA',
-                'value': Decimal('35.03600')
-            },
-            {
-                'indice_tiempo': date(2019, 5, 6),
-                'coin': 'peso_uruguayo',
-                'type': 'Tipo de cambio SML Peso Uruguayo',
-                'value': Decimal('1.28145')
-            },
-            {
-                'indice_tiempo': date(2019, 5, 6),
-                'coin': 'peso_uruguayo',
-                'type': 'Tipo de cambio SML Uruguayo Peso',
-                'value': Decimal('0.78040')
-            },
-            {
-                'indice_tiempo': date(2019, 5, 6),
                 'coin': 'real',
-                'type': 'Tipo de cambio de Referencia',
-                'value': Decimal('44.89670')
-            },
-            {
-                'indice_tiempo': date(2019, 5, 6),
-                'coin': 'real',
-                'type': 'Tipo de cambio PTAX',
-                'value': Decimal('3.96210')
+                'type': 'Tipo de cambio SML Real Peso',
+                'value': Decimal('0.08825')
             },
             {
                 'indice_tiempo': date(2019, 5, 6),
@@ -521,8 +491,38 @@ class BcraSmlScraperTestCase(unittest.TestCase):
             {
                 'indice_tiempo': date(2019, 5, 6),
                 'coin': 'real',
-                'type': 'Tipo de cambio SML Real Peso',
-                'value': Decimal('0.08825')
+                'type': 'Tipo de cambio PTAX',
+                'value': Decimal('3.96210')
+            },
+            {
+                'indice_tiempo': date(2019, 5, 6),
+                'coin': 'real',
+                'type': 'Tipo de cambio de Referencia',
+                'value': Decimal('44.89670')
+            },
+            {
+                'indice_tiempo': date(2019, 5, 6),
+                'coin': 'peso_uruguayo',
+                'type': 'Tipo de cambio SML Uruguayo Peso',
+                'value': Decimal('0.78040')
+            },
+            {
+                'indice_tiempo': date(2019, 5, 6),
+                'coin': 'peso_uruguayo',
+                'type': 'Tipo de cambio SML Peso Uruguayo',
+                'value': Decimal('1.28145')
+            },
+            {
+                'indice_tiempo': date(2019, 5, 6),
+                'coin': 'peso_uruguayo',
+                'type': 'Tipo de cambio URINUSCA',
+                'value': Decimal('35.03600')
+            },
+            {
+                'indice_tiempo': date(2019, 5, 6),
+                'coin': 'peso_uruguayo',
+                'type': 'Tipo de cambio de Referencia',
+                'value': Decimal('44.89670')
             }
         ]
 
@@ -544,7 +544,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
             }
         ]
 
-        scraper = BCRASMLScraper(False, rows, False)
+        scraper = BCRASMLScraper(False, rows, intermediate_panel_path=None, use_intermediate_panel=False)
 
         result = scraper.preprocess_rows(rows)
 
@@ -582,7 +582,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
                 'Tipo de cambio SML Real Peso': '0.09465'
             }
         ]
-        scraper = BCRASMLScraper(False, rows, False)
+        scraper = BCRASMLScraper(False, rows, intermediate_panel_path=None, use_intermediate_panel=False)
 
         result = scraper.preprocess_rows(rows)
 
@@ -664,7 +664,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
             'read_intermediate_panel_dataframe',
             return_value=pd.DataFrame(data=intermediate_panel_df)
         ):
-            scraper = BCRASMLScraper(url, coins, True)
+            scraper = BCRASMLScraper(url, coins, intermediate_panel_path=None, use_intermediate_panel=True)
             content = scraper.parse_from_intermediate_panel(
                 start_date, end_date,
                 )
@@ -735,7 +735,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
             'read_intermediate_panel_dataframe',
             return_value=pd.DataFrame(data=intermediate_panel_df)
         ):
-            scraper = BCRASMLScraper(url, coins, True)
+            scraper = BCRASMLScraper(url, coins, intermediate_panel_path=None, use_intermediate_panel=True)
             content = scraper.parse_from_intermediate_panel(
                 start_date, end_date,
                 )
@@ -798,7 +798,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
             'read_intermediate_panel_dataframe',
             return_value=pd.DataFrame(data=intermediate_panel_df)
         ):
-            scraper = BCRASMLScraper(url, coins, True)
+            scraper = BCRASMLScraper(url, coins, intermediate_panel_path=None, use_intermediate_panel=True)
             content = scraper.parse_from_intermediate_panel(
                 start_date, end_date,
                 )
@@ -893,7 +893,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
                         'save_intermediate_panel',
                         return_value=''
                     ):
-                        scraper = BCRASMLScraper(url, coins, False)
+                        scraper = BCRASMLScraper(url, coins, intermediate_panel_path=None, use_intermediate_panel=False)
                         result = scraper.run(start_date, end_date)
 
                         assert result == {
@@ -998,7 +998,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
                 'preprocess_rows',
                 side_effect=[peso_uruguayo_preprocess, real_preprocess]
             ):
-                scraper = BCRASMLScraper(url, coins, True)
+                scraper = BCRASMLScraper(url, coins, intermediate_panel_path=None, use_intermediate_panel=True)
                 result = scraper.run(start_date, end_date)
 
                 assert result == {
@@ -1041,7 +1041,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
             'real': 'Real'
         }
 
-        scraper = BCRASMLScraper(url, coins, True)
+        scraper = BCRASMLScraper(url, coins, intermediate_panel_path=None, use_intermediate_panel=True)
 
         result = scraper.get_intermediate_panel_data_from_parsed(parsed)
 
