@@ -147,10 +147,10 @@ def cli(ctx):
     type=click.Path(exists=True),
     )
 @click.option(
-    '--use-intermediate-panel',
+    '--skip-intermediate-panel-data',
     default=False,
     is_flag=True,
-    help=('Use este flag para forzar la lectura de datos desde un'
+    help=('Use este flag para no utilizar la lectura de datos desde un'
           'archivo intermedio')
 )
 @click.option(
@@ -162,7 +162,7 @@ def cli(ctx):
     type=str
 )
 @click.pass_context
-def libor(ctx, start_date, end_date, config, use_intermediate_panel, libor_csv_path,
+def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor_csv_path,
           intermediate_panel_path, *args, **kwargs):
     validate_dates(start_date, end_date)
     start_date = date(start_date.year, start_date.month, start_date.day)
@@ -199,7 +199,7 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel, libor_csv_p
             timeout=timeout,
             tries=tries,
             rates=config.get('rates'),
-            use_intermediate_panel=use_intermediate_panel,
+            skip_intermediate_panel_data=skip_intermediate_panel_data,
             intermediate_panel_path=intermediate_panel_path,
         )
 
@@ -230,10 +230,10 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel, libor_csv_p
     type=click.Path(exists=True),
     )
 @click.option(
-    '--use-intermediate-panel',
+    '--skip-intermediate-panel-data',
     default=False,
     is_flag=True,
-    help=('Use este flag para forzar la lectura de datos desde un'
+    help=('Use este flag para no utilizar la lectura de datos desde un'
           'archivo intermedio')
 )
 @click.option(
@@ -249,7 +249,7 @@ def libor(ctx, start_date, end_date, config, use_intermediate_panel, libor_csv_p
     type=str
 )
 @click.pass_context
-def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel,
+def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_data,
                    tp_csv_path, tc_csv_path, intermediate_panel_path):
 
     try:
@@ -290,16 +290,17 @@ def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel,
             timeout=timeout,
             tries=tries,
             coins=config.get('coins'),
-            use_intermediate_panel=use_intermediate_panel,
+            skip_intermediate_panel_data=skip_intermediate_panel_data,
             intermediate_panel_path=intermediate_panel_path
         )
         parsed = scraper.run(start_date, end_date)
 
         if parsed:
+            parsed['tc_local'] = scraper.reorder_parsed(parsed['tc_local'])
+            parsed['tp_usd'] = scraper.reorder_parsed(parsed['tp_usd'])
             coins = config.get('coins')
             csv_header = ['indice_tiempo']
             csv_header.extend([v for v in coins.keys()])
-
             write_file(csv_header, parsed['tp_usd'], tp_file_path)
 
             write_file(csv_header, parsed['tc_local'], tc_file_path)
@@ -328,10 +329,10 @@ def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel,
     type=click.Path(exists=True),
 )
 @click.option(
-    '--use-intermediate-panel',
+    '--skip-intermediate-panel-data',
     default=False,
     is_flag=True,
-    help=('Use este flag para forzar la lectura de datos desde un'
+    help=('Use este flag para no utilizar la lectura de datos desde un'
           'archivo intermedio')
     )
 @click.option(
@@ -347,7 +348,7 @@ def exchange_rates(ctx, start_date, end_date, config, use_intermediate_panel,
     type=str
 )
 @click.pass_context
-def sml(ctx, config, start_date, end_date, use_intermediate_panel, uruguayo_csv_path,
+def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguayo_csv_path,
         real_csv_path, intermediate_panel_path):
 
     try:
@@ -388,14 +389,15 @@ def sml(ctx, config, start_date, end_date, use_intermediate_panel, uruguayo_csv_
             timeout=timeout,
             tries=tries,
             coins=config.get('coins'),
-            use_intermediate_panel=use_intermediate_panel,
+            skip_intermediate_panel_data=skip_intermediate_panel_data,
             intermediate_panel_path=intermediate_panel_path
         )
 
         parsed = scraper.run(start_date, end_date)
 
         if parsed:
-
+            parsed['peso_uruguayo'] = scraper.reorder_parsed(parsed['peso_uruguayo'])
+            parsed['real'] = scraper.reorder_parsed(parsed['real'])
             for k, v in parsed.items():
                 if k == 'peso_uruguayo':
                     csv_header = [
@@ -444,10 +446,10 @@ def sml(ctx, config, start_date, end_date, use_intermediate_panel, uruguayo_csv_
     type=click.Path(exists=True),
 )
 @click.option(
-    '--use-intermediate-panel',
+    '--skip-intermediate-panel-data',
     default=False,
     is_flag=True,
-    help=('Use este flag para forzar la lectura de datos desde un'
+    help=('Use este flag para no utilizar la lectura de datos desde un'
           'archivo intermedio')
     )
 @click.option(
@@ -463,7 +465,7 @@ def sml(ctx, config, start_date, end_date, use_intermediate_panel, uruguayo_csv_
     type=str
 )
 @click.pass_context
-def tce(ctx, config, start_date, end_date, use_intermediate_panel, dolar_csv_path,
+def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_csv_path,
         euro_csv_path, intermediate_panel_path):
 
     try:
@@ -507,12 +509,13 @@ def tce(ctx, config, start_date, end_date, use_intermediate_panel, dolar_csv_pat
             tries=tries,
             coins=config.get('coins'),
             entities=config.get('entities'),
-            use_intermediate_panel=use_intermediate_panel,
+            skip_intermediate_panel_data=skip_intermediate_panel_data,
             intermediate_panel_path=intermediate_panel_path
         )
         parsed = scraper.run(start_date, end_date)
 
         if parsed:
+            parsed = scraper.reorder_parsed(parsed)
             for coin in ['dolar', 'euro']:
                 csv_header = ['indice_tiempo']
                 for entity in config.get('entities'):
