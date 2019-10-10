@@ -10,7 +10,7 @@ from pandas import pandas as pd
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
 
 from bcra_scraper.exceptions import InvalidConfigurationError
 from bcra_scraper.scraper_base import BCRAScraper
@@ -166,7 +166,11 @@ class BCRATCEScraper(BCRAScraper):
                     content_dict['indice_tiempo'] = f'{single_date.strftime("%Y-%m-%d")}'
                     content_dict['content'] = content
 
-            except TimeoutException:
+            except NoSuchElementException:
+                raise InvalidConfigurationError(
+                    f'La conexion de internet ha fallado para la fecha {single_date}'
+                )
+            except (TimeoutException, WebDriverException):
                 if counter < tries:
                     logging.warning(
                         f'La conexion de internet ha fallado para la fecha {single_date}. Reintentando...'
@@ -179,10 +183,6 @@ class BCRATCEScraper(BCRAScraper):
                     raise InvalidConfigurationError(
                         f'La conexion de internet ha fallado para la fecha {single_date}'
                     )
-            except NoSuchElementException:
-                raise InvalidConfigurationError(
-                    f'La conexion de internet ha fallado para la fecha {single_date}'
-                )
 
             break
 
@@ -448,6 +448,7 @@ class BCRATCEScraper(BCRAScraper):
                                                 intermediate_panel_data['euro'].append(d)
             else:
                 parsed = self.intermediate_panel_data_has_date(intermediate_panel_data, single_date)
+                # breakpoint()
                 parsed_contents['dolar'].append(parsed['dolar'])
                 parsed_contents['euro'].append(parsed['euro'])
 
