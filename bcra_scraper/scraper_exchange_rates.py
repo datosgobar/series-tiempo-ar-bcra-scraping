@@ -13,7 +13,7 @@ from bcra_scraper.exceptions import InvalidConfigurationError
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
 
 
 class BCRAExchangeRateScraper(BCRAScraper):
@@ -152,7 +152,11 @@ class BCRAExchangeRateScraper(BCRAScraper):
                     submit_button.click()
                     content = browser_driver.page_source
 
-            except TimeoutException:
+            except NoSuchElementException:
+                raise InvalidConfigurationError(
+                    f'La conexion de internet ha fallado para la fecha {start_date}'
+                )
+            except (TimeoutException, WebDriverException):
                 if counter < tries:
                     logging.warning(
                         f'La conexion de internet ha fallado para la fecha {start_date}. Reintentando...'
@@ -165,10 +169,6 @@ class BCRAExchangeRateScraper(BCRAScraper):
                     raise InvalidConfigurationError(
                         f'La conexion de internet ha fallado para la fecha {start_date}'
                     )
-            except NoSuchElementException:
-                raise InvalidConfigurationError(
-                    f'La conexion de internet ha fallado para la fecha {start_date}'
-                )
 
             break
 

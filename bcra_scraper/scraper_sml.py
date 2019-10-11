@@ -13,7 +13,7 @@ from bcra_scraper.scraper_base import BCRAScraper
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
 
 
 class BCRASMLScraper(BCRAScraper):
@@ -139,7 +139,12 @@ class BCRASMLScraper(BCRAScraper):
                 if valid:
                     element.send_keys(coin)
                     content = browser_driver.page_source
-            except TimeoutException:
+
+            except NoSuchElementException:
+                raise InvalidConfigurationError(
+                    f'La conexion de internet ha fallado para la moneda {coin}'
+                )
+            except (TimeoutException, WebDriverException):
                 if counter < tries:
                     logging.warning(
                         f'La conexion de internet ha fallado para la moneda {coin}. Reintentando...'
@@ -152,10 +157,6 @@ class BCRASMLScraper(BCRAScraper):
                     raise InvalidConfigurationError(
                         f'La conexion de internet ha fallado para la moneda {coin}'
                     )
-            except NoSuchElementException:
-                raise InvalidConfigurationError(
-                    f'La conexion de internet ha fallado para la moneda {coin}'
-                )
 
             break
 

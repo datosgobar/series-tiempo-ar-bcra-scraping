@@ -14,7 +14,7 @@ from bcra_scraper.exceptions import InvalidConfigurationError
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
 
 
 class BCRALiborScraper(BCRAScraper):
@@ -132,7 +132,12 @@ class BCRALiborScraper(BCRAScraper):
                 element.send_keys(single_date.strftime("%d/%m/%Y") + Keys.RETURN)
                 content = browser_driver.page_source
                 content_dict[f'{single_date.strftime("%Y-%m-%d")}'] = content
-            except TimeoutException:
+            
+            except NoSuchElementException:
+                raise InvalidConfigurationError(
+                    f'La conexion de internet ha fallado para la fecha {single_date}'
+                )
+            except (TimeoutException, WebDriverException):
                 if counter < tries:
                     logging.warning(
                         f'La conexion de internet ha fallado para la fecha {single_date}. Reintentando...'
@@ -145,10 +150,6 @@ class BCRALiborScraper(BCRAScraper):
                     raise InvalidConfigurationError(
                         f'La conexion de internet ha fallado para la fecha {single_date}'
                     )
-            except NoSuchElementException:
-                raise InvalidConfigurationError(
-                    f'La conexion de internet ha fallado para la fecha {single_date}'
-                )
 
             break
 
