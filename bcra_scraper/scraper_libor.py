@@ -430,7 +430,7 @@ class BCRALiborScraper(BCRAScraper):
             )
 
         except FileNotFoundError:
-            raise InvalidConfigurationError(
-                "El archivo panel no existe"
-            )
+            rows = []
+            self.write_intermediate_panel(rows, self.intermediate_panel_path)
+            intermediate_panel_dataframe = self.read_intermediate_panel_dataframe()
         return intermediate_panel_dataframe

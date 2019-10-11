@@ -375,9 +375,9 @@ class BCRATCEScraper(BCRAScraper):
             )
 
         except FileNotFoundError:
-            raise InvalidConfigurationError(
-                "El archivo panel no existe"
-            )
+            rows = []
+            self.write_intermediate_panel(rows, self.intermediate_panel_path)
+            intermediate_panel_dataframe = self.read_intermediate_panel_dataframe()
         return intermediate_panel_dataframe
 
     def save_intermediate_panel(self, parsed):
@@ -448,7 +448,6 @@ class BCRATCEScraper(BCRAScraper):
                                                 intermediate_panel_data['euro'].append(d)
             else:
                 parsed = self.intermediate_panel_data_has_date(intermediate_panel_data, single_date)
-                # breakpoint()
                 parsed_contents['dolar'].append(parsed['dolar'])
                 parsed_contents['euro'].append(parsed['euro'])
 
