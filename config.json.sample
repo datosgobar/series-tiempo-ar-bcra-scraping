@@ -121,7 +121,9 @@
             "supervielle": "BANCO SUPERVIELLE S.A.",
             "bcba": "BANCO DE LA CIUDAD DE BUENOS AIRES",
             "patagonia": "BANCO PATAGONIA S.A.",
+            "hipotecario": "BANCO HIPOTECARIO S.A.",
             "santander": "BANCO SANTANDER RIO S.A.",
+            "brubank": "BRUBANK S.A.U.",
             "hsbc": "HSBC BANK ARGENTINA S.A.",
             "credicoop": "BANCO CREDICOOP COOPERATIVO LIMITADO",
             "itau": "BANCO ITAU ARGENTINA S.A.",
@@ -129,7 +131,9 @@
             "piano": "BANCO PIANO S.A.",
             "balanz": "BALANZ CAPITAL VALORES S.A.U.",
             "ibcambio": "IB Cambio SAS",
-            "bullmarket": "BULL MARKET BROKERS SA"
+            "cambios": "CAMBIOS ONLINE SA",
+            "bullmarket": "BULL MARKET BROKERS SA",
+            "invertir": "INVERTIRONLINE SAU"
         }
     }
 }
