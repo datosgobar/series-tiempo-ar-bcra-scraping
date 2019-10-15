@@ -483,21 +483,27 @@ class BCRAExchangeRateScraper(BCRAScraper):
         intermediate_panel_dataframe = None
 
         try:
-            intermediate_panel_dataframe = pd.read_csv(
-                self.intermediate_panel_path,
-                converters={
-                    'serie_tiempo': lambda _: _,
-                    'coin': lambda _: str(_),
-                    'type': lambda _: str(_),
-                    'value': lambda _: Decimal(_) if _ else None
-                }
-            )
+            self.create_intermediate_panel_dataframe()
 
         except FileNotFoundError:
-            rows = []
-            self.write_intermediate_panel(rows, self.intermediate_panel_path)
-            intermediate_panel_dataframe = self.read_intermediate_panel_dataframe()
+            self.create_intermediate_panel()
+            intermediate_panel_dataframe = self.create_intermediate_panel_dataframe()
+        return intermediate_panel_dataframe
 
+    def create_intermediate_panel(self):
+        rows = []
+        self.write_intermediate_panel(rows, self.intermediate_panel_path)
+
+    def create_intermediate_panel_dataframe(self):
+        intermediate_panel_dataframe = pd.read_csv(
+            self.intermediate_panel_path,
+            converters={
+                'serie_tiempo': lambda _: _,
+                'coin': lambda _: str(_),
+                'type': lambda _: str(_),
+                'value': lambda _: Decimal(_) if _ else None
+            }
+        )
         return intermediate_panel_dataframe
 
     def preprocess_start_date(self, start_date):
