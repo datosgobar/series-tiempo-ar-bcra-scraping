@@ -11,8 +11,8 @@ clean:
 	rm -rf .cache
 	rm -rf .pytest_cache
 
-all_local: libor_local exchange_rates_local sml_local tce_local
-all: libor exchange_rates sml tce
+all_local: libor_local sml_local tce_local exchange_rates_local
+all: libor sml tce exchange_rates
 
 install_anaconda:
 	wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -46,28 +46,32 @@ update_environment_local:
 libor_local:
 	bcra_scraper libor --start-date=01/09/2019
 
-exchange_rates_local:
-	bcra_scraper exchange-rates --start-date=01/09/2019
-
 sml_local:
 	bcra_scraper sml --start-date=01/09/2019
 
 tce_local:
 	bcra_scraper tce --start-date=01/09/2019
 
+exchange_rates_local:
+	bcra_scraper exchange-rates --start-date=21/10/2019
+
 # desde la fecha más lejana posible en cada caso
 libor:
 # 	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper libor --start-date=03/01/2001
-	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper libor --start-date=03/01/2016
-
-exchange_rates:
-# 	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper exchange-rates --start-date=31/01/1935
-	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper exchange-rates --start-date=03/01/1980
+# 	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper libor --start-date=03/01/2016
+	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper libor --start-date=01/09/2019
 
 sml:
 # 	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper sml --start-date=03/10/2008
-	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper sml --start-date=03/01/2016
+# 	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper sml --start-date=03/01/2016
+	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper sml --start-date=01/09/2019
 
 tce:
 # 	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper tce --start-date=10/03/2010
-	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper tce --start-date=03/01/2016
+# 	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper tce --start-date=03/01/2016
+	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper tce --start-date=01/09/2019
+
+exchange_rates:
+# 	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper exchange-rates --start-date=31/01/1935
+# 	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper exchange-rates --start-date=03/01/1980
+	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper exchange-rates --start-date=15/10/2019
