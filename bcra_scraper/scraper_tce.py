@@ -365,7 +365,7 @@ class BCRATCEScraper(BCRAScraper):
         intermediate_panel_dataframe = None
 
         try:
-            self.create_intermediate_panel_dataframe()
+            intermediate_panel_dataframe = self.create_intermediate_panel_dataframe()
 
         except FileNotFoundError:
             self.create_intermediate_panel()
