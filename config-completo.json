@@ -1,0 +1,154 @@
+{
+    "libor":
+    {
+        "libor_file_path": "datos/libor/tasas-libor-series.csv",
+        "intermediate_panel_path": "datos/libor/tasas-libor-panel.csv",
+        "url": "http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp",
+        "tries": "3",
+        "rates":
+        {
+            "30": "libor_30_dias",
+            "60": "libor_60_dias",
+            "90": "libor_90_dias",
+            "180": "libor_180_dias",
+            "360": "libor_360_dias"
+        }
+    },
+    "exchange-rates":
+    {
+        "tc_file_path": "datos/tcs/monedas-tipo-cambio-local-series.csv",
+        "tp_file_path": "datos/tcs/monedas-tipo-pase-dolares-series.csv",
+        "intermediate_panel_path": "datos/tcs/monedas-tipo-cambio-panel.csv",
+        "url": "http://www.bcra.gov.ar/PublicacionesEstadisticas/Evolucion_moneda.asp",
+        "tries": "3",
+        "coins":
+        {
+            "bolivar_venezolano": "Bolívar Venezolano",
+            "chelin_austriaco": "Chelín Austríaco",
+            "cordoba_nicaraguense": "Cordoba Nicaraguense",
+            "corona_checa": "Corona Checa",
+            "corona_danesa": "Corona Danesa",
+            "corona_noruega": "Corona Noruega",
+            "corona_sueca": "Corona Sueca",
+            "derecho_especial_de_giro": "Derecho Especial de Giro",
+            "dinar_serbia": "Dinar Serbia",
+            "dolar_comercial_unico": "Dolar Comercial Unico",
+            "dolar_australiano": "Dolar Australiano",
+            "dolar_canadiense": "Dolar Canadiense",
+            "dolar_de_singapur": "Dolar de Singapur",
+            "dolar_estadounidense": "Dolar Estadounidense",
+            "dolar_fin_exp_imp_compra": "Dolar Fin.Exp.Imp. Compra",
+            "dolar_fin_exp_imp_venta": "Dolar Fin.Exp.Imp. Venta",
+            "dolar_finan_esp_compra": "Dolar Finan. Esp. Compra",
+            "dolar_finan_esp_venta": "Dolar Finan. Esp. Venta",
+            "dolar_financiero_compra": "Dolar Financiero-Compra",
+            "dolar_financiero_venta": "Dolar Financiero-Venta",
+            "dolar_hong_kong": "Dolar Hong Kong",
+            "dolar_libre_compra": "Dolar Libre (Compra)",
+            "dolar_libre_venta": "Dolar Libre (Venta)",
+            "dolar_neozelandes": "Dolar Neozelandes",
+            "dolar_oficial_compra": "Dolar Oficial (Compra)",
+            "dolar_oficial_venta": "Dolar Oficial (Venta)",
+            "dolar_oficial_tipo_unico": "Dolar Oficial Tipo Unico",
+            "dolar_prom_men_1935_69": "Dolar Prom. Men. 1935/69",
+            "dolar_referencia_com_3500": "Dolar Referencia Com 3500",
+            "dolar_tipo_unico": "Dolar Tipo Unico",
+            "dong_vietnam_1000_c_u": "Dong Vietnam (c/1.000 u.)",
+            "drachma_griego": "Drachma Griego",
+            "ecu": "Ecu",
+            "escudo_portugues": "Escudo Portugués",
+            "euro": "Euro",
+            "florin_antillas_holande": "Florín (Antillas Holande",
+            "florin_holandes": "Florín Holandés",
+            "franco_belga": "Franco Belga",
+            "franco_frances": "Franco Francés",
+            "franco_suizo": "Franco Suizo",
+            "guarani_paraguayo": "Guaraní Paraguayo",
+            "libra_esterlina": "Libra Esterlina",
+            "lira_italiana": "Lira Italiana",
+            "lira_turca": "Lira Turca",
+            "marco_aleman": "Marco Alemán",
+            "marco_finlandes": "Marco Finlandés",
+            "nuevo_sol_peruano": "Nuevo Sol Peruano",
+            "oro_onza_troy": "Oro - Onza Troy",
+            "peseta_espania": "Peseta (España)",
+            "peso": "Peso",
+            "peso_boliviano": "Peso Boliviano",
+            "peso_chileno": "Peso Chileno",
+            "peso_colombiano": "Peso Colombiano",
+            "peso_mexicano": "Peso Mexicano",
+            "peso_uruguayo": "Peso Uruguayo",
+            "plata_onza_troy": "Plata - Onza Troy",
+            "rang_sudafricano": "Rand Sudafricano",
+            "real_brasil": "Real (Brasil)",
+            "rublo_rusia": "Rublo (Rusia)",
+            "rupia_india": "Rupia (India)",
+            "shekel_israel": "Shekel (Israel)",
+            "sucre_ecuatoriano": "Sucre Ecuatoriano",
+            "tipo_de_cambio_especial": "Tipo de Cambio Especial",
+            "yen_japon": "Yen (Japón)",
+            "yuan_china_cny": "Yuan - China CNY",
+            "yuan_china_off_shore_cnh": "Yuan-China Off Shore CNH"
+        }
+    },
+    "sml":
+    {
+        "peso_uruguayo_file_path": "datos/sml/sml-tipo-cambio-peso-uruguayo-series.csv",
+        "real_file_path": "datos/sml/sml-tipo-cambio-peso-real-series.csv",
+        "intermediate_panel_path": "datos/sml/sml-tipo-cambio-panel.csv",
+        "url": "http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_sml.asp",
+        "tries": "3",
+        "coins":
+        {
+            "peso_uruguayo": "Peso Uruguayo",
+            "real": "Real"
+        },
+        "types":
+        {
+            "tipo_cambio_referencia": "Tipo de cambio de Referencia",
+            "tipo_cambio_urinusca": "Tipo de cambio URINUSCA",
+            "tipo_cambio_sml_peso_urguayo": "Tipo de cambio SML Peso Uruguayo",
+            "tipo_cambio_sml_uruguayo_peso": "Tipo de cambio SML Uruguayo Peso",
+            "tipo_cambio_referencia": "Tipo de cambio de Referencia",
+            "tipo_cambio_ptax": "Tipo de cambio PTAX",
+            "tipo_cambio_peso_real": "Tipo de cambio SML Peso Real",
+            "tipo_cambio_real_peso": "Tipo de cambio SML Real Peso"
+        }
+    },
+    "tce":
+    {
+        "dolar_file_path": "datos/tce/tipos-cambio-dolar-entidades-financieras-series.csv",
+        "euro_file_path": "datos/tce/tipos-cambio-euro-entidades-financieras-series.csv",
+        "intermediate_panel_path": "datos/tce/tipos-cambio-minorista-cotizaciones-panel.csv",
+        "url": "http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_minorista.asp",
+        "tries": "3",
+        "coins":
+        {
+            "dolar": "DOLAR",
+            "euro": "EURO"
+        },
+        "entities":
+        {
+            "galicia": "BANCO DE GALICIA Y BUENOS AIRES S.A.U.",
+            "bna": "BANCO DE LA NACION ARGENTINA",
+            "icbc": "INDUSTRIAL AND COMMERCIAL BANK OF CHINA (ARGENTINA) S.A.",
+            "frances": "BBVA BANCO FRANCES S.A.",
+            "supervielle": "BANCO SUPERVIELLE S.A.",
+            "bcba": "BANCO DE LA CIUDAD DE BUENOS AIRES",
+            "patagonia": "BANCO PATAGONIA S.A.",
+            "santander": "BANCO SANTANDER RIO S.A.",
+            "hsbc": "HSBC BANK ARGENTINA S.A.",
+            "credicoop": "BANCO CREDICOOP COOPERATIVO LIMITADO",
+            "itau": "BANCO ITAU ARGENTINA S.A.",
+            "macro": "BANCO MACRO S.A.",
+            "piano": "BANCO PIANO S.A.",
+            "balanz": "BALANZ CAPITAL VALORES S.A.U.",
+            "ibcambio": "IB Cambio SAS",
+            "bullmarket": "BULL MARKET BROKERS SA",
+            "cambiosonline": "CAMBIOS ONLINE SA",
+            "brubank": "BRUBANK S.A.U.",
+            "ppinv": "PP INVERSIONES S.A.",
+            "iol": "INVERTIRONLINE SA"
+        }
+    }
+}
