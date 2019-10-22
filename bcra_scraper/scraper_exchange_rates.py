@@ -483,32 +483,52 @@ class BCRAExchangeRateScraper(BCRAScraper):
         intermediate_panel_dataframe = None
 
         try:
-            intermediate_panel_dataframe = pd.read_csv(
-                self.intermediate_panel_path,
-                converters={
-                    'serie_tiempo': lambda _: _,
-                    'coin': lambda _: str(_),
-                    'type': lambda _: str(_),
-                    'value': lambda _: Decimal(_) if _ else None
-                }
-            )
+            self.create_intermediate_panel_dataframe()
 
         except FileNotFoundError:
-            raise InvalidConfigurationError(
-                "El archivo panel no existe"
-            )
+            self.create_intermediate_panel()
+            intermediate_panel_dataframe = self.create_intermediate_panel_dataframe()
+        return intermediate_panel_dataframe
 
+    def create_intermediate_panel(self):
+        rows = []
+        self.write_intermediate_panel(rows, self.intermediate_panel_path)
+
+    def create_intermediate_panel_dataframe(self):
+        intermediate_panel_dataframe = pd.read_csv(
+            self.intermediate_panel_path,
+            converters={
+                'serie_tiempo': lambda _: _,
+                'coin': lambda _: str(_),
+                'type': lambda _: str(_),
+                'value': lambda _: Decimal(_) if _ else None
+            }
+        )
         return intermediate_panel_dataframe
 
     def preprocess_start_date(self, start_date):
-        browser_driver = self.get_browser_driver()
-        browser_driver.get(self.url)
-        element_present = EC.presence_of_element_located(
-            (By.NAME, 'Fecha')
-        )
-        elem = WebDriverWait(browser_driver, 0).until(element_present)
+        counter = 1
+        tries = self.tries
 
-        if not start_date.strftime("%d/%m/%Y") in elem.text:
-            logging.warning(f'La fecha {start_date.strftime("%d/%m/%Y")} no existe')
+        while counter <= tries:
+            try:
+                browser_driver = self.get_browser_driver()
+                browser_driver.get(self.url)
+                element_present = EC.presence_of_element_located(
+                    (By.NAME, 'Fecha')
+                )
+                elem = WebDriverWait(browser_driver, 0).until(element_present)
 
-        return start_date
+                if not start_date.strftime("%d/%m/%Y") in elem.text:
+                    logging.warning(f'La fecha {start_date.strftime("%d/%m/%Y")} no existe')
+                    start_date = start_date + timedelta(days=1)
+                    logging.warning(f'La nueva fecha de inicio es {start_date}')
+                else:
+                    return start_date
+
+            except (TimeoutException, WebDriverException):
+                if counter < tries:
+                    logging.warning(
+                        f'La conexion de internet ha fallado para la fecha {start_date}. Reintentando...'
+                    )
+                    counter = counter + 1
