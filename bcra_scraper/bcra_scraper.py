@@ -389,6 +389,7 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
             timeout=timeout,
             tries=tries,
             coins=config.get('coins'),
+            types=config.get('types'),
             skip_intermediate_panel_data=skip_intermediate_panel_data,
             intermediate_panel_path=intermediate_panel_path
         )
@@ -398,27 +399,17 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
         if parsed:
             parsed['peso_uruguayo'] = scraper.reorder_parsed(parsed['peso_uruguayo'])
             parsed['real'] = scraper.reorder_parsed(parsed['real'])
-            for k, v in parsed.items():
+            for k  in parsed.keys():
                 if k == 'peso_uruguayo':
-                    csv_header = [
-                        'indice_tiempo',
-                        'Tipo de cambio de Referencia',
-                        'Tipo de cambio URINUSCA',
-                        'Tipo de cambio SML Peso Uruguayo',
-                        'Tipo de cambio SML Uruguayo Peso'
-                    ]
+                    csv_header = ['indice_tiempo']
+                    csv_header.extend(config['types']['peso_uruguayo'].values())
 
                     write_file(csv_header, parsed['peso_uruguayo'], peso_uruguayo_file_path)
 
 
                 elif k == 'real':
-                    csv_header = [
-                        'indice_tiempo',
-                        'Tipo de cambio de Referencia',
-                        'Tipo de cambio PTAX',
-                        'Tipo de cambio SML Peso Real',
-                        'Tipo de cambio SML Real Peso'
-                    ]
+                    csv_header = ['indice_tiempo']
+                    csv_header.extend(config['types']['real'].values())
 
                     write_file(csv_header, parsed['real'], real_file_path)
 

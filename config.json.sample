@@ -101,6 +101,20 @@
             "peso_uruguayo": "Peso Uruguayo",
             "real": "Real"
         }
+        "types": {
+            "peso_uruguayo": {
+                "Tipo de cambio de Referencia": "tipo_cambio_referencia",
+                "Tipo de cambio URINUSCA": "tipo_cambio_urinusca",
+                "Tipo de cambio SML Peso Uruguayo": "tipo_cambio_sml_peso_urguayo",
+                "Tipo de cambio SML Uruguayo Peso": "tipo_cambio_sml_uruguayo_peso"
+            },
+            "real": {
+                "Tipo de cambio de Referencia": "tipo_cambio_referencia",
+                "Tipo de cambio PTAX": "tipo_cambio_ptax",
+                "Tipo de cambio SML Peso Real": "tipo_cambio_peso_real",
+                "Tipo de cambio SML Real Peso": "tipo_cambio_real_peso"
+            }
+        }
     },
     "tce": {
         "dolar_file_path": "/home/tmp/tipos-cambio-dolar-entidades-financieras-series.csv",

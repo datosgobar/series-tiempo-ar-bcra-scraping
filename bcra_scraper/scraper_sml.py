@@ -51,7 +51,7 @@ class BCRASMLScraper(BCRAScraper):
         y los devuelve en un iterable
     """
 
-    def __init__(self, url, coins, intermediate_panel_path, *args, **kwargs):
+    def __init__(self, url, coins, intermediate_panel_path, types, *args, **kwargs):
         """
         Parameters
         ----------
@@ -65,6 +65,7 @@ class BCRASMLScraper(BCRAScraper):
 
         self.coins = coins
         self.intermediate_panel_path = intermediate_panel_path
+        self.types = types
         super(BCRASMLScraper, self)\
             .__init__(url, *args, **kwargs)
 
@@ -190,7 +191,6 @@ class BCRASMLScraper(BCRAScraper):
                 for k, v in contents.items():
 
                     parsed = self.parse_content(v, k, single_date)
-
                     if parsed:
                         for p in parsed:
                             if p['coin'] == 'peso_uruguayo':
@@ -199,32 +199,32 @@ class BCRASMLScraper(BCRAScraper):
                                 ):
                                     parsed_peso_uruguayo[p['indice_tiempo']] = {}
                                 parsed_peso_uruguayo[p['indice_tiempo']][
-                                    'Tipo de cambio de Referencia'
+                                    self.types['peso_uruguayo']['Tipo de cambio de Referencia']
                                     ] = p['Tipo de cambio de Referencia']
                                 parsed_peso_uruguayo[p['indice_tiempo']][
-                                    'Tipo de cambio URINUSCA'
+                                    self.types['peso_uruguayo']['Tipo de cambio URINUSCA']
                                     ] = p['Tipo de cambio URINUSCA']
                                 parsed_peso_uruguayo[p['indice_tiempo']][
-                                    'Tipo de cambio SML Peso Uruguayo'
+                                    self.types['peso_uruguayo']['Tipo de cambio SML Peso Uruguayo']
                                     ] = p['Tipo de cambio SML Peso Uruguayo']
                                 parsed_peso_uruguayo[p['indice_tiempo']][
-                                    'Tipo de cambio SML Uruguayo Peso'
+                                    self.types['peso_uruguayo']['Tipo de cambio SML Uruguayo Peso']
                                     ] = p['Tipo de cambio SML Uruguayo Peso']
 
                             else:
                                 if p['indice_tiempo'] not in parsed_real.keys():
                                     parsed_real[p['indice_tiempo']] = {}
                                 parsed_real[p['indice_tiempo']][
-                                    'Tipo de cambio de Referencia'
+                                    self.types['real']['Tipo de cambio de Referencia']
                                     ] = p['Tipo de cambio de Referencia']
                                 parsed_real[p['indice_tiempo']][
-                                    'Tipo de cambio PTAX'
+                                    self.types['real']['Tipo de cambio PTAX']
                                     ] = p['Tipo de cambio PTAX']
                                 parsed_real[p['indice_tiempo']][
-                                    'Tipo de cambio SML Peso Real'
+                                    self.types['real']['Tipo de cambio SML Peso Real']
                                     ] = p['Tipo de cambio SML Peso Real']
                                 parsed_real[p['indice_tiempo']][
-                                    'Tipo de cambio SML Real Peso'
+                                    self.types['real']['Tipo de cambio SML Real Peso']
                                     ] = p['Tipo de cambio SML Real Peso']
             else:
                 parsed = self.intermediate_panel_data_has_date(intermediate_panel_data, single_date)
@@ -373,23 +373,14 @@ class BCRASMLScraper(BCRAScraper):
         parsed : lista de diccionarios por moneda
         """
         intermediate_panel_data = []
-
         if parsed:
             for c in self.coins.keys():
                 if c == 'peso_uruguayo':
-                    types = [
-                        'Tipo de cambio de Referencia',
-                        'Tipo de cambio URINUSCA',
-                        'Tipo de cambio SML Peso Uruguayo',
-                        'Tipo de cambio SML Uruguayo Peso',
-                    ]
+                    types = []
+                    types.extend(self.types['peso_uruguayo'].values())
                 else:
-                    types = [
-                        'Tipo de cambio de Referencia',
-                        'Tipo de cambio PTAX',
-                        'Tipo de cambio SML Peso Real',
-                        'Tipo de cambio SML Real Peso',
-                    ]
+                    types = []
+                    types.extend(self.types['real'].values())
 
                 for r in parsed[c]:
                     for t in types:
@@ -445,12 +436,7 @@ class BCRASMLScraper(BCRAScraper):
             coin_dfs = {'peso_uruguayo': {}, 'real': {}}
             for k in self.coins.keys():
                 if k == 'peso_uruguayo':
-                    for type in [
-                        'Tipo de cambio de Referencia',
-                        'Tipo de cambio URINUSCA',
-                        'Tipo de cambio SML Peso Uruguayo',
-                        'Tipo de cambio SML Uruguayo Peso'
-                    ]:
+                    for type in [self.types['peso_uruguayo'].values()]:
                         coin_dfs[k][type] = intermediate_panel_df.loc[
                             (intermediate_panel_df['type'] == type) &
                             (intermediate_panel_df['coin'] == k)
@@ -461,12 +447,7 @@ class BCRASMLScraper(BCRAScraper):
                         if coin_dfs[k][type].empty:
                             (coin_dfs[k][type] == '0.0')
                 else:
-                    for type in [
-                        'Tipo de cambio de Referencia',
-                        'Tipo de cambio PTAX',
-                        'Tipo de cambio SML Peso Real',
-                        'Tipo de cambio SML Real Peso'
-                    ]:
+                    for type in [self.types['real'].values()]:
                         coin_dfs[k][type] = intermediate_panel_df.loc[
                             (intermediate_panel_df['type'] == type) &
                             (intermediate_panel_df['coin'] == k)
