@@ -189,43 +189,17 @@ class BCRASMLScraper(BCRAScraper):
                             for n in range(day_count)):
             if not self.intermediate_panel_data_has_date(intermediate_panel_data, single_date):
                 for k, v in contents.items():
-
                     parsed = self.parse_content(v, k, single_date)
                     if parsed:
                         for p in parsed:
                             if p['coin'] == 'peso_uruguayo':
-                                if p['indice_tiempo'] not in(
-                                    parsed_peso_uruguayo.keys()
-                                ):
-                                    parsed_peso_uruguayo[p['indice_tiempo']] = {}
-                                parsed_peso_uruguayo[p['indice_tiempo']][
-                                    self.types['peso_uruguayo']['Tipo de cambio de Referencia']
-                                    ] = p['Tipo de cambio de Referencia']
-                                parsed_peso_uruguayo[p['indice_tiempo']][
-                                    self.types['peso_uruguayo']['Tipo de cambio URINUSCA']
-                                    ] = p['Tipo de cambio URINUSCA']
-                                parsed_peso_uruguayo[p['indice_tiempo']][
-                                    self.types['peso_uruguayo']['Tipo de cambio SML Peso Uruguayo']
-                                    ] = p['Tipo de cambio SML Peso Uruguayo']
-                                parsed_peso_uruguayo[p['indice_tiempo']][
-                                    self.types['peso_uruguayo']['Tipo de cambio SML Uruguayo Peso']
-                                    ] = p['Tipo de cambio SML Uruguayo Peso']
-
+                                parsed_peso_uruguayo[p['indice_tiempo']] = {}
+                                for k, v in self.types[p['coin']].items():
+                                    parsed_peso_uruguayo[p['indice_tiempo']][v] = p[k]
                             else:
-                                if p['indice_tiempo'] not in parsed_real.keys():
-                                    parsed_real[p['indice_tiempo']] = {}
-                                parsed_real[p['indice_tiempo']][
-                                    self.types['real']['Tipo de cambio de Referencia']
-                                    ] = p['Tipo de cambio de Referencia']
-                                parsed_real[p['indice_tiempo']][
-                                    self.types['real']['Tipo de cambio PTAX']
-                                    ] = p['Tipo de cambio PTAX']
-                                parsed_real[p['indice_tiempo']][
-                                    self.types['real']['Tipo de cambio SML Peso Real']
-                                    ] = p['Tipo de cambio SML Peso Real']
-                                parsed_real[p['indice_tiempo']][
-                                    self.types['real']['Tipo de cambio SML Real Peso']
-                                    ] = p['Tipo de cambio SML Real Peso']
+                                parsed_real[p['indice_tiempo']] = {}
+                                for k, v in self.types[p['coin']].items():
+                                    parsed_real[p['indice_tiempo']][v] = p[k]
             else:
                 parsed = self.intermediate_panel_data_has_date(intermediate_panel_data, single_date)
                 parsed_contents['peso_uruguayo'].append(parsed['peso_uruguayo'])
