@@ -410,7 +410,7 @@ class BCRASMLScraper(BCRAScraper):
             coin_dfs = {'peso_uruguayo': {}, 'real': {}}
             for k in self.coins.keys():
                 if k == 'peso_uruguayo':
-                    for type in [self.types['peso_uruguayo'].values()]:
+                    for type in self.types['peso_uruguayo'].values():
                         coin_dfs[k][type] = intermediate_panel_df.loc[
                             (intermediate_panel_df['type'] == type) &
                             (intermediate_panel_df['coin'] == k)
@@ -421,7 +421,7 @@ class BCRASMLScraper(BCRAScraper):
                         if coin_dfs[k][type].empty:
                             (coin_dfs[k][type] == '0.0')
                 else:
-                    for type in [self.types['real'].values()]:
+                    for type in self.types['real'].values():
                         coin_dfs[k][type] = intermediate_panel_df.loc[
                             (intermediate_panel_df['type'] == type) &
                             (intermediate_panel_df['coin'] == k)
