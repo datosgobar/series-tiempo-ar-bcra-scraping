@@ -409,28 +409,16 @@ class BCRASMLScraper(BCRAScraper):
         if not intermediate_panel_df.empty:
             coin_dfs = {'peso_uruguayo': {}, 'real': {}}
             for k in self.coins.keys():
-                if k == 'peso_uruguayo':
-                    for type in self.types['peso_uruguayo'].values():
-                        coin_dfs[k][type] = intermediate_panel_df.loc[
-                            (intermediate_panel_df['type'] == type) &
-                            (intermediate_panel_df['coin'] == k)
-                        ][['value']]
-                        coin_dfs[k][type].rename(
-                            columns={'value': f'{k}_{type}'}, inplace=True
-                        )
-                        if coin_dfs[k][type].empty:
-                            (coin_dfs[k][type] == '0.0')
-                else:
-                    for type in self.types['real'].values():
-                        coin_dfs[k][type] = intermediate_panel_df.loc[
-                            (intermediate_panel_df['type'] == type) &
-                            (intermediate_panel_df['coin'] == k)
-                        ][['value']]
-                        coin_dfs[k][type].rename(
-                            columns={'value': f'{k}_{type}'}, inplace=True
-                        )
-                        if coin_dfs[k][type].empty:
-                            (coin_dfs[k][type] == '0.0')
+                for type in self.types[k].values():
+                    coin_dfs[k][type] = intermediate_panel_df.loc[
+                        (intermediate_panel_df['type'] == type) &
+                        (intermediate_panel_df['coin'] == k)
+                    ][['value']]
+                    coin_dfs[k][type].rename(
+                        columns={'value': f'{k}_{type}'}, inplace=True
+                    )
+                    if coin_dfs[k][type].empty:
+                        (coin_dfs[k][type] == '0.0')
 
             coins_df = {}
             for type in ['peso_uruguayo', 'real']:
