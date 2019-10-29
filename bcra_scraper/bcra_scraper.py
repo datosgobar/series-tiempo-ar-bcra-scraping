@@ -3,6 +3,7 @@
 
 from csv import DictWriter
 from datetime import date, datetime
+from email.utils import formatdate
 from json import JSONDecodeError
 import json
 import logging
@@ -11,6 +12,7 @@ import os
 import click
 
 from bcra_scraper.exceptions import InvalidConfigurationError
+from bcra_scraper.mails import Email
 
 from bcra_scraper import (
     BCRALiborScraper,
@@ -168,6 +170,7 @@ def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor
     start_date = date(start_date.year, start_date.month, start_date.day)
     end_date = date(end_date.year, end_date.month, end_date.day)
     try:
+        execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         logging.basicConfig(level=logging.WARNING)
         config = read_config(file_path=config, command=ctx.command.name)
         libor_file_path = validate_file_path(libor_csv_path, config, file_path_key='libor_file_path')
@@ -208,6 +211,9 @@ def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor
         processed_header = scraper.preprocess_header(scraper.rates)
 
         write_file(processed_header, parsed, libor_file_path)
+
+        execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data)
 
     except InvalidConfigurationError as err:
         click.echo(err)
@@ -253,6 +259,7 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
                    tp_csv_path, tc_csv_path, intermediate_panel_path):
 
     try:
+        execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         logging.basicConfig(level=logging.WARNING)
         config = read_config(file_path=config, command=ctx.command.name)
         validate_url_config(config)
@@ -307,6 +314,8 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
 
         else:
             click.echo("No se encontraron resultados")
+        execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data)
 
     except InvalidConfigurationError as err:
         click.echo(err)
@@ -352,6 +361,7 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
         real_csv_path, intermediate_panel_path):
 
     try:
+        execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         logging.basicConfig(level=logging.WARNING)
         config = read_config(file_path=config, command=ctx.command.name)
         validate_url_config(config)
@@ -415,7 +425,8 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
 
         else:
             click.echo("No se encontraron resultados")
-
+        execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data)
     except InvalidConfigurationError as err:
         click.echo(err)
 
@@ -460,6 +471,7 @@ def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_c
         euro_csv_path, intermediate_panel_path):
 
     try:
+        execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         logging.basicConfig(level=logging.WARNING)
         config = read_config(file_path=config, command=ctx.command.name)
         validate_url_config(config)
@@ -526,6 +538,8 @@ def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_c
 
         else:
             click.echo("No se encontraron resultados")
+        execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data)
 
     except InvalidConfigurationError as err:
         click.echo(err)
