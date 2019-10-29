@@ -213,7 +213,7 @@ def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor
         write_file(processed_header, parsed, libor_file_path)
 
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data)
+        Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='libor')
 
     except InvalidConfigurationError as err:
         click.echo(err)
@@ -315,7 +315,7 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
         else:
             click.echo("No se encontraron resultados")
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data)
+        Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='exchange-rates')
 
     except InvalidConfigurationError as err:
         click.echo(err)
@@ -426,7 +426,7 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
         else:
             click.echo("No se encontraron resultados")
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data)
+        Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='sml')
     except InvalidConfigurationError as err:
         click.echo(err)
 
@@ -539,7 +539,7 @@ def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_c
         else:
             click.echo("No se encontraron resultados")
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data)
+        Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='tce')
 
     except InvalidConfigurationError as err:
         click.echo(err)

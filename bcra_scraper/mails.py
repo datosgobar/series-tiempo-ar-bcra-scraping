@@ -41,12 +41,12 @@ class Email:
         except Exception as e:
             logging.info(f'Error al enviar mail: {repr(e)}')
 
-    def send_validation_group_email(self, execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data):
+    def send_validation_group_email(self, execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier):
         config_mail = self.read_config_mail()
         mailer_config = self.get_mailer(config_mail)
 
         try:
-            subject = self.generate_subject()
+            subject = self.generate_subject(identifier)
             message = self.generate_message(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data)
 
             recipients = config_mail.get('destinatarios', [])
@@ -78,8 +78,8 @@ class Email:
         except Exception:
             logging.info(f'Error en la configuración para el envío de mails')
 
-    def generate_subject(self):
-        subject = self._get_mail_subject()
+    def generate_subject(self, identifier):
+        subject = self._get_mail_subject(identifier)
         return subject
 
     def generate_message(self, execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data):
@@ -102,6 +102,6 @@ class Email:
             skip_intermediate_panel_data = 'No'
         return skip_intermediate_panel_data
 
-    def _get_mail_subject(self):
-        subject = "Resultados del scraper"
+    def _get_mail_subject(self, identifier):
+        subject = f"Resultados del scraper {identifier}"
         return subject
