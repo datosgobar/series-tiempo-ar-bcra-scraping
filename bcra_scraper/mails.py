@@ -56,7 +56,7 @@ class Email:
             else:
                 logging.warning('No hay destinatarios')
         except Exception:
-            raise
+            logging.info(f'Error en la configuración para el envío de mails')
 
     def read_config_mail(self):
         cfg = {}
