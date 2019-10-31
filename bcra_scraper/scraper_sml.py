@@ -5,8 +5,8 @@ from functools import reduce
 import logging
 
 from bs4 import BeautifulSoup
-
 import pandas as pd
+import progressbar
 
 from bcra_scraper.exceptions import InvalidConfigurationError
 from bcra_scraper.scraper_base import BCRAScraper
@@ -82,7 +82,10 @@ class BCRASMLScraper(BCRAScraper):
 
         contents = {}
         day_count = (end_date - start_date).days + 1
-
+        cont = 0
+        bar = progressbar.ProgressBar(max_value=day_count, redirect_stdout=True, \
+            widgets=[progressbar.Bar('=', '[', ']'), '', progressbar.Percentage()])
+        bar.start()
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
             if not self.intermediate_panel_data_has_date(intermediate_panel_data, single_date):
@@ -90,6 +93,9 @@ class BCRASMLScraper(BCRAScraper):
                     fetched = self.fetch_content(v)
                     if fetched:
                         contents[k] = fetched
+            cont += 1
+            bar.update(cont)
+        bar.finish()
         return contents
 
     def intermediate_panel_data_has_date(self, intermediate_panel_data, single_date):

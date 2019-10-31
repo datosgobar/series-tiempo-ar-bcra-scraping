@@ -7,6 +7,7 @@ import re
 
 from bs4 import BeautifulSoup
 import pandas as pd
+import progressbar
 
 from bcra_scraper.scraper_base import BCRAScraper
 from bcra_scraper.exceptions import InvalidConfigurationError
@@ -81,15 +82,20 @@ class BCRAExchangeRateScraper(BCRAScraper):
         """
         content = {}
         day_count = (end_date - start_date).days + 1
-
+        cont = 0
+        bar = progressbar.ProgressBar(max_value=day_count, redirect_stdout=True, \
+            widgets=[progressbar.Bar('=', '[', ']'), '', progressbar.Percentage()])
+        bar.start()
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
-
             if not self.intermediate_panel_data_has_date(intermediate_panel_data, single_date):
                 for k, v in self.coins.items():
                     fetched = self.fetch_content(start_date, v)
                     if fetched:
                         content[k] = fetched
+            cont += 1
+            bar.update(cont)
+        bar.finish()
         return content
 
     def intermediate_panel_data_has_date(self, intermediate_panel_data, single_date):
@@ -154,20 +160,20 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
             except NoSuchElementException:
                 raise InvalidConfigurationError(
-                    f'La conexion de internet ha fallado para la fecha {start_date}'
+                    f'La conexion de internet ha fallado...'
                 )
             except (TimeoutException, WebDriverException):
                 if counter < tries:
                     logging.warning(
-                        f'La conexion de internet ha fallado para la fecha {start_date}. Reintentando...'
+                        f'La conexion de internet ha fallado. Reintentando...'
                     )
                     counter = counter + 1
                 else:
                     logging.warning(
-                        f'La conexion de internet ha fallado para la fecha {start_date}'
+                        f'La conexion de internet ha fallado...'
                     )
                     raise InvalidConfigurationError(
-                        f'La conexion de internet ha fallado para la fecha {start_date}'
+                        f'La conexion de internet ha fallado...'
                     )
 
             break
