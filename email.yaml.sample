@@ -1,0 +1,10 @@
+--- 
+mailer:
+  user: foo
+  password: bar
+  smtp_server: smtp.example.com
+  ssl: false
+  port: 587
+destinatarios: 
+- john@example.com
+- jane@example.com
