@@ -19,6 +19,8 @@ bs4 = "*"
 bcra-scraper = {path = ".",editable = true}
 pandas = "*"
 requests = "*"
+pyyaml = "*"
+progressbar2 = "*"
 
 [requires]
 python_version = "3.7"
