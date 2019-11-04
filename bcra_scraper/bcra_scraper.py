@@ -169,6 +169,7 @@ def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor
     validate_dates(start_date, end_date)
     start_date = date(start_date.year, start_date.month, start_date.day)
     end_date = date(end_date.year, end_date.month, end_date.day)
+
     try:
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         logging.basicConfig(level=logging.WARNING)
