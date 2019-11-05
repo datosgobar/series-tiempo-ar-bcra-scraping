@@ -58,6 +58,8 @@ o
     $ cp config_email.yaml.sample config_email.yaml
     $ cp config_general.json.sample config_general.json
 
+Luego, editar los archivos config_email.yaml y config_general.json con los parámetros deseados.
+
 ## Uso
 ### Básico
 * bcra_scraper libor --start-date=01/04/2019
