@@ -318,7 +318,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
         ):
 
             with self.assertRaises(InvalidConfigurationError):
-                config = read_config("config.json", "sml")
+                config = read_config("config_general.json", "sml")
                 validate_url_config(config)
 
     def test_sml_url_has_value(self):
@@ -331,7 +331,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
         ):
 
             with self.assertRaises(InvalidConfigurationError):
-                config = read_config("config.json", "sml")
+                config = read_config("config_general.json", "sml")
                 validate_url_has_value(config)
 
     def test_sml_configuration_has_coins(self):
@@ -345,7 +345,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
         ):
 
             with self.assertRaises(InvalidConfigurationError):
-                config = read_config("config.json", "sml")
+                config = read_config("config_general.json", "sml")
                 validate_coins_key_config(config)
 
     def test_sml_coins_has_values(self):
@@ -358,7 +358,7 @@ class BcraSmlScraperTestCase(unittest.TestCase):
         ):
 
             with self.assertRaises(InvalidConfigurationError):
-                config = read_config("config.json", "sml")
+                config = read_config("config_general.json", "sml")
                 validate_coins_key_has_values(config)
 
     def test_fetch_content_patching_driver(self):

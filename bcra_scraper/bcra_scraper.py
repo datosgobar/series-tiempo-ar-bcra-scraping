@@ -145,7 +145,7 @@ def cli(ctx):
     )
 @click.option(
     '--config',
-    default='config.json',
+    default='config_general.json',
     type=click.Path(exists=True),
     )
 @click.option(
@@ -233,7 +233,7 @@ def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor
     )
 @click.option(
     '--config',
-    default='config.json',
+    default='config_general.json',
     type=click.Path(exists=True),
     )
 @click.option(
@@ -335,7 +335,7 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
 )
 @click.option(
     '--config',
-    default='config.json',
+    default='config_general.json',
     type=click.Path(exists=True),
 )
 @click.option(
@@ -445,7 +445,7 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
     )
 @click.option(
     '--config',
-    default='config.json',
+    default='config_general.json',
     type=click.Path(exists=True),
 )
 @click.option(
