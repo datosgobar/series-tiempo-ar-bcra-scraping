@@ -151,7 +151,7 @@
                 "sha256:f81025eddd0327c7d4cfe9b62cf33190e1e736cc6e97502b3ec425f574b3e7a8"
             ],
             "index": "pypi",
-            "version": "==5.1.2"
+            "version": "==5.1"
         },
         "requests": {
             "hashes": [
