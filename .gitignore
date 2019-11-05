@@ -66,4 +66,5 @@ target/
 
 #
 *.csv
-config.json
+config_general.json
+config_email.yaml
