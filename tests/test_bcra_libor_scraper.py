@@ -575,7 +575,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
                 return_value=io.StringIO(dict_config)):
 
             with self.assertRaises(InvalidConfigurationError):
-                read_config("config.json", "cmd")
+                read_config("config_general.json", "cmd")
 
     def test_rates_not_in_config(self):
         """Validar error en caso de que no exista
@@ -606,7 +606,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         ):
 
             with self.assertRaises(InvalidConfigurationError):
-                config = read_config("config.json", "libor")
+                config = read_config("config_general.json", "libor")
                 validate_url_config(config)
 
     def test_libor_url_has_value(self):
@@ -619,7 +619,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         ):
 
             with self.assertRaises(InvalidConfigurationError):
-                config = read_config("config.json", "libor")
+                config = read_config("config_general.json", "libor")
                 validate_url_has_value(config)
 
     def test_libor_configuration_has_rates(self):
@@ -633,7 +633,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         ):
 
             with self.assertRaises(InvalidConfigurationError):
-                config = read_config("config.json", "libor")
+                config = read_config("config_general.json", "libor")
                 validate_libor_rates_config(config)
 
     def test_libor_rates_has_values(self):
@@ -646,7 +646,7 @@ class BcraLiborScraperTestCase(unittest.TestCase):
         ):
 
             with self.assertRaises(InvalidConfigurationError):
-                config = read_config("config.json", "libor")
+                config = read_config("config_general.json", "libor")
                 validate_libor_rates_has_values(config)
 
     def test_fetch_day_content_patching_driver(self):
