@@ -60,6 +60,9 @@ o
 
 Luego, editar los archivos config_email.yaml y config_general.json con los parámetros deseados.
 
+* Para scraper tce: en caso de querer deshabilitar alguno de los channel para una entidad,
+    cambiar a false el channel que no se quiera visualizar (mostrador o electronico).
+
 ## Uso
 ### Básico
 * bcra_scraper libor --start-date=01/04/2019
