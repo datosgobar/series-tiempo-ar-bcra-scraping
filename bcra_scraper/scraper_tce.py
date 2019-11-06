@@ -507,61 +507,30 @@ class BCRATCEScraper(BCRAScraper):
                 parsed_contents.append(parsed)
                 return parsed_contents
 
+            keys_dict = {
+                'mostrador_compra_11': 1,
+                'mostrador_compra_13': 5,
+                'mostrador_compra_15': 9,
+                'electronico_compra_11': 3,
+                'electronico_compra_13': 7,
+                'electronico_compra_15': 11,
+                'mostrador_venta_11': 2,
+                'mostrador_venta_13': 6,
+                'mostrador_venta_15': 10,
+                'electronico_venta_11': 4,
+                'electronico_venta_13': 8,
+                'electronico_venta_15': 12
+            }
+
             for k, v in entities.items():
-                if body.find('td', text=re.compile(v)):
-                    row = body.find('td', text=re.compile(v)).parent
+                if body.find('td', text=re.compile(v.get('name'))):
+                    row = body.find('td', text=re.compile(v.get('name'))).parent
                     cols = row.find_all('td')
                     parsed[
                         'indice_tiempo'
                         ] = single_date.date()
-                    parsed[
-                        f'tc_ars_{coin}_{k}_mostrador_compra_11hs'
-                        ] =\
-                        (cols[1].text.strip())
-                    parsed[
-                        f'tc_ars_{coin}_{k}_mostrador_compra_13hs'
-                        ] =\
-                        (cols[5].text.strip())
-                    parsed[
-                        f'tc_ars_{coin}_{k}_mostrador_compra_15hs'
-                        ] =\
-                        (cols[9].text.strip())
-                    parsed[
-                        f'tc_ars_{coin}_{k}_electronico_compra_11hs'
-                        ] =\
-                        (cols[3].text.strip())
-                    parsed[
-                        f'tc_ars_{coin}_{k}_electronico_compra_13hs'
-                        ] =\
-                        (cols[7].text.strip())
-                    parsed[
-                        f'tc_ars_{coin}_{k}_electronico_compra_15hs'
-                        ] =\
-                        (cols[11].text.strip())
-                    parsed[
-                        f'tc_ars_{coin}_{k}_mostrador_venta_11hs'
-                        ] =\
-                        (cols[2].text.strip())
-                    parsed[
-                        f'tc_ars_{coin}_{k}_mostrador_venta_13hs'
-                        ] =\
-                        (cols[6].text.strip())
-                    parsed[
-                        f'tc_ars_{coin}_{k}_mostrador_venta_15hs'
-                        ] =\
-                        (cols[10].text.strip())
-                    parsed[
-                        f'tc_ars_{coin}_{k}_electronico_venta_11hs'
-                        ] =\
-                        (cols[4].text.strip())
-                    parsed[
-                        f'tc_ars_{coin}_{k}_electronico_venta_13hs'
-                        ] =\
-                        (cols[8].text.strip())
-                    parsed[
-                        f'tc_ars_{coin}_{k}_electronico_venta_15hs'
-                        ] =\
-                        (cols[12].text.strip())
+                    for hour in ['11', '13', '15']:
+                        parsed = self.parse_hour(v, k, hour, coin, parsed, cols, keys_dict)
                 result.update(parsed)
             parsed_contents.append(result)
 
@@ -570,9 +539,19 @@ class BCRATCEScraper(BCRAScraper):
             parsed_contents.append(parsed)
             return parsed_contents
 
+    def parse_hour(self, config, entity, hour, coin, parsed, cols, keys_dict):
+        config = config['coins'].get(coin)
+        for k in config[hour]['channels'].keys():
+            for f in ['compra', 'venta']:
+                parsed[
+                    f'tc_ars_{coin}_{entity}_{k}_{f}_{hour}hs'
+                    ] =\
+                    (cols[keys_dict[f'{k}_{f}_{hour}']].text.strip())
+        return parsed
+
     def get_parsed(self, day, coin, entities):
         parsed = {}
-        for k, v in entities.items():
+        for k in entities.keys():
             parsed[
                 'indice_tiempo'
                 ] = day.date()
