@@ -125,6 +125,25 @@ def validate_file_path(file_path, config, file_path_key):
         raise InvalidConfigurationError(f"Error: No hay configuración para {file_path_key}")
     return file_path
 
+def filter_parsed(parsed, csv_header):
+    for r in parsed:
+        for k in list(r.keys()):
+            if k not in csv_header:
+                r.pop(k)
+    return parsed
+
+def get_csv_header(coin, config):
+    csv_header = ['indice_tiempo']
+    for k, v in config['entities'].items():
+        for hour, channels in v['coins'][coin].items():
+            for channel, state in channels['channels'].items():
+                if state:
+                    for flow in ['compra', 'venta']:
+                        csv_header.append(
+                            f'tc_ars_{coin}_{k}_{channel}_{flow}_{hour}hs'
+                        )
+    return csv_header
+
 
 @click.group()
 @click.pass_context
@@ -521,21 +540,14 @@ def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_c
         if parsed:
             parsed = scraper.reorder_parsed(parsed)
             for coin in ['dolar', 'euro']:
-                csv_header = ['indice_tiempo']
-                for entity in config.get('entities'):
-                    for channel in ['mostrador', 'electronico']:
-                        for flow in ['compra', 'venta']:
-                            for hour in [11, 13, 15]:
-                                csv_header.append(
-                                    f'tc_ars_{coin}_{entity}_{channel}_{flow}_{hour}hs'
-                                )
-
+                csv_header = get_csv_header(coin, config)
                 if coin == 'dolar':
                     csv_name = dolar_file_path
                 else:
                     csv_name = euro_file_path
 
-                write_file(csv_header, parsed[coin], csv_name)
+                filtered_parsed = filter_parsed(parsed[coin], csv_header)
+                write_file(csv_header, filtered_parsed, csv_name)
 
         else:
             click.echo("No se encontraron resultados")
