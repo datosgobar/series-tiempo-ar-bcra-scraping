@@ -132,7 +132,7 @@
                 "name": "BANCO DE GALICIA Y BUENOS AIRES S.A.U.",
                 "coins": {
                     "dolar": {
-                        "11": {"channels": {"mostrador": true, "electronico": false}},
+                        "11": {"channels": {"mostrador": true, "electronico": true}},
                         "13": {"channels": {"mostrador": true, "electronico": true}},
                         "15": {"channels": {"mostrador": true, "electronico": true}}
                     },
