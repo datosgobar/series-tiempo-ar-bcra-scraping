@@ -53,7 +53,7 @@ tce_local:
 	bcra_scraper tce --start-date=01/09/2019
 
 exchange_rates_local:
-	bcra_scraper exchange-rates --start-date=21/10/2019
+	bcra_scraper exchange-rates --start-date=05/11/2019
 
 # desde la fecha más lejana posible en cada caso
 libor:
