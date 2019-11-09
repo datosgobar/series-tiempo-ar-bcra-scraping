@@ -1,12 +1,13 @@
 {
-    "libor": {
-        "libor_file_path": "/home/tmp/tasas-libor.csv",
-        "intermediate_panel_path": "tmp/libor-intermediate-panel.csv",
+    "libor":
+    {
+        "libor_file_path": "datos/libor/tasas-libor-series.csv",
+        "intermediate_panel_path": "datos/libor/tasas-libor-panel.csv",
         "url": "http://www.bcra.gov.ar/PublicacionesEstadisticas/libor.asp",
         "tries": "3",
         "timeout": "10000",
-        "rates": {
-        "rates": {
+        "rates":
+        {
             "30": "libor_30_dias",
             "60": "libor_60_dias",
             "90": "libor_90_dias",
@@ -14,16 +15,17 @@
             "360": "libor_360_dias"
         }
     },
-    "exchange-rates": {
-        "tc_file_path": "/home/tmp/tipos-cambio-local-series.csv",
-        "tp_file_path": "/home/tmp/tipos-pase-usd-series.csv",
-        "intermediate_panel_path": "tmp/exchange-rates-intermediate-panel.csv",
+    "exchange-rates":
+    {
+        "tc_file_path": "datos/tcs/monedas-tipo-cambio-local-series.csv",
+        "tp_file_path": "datos/tcs/monedas-tipo-pase-dolares-series.csv",
+        "intermediate_panel_path": "datos/tcs/monedas-tipo-cambio-panel.csv",
         "url": "http://www.bcra.gov.ar/PublicacionesEstadisticas/Evolucion_moneda.asp",
         "tries": "3",
         "timeout": "10000",
-        "coins": {
+        "coins":
+        {
             "bolivar_venezolano": "Bolívar Venezolano",
-            "chelin_austriaco": "Chelín Austríaco",
             "cordoba_nicaraguense": "Cordoba Nicaraguense",
             "corona_checa": "Corona Checa",
             "corona_danesa": "Corona Danesa",
@@ -31,46 +33,21 @@
             "corona_sueca": "Corona Sueca",
             "derecho_especial_de_giro": "Derecho Especial de Giro",
             "dinar_serbia": "Dinar Serbia",
-            "dolar_comercial_unico": "Dolar Comercial Unico",
             "dolar_australiano": "Dolar Australiano",
             "dolar_canadiense": "Dolar Canadiense",
             "dolar_de_singapur": "Dolar de Singapur",
             "dolar_estadounidense": "Dolar Estadounidense",
-            "dolar_fin_exp_imp_compra": "Dolar Fin.Exp.Imp. Compra",
-            "dolar_fin_exp_imp_venta": "Dolar Fin.Exp.Imp. Venta",
-            "dolar_finan_esp_compra": "Dolar Finan. Esp. Compra",
-            "dolar_finan_esp_venta": "Dolar Finan. Esp. Venta",
-            "dolar_financiero_compra": "Dolar Financiero-Compra",
-            "dolar_financiero_venta": "Dolar Financiero-Venta",
             "dolar_hong_kong": "Dolar Hong Kong",
-            "dolar_libre_compra": "Dolar Libre (Compra)",
-            "dolar_libre_venta": "Dolar Libre (Venta)",
             "dolar_neozelandes": "Dolar Neozelandes",
-            "dolar_oficial_compra": "Dolar Oficial (Compra)",
-            "dolar_oficial_venta": "Dolar Oficial (Venta)",
-            "dolar_oficial_tipo_unico": "Dolar Oficial Tipo Unico",
-            "dolar_prom_men_1935_69": "Dolar Prom. Men. 1935/69",
             "dolar_referencia_com_3500": "Dolar Referencia Com 3500",
-            "dolar_tipo_unico": "Dolar Tipo Unico",
             "dong_vietnam_1000_c_u": "Dong Vietnam (c/1.000 u.)",
-            "drachma_griego": "Drachma Griego",
-            "ecu": "Ecu",
-            "escudo_portugues": "Escudo Portugués",
             "euro": "Euro",
-            "florin_antillas_holande": "Florín (Antillas Holande",
-            "florin_holandes": "Florín Holandés",
-            "franco_belga": "Franco Belga",
-            "franco_frances": "Franco Francés",
             "franco_suizo": "Franco Suizo",
             "guarani_paraguayo": "Guaraní Paraguayo",
             "libra_esterlina": "Libra Esterlina",
-            "lira_italiana": "Lira Italiana",
             "lira_turca": "Lira Turca",
-            "marco_aleman": "Marco Alemán",
-            "marco_finlandes": "Marco Finlandés",
             "nuevo_sol_peruano": "Nuevo Sol Peruano",
             "oro_onza_troy": "Oro - Onza Troy",
-            "peseta_españa": "Peseta (España)",
             "peso": "Peso",
             "peso_boliviano": "Peso Boliviano",
             "peso_chileno": "Peso Chileno",
@@ -83,24 +60,24 @@
             "rublo_rusia": "Rublo (Rusia)",
             "rupia_india": "Rupia (India)",
             "shekel_israel": "Shekel (Israel)",
-            "sucre_ecuatoriano": "Sucre Ecuatoriano",
-            "tipo_de_cambio_especial": "Tipo de Cambio Especial",
             "yen_japon": "Yen (Japón)",
             "yuan_china_cny": "Yuan - China CNY",
             "yuan_china_off_shore_cnh": "Yuan-China Off Shore CNH"
         }
     },
-    "sml": {
-        "peso_uruguayo_file_path": "/home/tmp/tipos-cambio-peso-uruguayo-series.csv",
-        "real_file_path": "/home/tmp/tipos-cambio-real-series.csv",
-        "intermediate_panel_path": "tmp/sml-intermediate-panel.csv",
+    "sml":
+    {
+        "peso_uruguayo_file_path": "datos/sml/sml-tipo-cambio-peso-uruguayo-series.csv",
+        "real_file_path": "datos/sml/sml-tipo-cambio-peso-real-series.csv",
+        "intermediate_panel_path": "datos/sml/sml-tipo-cambio-panel.csv",
         "url": "http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_sml.asp",
         "tries": "3",
         "timeout": "10000",
-        "coins": {
+        "coins":
+        {
             "peso_uruguayo": "Peso Uruguayo",
             "real": "Real"
-        }
+        },
         "types": {
             "peso_uruguayo": {
                 "Tipo de cambio de Referencia": "tipo_cambio_referencia",
@@ -117,19 +94,21 @@
         }
     },
     "tce": {
-        "dolar_file_path": "/home/tmp/tipos-cambio-dolar-entidades-financieras-series.csv",
-        "euro_file_path": "/home/tmp/tipos-cambio-euro-entidades-financieras-series.csv",
-        "intermediate_panel_path": "tmp/tce-intermediate-panel.csv",
+        "dolar_file_path": "datos/tce/tipos-cambio-dolar-entidades-financieras-series.csv",
+        "euro_file_path": "datos/tce/tipos-cambio-euro-entidades-financieras-series.csv",
+        "intermediate_panel_path": "datos/tce/tipos-cambio-minorista-cotizaciones-panel.csv",
         "url": "http://www.bcra.gov.ar/PublicacionesEstadisticas/Tipo_de_cambio_minorista.asp",
         "tries": "3",
+        "timeout": "10000",
         "timeout": "10000",
         "coins": {
             "dolar": "DOLAR",
             "euro": "EURO"
         },
         "entities": {
-            "galicia": {
-                "name": "BANCO DE GALICIA Y BUENOS AIRES S.A.U.",
+            "hipotecario": {
+                "name": "BANCO HIPOTECARIO S.A.",
+                "title": "Hipotecario",
                 "coins": {
                     "dolar": {
                         "11": {"channels": {"mostrador": true, "electronico": true}},
@@ -140,10 +119,26 @@
                         "11": {"channels": {"mostrador": true, "electronico": true}},
                         "13": {"channels": {"mostrador": true, "electronico": true}},
                         "15": {"channels": {"mostrador": true, "electronico": true}}
+                    }}
+            },
+            "galicia": {
+                "name": "BANCO DE GALICIA Y BUENOS AIRES S.A.U.",
+                "title": "Galicia",
+                "coins": {
+                    "dolar": {
+                        "11": {"channels": {"mostrador": true, "electronico": true}},
+                        "13": {"channels": {"mostrador": true, "electronico": true}},
+                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                    },
+                    "euro": {
+                        "11": {"channels": {"mostrador": true, "electronico": false}},
+                        "13": {"channels": {"mostrador": true, "electronico": false}},
+                        "15": {"channels": {"mostrador": true, "electronico": false}}
                     }}
             },
             "bna": {
                 "name": "BANCO DE LA NACION ARGENTINA",
+                "title": "BNA",
                 "coins": {
                     "dolar": {
                         "11": {"channels": {"mostrador": true, "electronico": true}},
@@ -151,13 +146,14 @@
                         "15": {"channels": {"mostrador": true, "electronico": true}}
                     },
                     "euro": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                        "11": {"channels": {"mostrador": true, "electronico": false}},
+                        "13": {"channels": {"mostrador": true, "electronico": false}},
+                        "15": {"channels": {"mostrador": true, "electronico": false}}
                     }}
             },
             "icbc": {
                 "name": "INDUSTRIAL AND COMMERCIAL BANK OF CHINA (ARGENTINA) S.A.",
+                "title": "ICBC",
                 "coins": {
                     "dolar": {
                         "11": {"channels": {"mostrador": true, "electronico": true}},
@@ -165,13 +161,14 @@
                         "15": {"channels": {"mostrador": true, "electronico": true}}
                     },
                     "euro": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                        "11": {"channels": {"mostrador": false, "electronico": false}},
+                        "13": {"channels": {"mostrador": false, "electronico": false}},
+                        "15": {"channels": {"mostrador": false, "electronico": false}}
                     }}
             },
-            "frances": {
-                "name": "BBVA BANCO FRANCES S.A.",
+            "bbva": {
+                "name": "BANCO BBVA ARGENTINA S.A.",
+                "title": "BBVA",
                 "coins": {
                     "dolar": {
                         "11": {"channels": {"mostrador": true, "electronico": true}},
@@ -186,6 +183,7 @@
             },
             "supervielle": {
                 "name": "BANCO SUPERVIELLE S.A.",
+                "title": "Supervielle",
                 "coins": {
                     "dolar": {
                         "11": {"channels": {"mostrador": true, "electronico": true}},
@@ -200,6 +198,7 @@
             },
             "bcba": {
                 "name": "BANCO DE LA CIUDAD DE BUENOS AIRES",
+                "title": "Banco Ciudad BA",
                 "coins": {
                     "dolar": {
                         "11": {"channels": {"mostrador": true, "electronico": true}},
@@ -207,13 +206,14 @@
                         "15": {"channels": {"mostrador": true, "electronico": true}}
                     },
                     "euro": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                        "11": {"channels": {"mostrador": true, "electronico": false}},
+                        "13": {"channels": {"mostrador": true, "electronico": false}},
+                        "15": {"channels": {"mostrador": true, "electronico": false}}
                     }}
             },
             "patagonia": {
                 "name": "BANCO PATAGONIA S.A.",
+                "title": "Patagonia",
                 "coins": {
                     "dolar": {
                         "11": {"channels": {"mostrador": true, "electronico": true}},
@@ -228,6 +228,7 @@
             },
             "santander": {
                 "name": "BANCO SANTANDER RIO S.A.",
+                "title": "Santander Río",
                 "coins": {
                     "dolar": {
                         "11": {"channels": {"mostrador": true, "electronico": true}},
@@ -235,13 +236,14 @@
                         "15": {"channels": {"mostrador": true, "electronico": true}}
                     },
                     "euro": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                        "11": {"channels": {"mostrador": true, "electronico": false}},
+                        "13": {"channels": {"mostrador": true, "electronico": false}},
+                        "15": {"channels": {"mostrador": true, "electronico": false}}
                     }}
             },
             "hsbc": {
                 "name": "HSBC BANK ARGENTINA S.A.",
+                "title": "HSBC",
                 "coins": {
                     "dolar": {
                         "11": {"channels": {"mostrador": true, "electronico": true}},
@@ -249,13 +251,14 @@
                         "15": {"channels": {"mostrador": true, "electronico": true}}
                     },
                     "euro": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                        "11": {"channels": {"mostrador": true, "electronico": false}},
+                        "13": {"channels": {"mostrador": true, "electronico": false}},
+                        "15": {"channels": {"mostrador": true, "electronico": false}}
                     }}
             },
             "credicoop": {
                 "name": "BANCO CREDICOOP COOPERATIVO LIMITADO",
+                "title": "Credicoop",
                 "coins": {
                     "dolar": {
                         "11": {"channels": {"mostrador": true, "electronico": true}},
@@ -263,13 +266,14 @@
                         "15": {"channels": {"mostrador": true, "electronico": true}}
                     },
                     "euro": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                        "11": {"channels": {"mostrador": true, "electronico": false}},
+                        "13": {"channels": {"mostrador": true, "electronico": false}},
+                        "15": {"channels": {"mostrador": true, "electronico": false}}
                     }}
             },
             "itau": {
                 "name": "BANCO ITAU ARGENTINA S.A.",
+                "title": "Itaú",
                 "coins": {
                     "dolar": {
                         "11": {"channels": {"mostrador": true, "electronico": true}},
@@ -284,6 +288,7 @@
             },
             "macro": {
                 "name": "BANCO MACRO S.A.",
+                "title": "Macro",
                 "coins": {
                     "dolar": {
                         "11": {"channels": {"mostrador": true, "electronico": true}},
@@ -291,13 +296,14 @@
                         "15": {"channels": {"mostrador": true, "electronico": true}}
                     },
                     "euro": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                        "11": {"channels": {"mostrador": true, "electronico": false}},
+                        "13": {"channels": {"mostrador": true, "electronico": false}},
+                        "15": {"channels": {"mostrador": true, "electronico": false}}
                     }}
             },
             "piano": {
                 "name": "BANCO PIANO S.A.",
+                "title": "Piano",
                 "coins": {
                     "dolar": {
                         "11": {"channels": {"mostrador": true, "electronico": true}},
@@ -305,107 +311,99 @@
                         "15": {"channels": {"mostrador": true, "electronico": true}}
                     },
                     "euro": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                        "11": {"channels": {"mostrador": true, "electronico": false}},
+                        "13": {"channels": {"mostrador": true, "electronico": false}},
+                        "15": {"channels": {"mostrador": true, "electronico": false}}
                     }}
             },
             "balanz": {
                 "name": "BALANZ CAPITAL VALORES S.A.U.",
+                "title": "Balanz Capital Valores",
                 "coins": {
                     "dolar": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                        "11": {"channels": {"mostrador": false, "electronico": true}},
+                        "13": {"channels": {"mostrador": false, "electronico": true}},
+                        "15": {"channels": {"mostrador": false, "electronico": true}}
                     },
                     "euro": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                        "11": {"channels": {"mostrador": false, "electronico": false}},
+                        "13": {"channels": {"mostrador": false, "electronico": false}},
+                        "15": {"channels": {"mostrador": false, "electronico": false}}
                     }}
             },
             "ibcambio": {
                 "name": "IB Cambio SAS",
+                "title": "IB Cambio",
                 "coins": {
                     "dolar": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                        "11": {"channels": {"mostrador": false, "electronico": true}},
+                        "13": {"channels": {"mostrador": false, "electronico": true}},
+                        "15": {"channels": {"mostrador": false, "electronico": true}}
                     },
                     "euro": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                        "11": {"channels": {"mostrador": false, "electronico": false}},
+                        "13": {"channels": {"mostrador": false, "electronico": false}},
+                        "15": {"channels": {"mostrador": false, "electronico": false}}
                     }}
             },
             "bullmarket": {
                 "name": "BULL MARKET BROKERS SA",
+                "title": "Bull Market",
                 "coins": {
                     "dolar": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                        "11": {"channels": {"mostrador": false, "electronico": true}},
+                        "13": {"channels": {"mostrador": false, "electronico": true}},
+                        "15": {"channels": {"mostrador": false, "electronico": true}}
                     },
                     "euro": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                        "11": {"channels": {"mostrador": false, "electronico": false}},
+                        "13": {"channels": {"mostrador": false, "electronico": false}},
+                        "15": {"channels": {"mostrador": false, "electronico": false}}
                     }}
             },
             "cambiosonline": {
                 "name": "CAMBIOS ONLINE SA",
+                "title": "Cambios Online",
                 "coins": {
                     "dolar": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                        "11": {"channels": {"mostrador": false, "electronico": true}},
+                        "13": {"channels": {"mostrador": false, "electronico": true}},
+                        "15": {"channels": {"mostrador": false, "electronico": true}}
                     },
                     "euro": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                        "11": {"channels": {"mostrador": false, "electronico": false}},
+                        "13": {"channels": {"mostrador": false, "electronico": false}},
+                        "15": {"channels": {"mostrador": false, "electronico": false}}
                     }}
             },
             "brubank": {
                 "name": "BRUBANK S.A.U.",
+                "title": "Brubank",
                 "coins": {
                     "dolar": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                        "11": {"channels": {"mostrador": false, "electronico": true}},
+                        "13": {"channels": {"mostrador": false, "electronico": true}},
+                        "15": {"channels": {"mostrador": false, "electronico": true}}
                     },
                     "euro": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
-                    }}
-            },
-            "ppinv": {
-                "name": "PP INVERSIONES S.A.",
-                "coins": {
-                    "dolar": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
-                    },
-                    "euro": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                        "11": {"channels": {"mostrador": false, "electronico": false}},
+                        "13": {"channels": {"mostrador": false, "electronico": false}},
+                        "15": {"channels": {"mostrador": false, "electronico": false}}
                     }}
             },
             "iol": {
-                "name": "INVERTIRONLINE SA",
+                "name": "INVERTIRONLINE SAU",
+                "title": "Invertironline",
                 "coins": {
                     "dolar": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                        "11": {"channels": {"mostrador": false, "electronico": true}},
+                        "13": {"channels": {"mostrador": false, "electronico": true}},
+                        "15": {"channels": {"mostrador": false, "electronico": true}}
                     },
                     "euro": {
-                        "11": {"channels": {"mostrador": true, "electronico": true}},
-                        "13": {"channels": {"mostrador": true, "electronico": true}},
-                        "15": {"channels": {"mostrador": true, "electronico": true}}
+                        "11": {"channels": {"mostrador": false, "electronico": false}},
+                        "13": {"channels": {"mostrador": false, "electronico": false}},
+                        "15": {"channels": {"mostrador": false, "electronico": false}}
                     }}
             }
         }

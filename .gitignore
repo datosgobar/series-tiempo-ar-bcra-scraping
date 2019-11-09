@@ -68,3 +68,4 @@ target/
 *.csv
 config_general.json
 config_email.yaml
+.ipynb_checkpoints
