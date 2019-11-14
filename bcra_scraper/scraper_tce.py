@@ -7,6 +7,7 @@ import re
 
 from bs4 import BeautifulSoup
 from pandas import pandas as pd
+from pyinstrument import Profiler
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -107,6 +108,7 @@ class BCRATCEScraper(BCRAScraper):
             cont += 1
             bar.update(cont)
         bar.finish()
+
         return contents
 
     def intermediate_panel_data_has_date(self, intermediate_panel_data, single_date):
@@ -114,7 +116,7 @@ class BCRATCEScraper(BCRAScraper):
         if intermediate_panel_data:
             for k, v in intermediate_panel_data.items():
                 for d in v:
-                    if single_date.strftime("%Y-%m-%d") == d['indice_tiempo'].strftime("%Y-%m-%d"):
+                    if single_date.strftime("%Y-%m-%d") == d['indice_tiempo']:
                         _content[k] = d
         return _content
 
@@ -195,6 +197,13 @@ class BCRATCEScraper(BCRAScraper):
 
         return content_dict
 
+    def create_multi_index_column(self, field_title):
+        """Crea multi index desarmando el título de un campo."""
+        
+        tc, ars, coin, entity, channel, flow, hour = field_title.split("_")
+
+        return (coin, entity, channel, flow, hour)
+
     def get_intermediate_panel_data_from_parsed(self, parsed):
         """
         Recorre parsed y por cada registro genera un diccionario
@@ -206,51 +215,26 @@ class BCRATCEScraper(BCRAScraper):
         parsed : lista de diccionarios por moneda
         """
         intermediate_panel_data = []
+        for currency in ["dolar", "euro"]:
+            parsed_by_currency = parsed[currency]
 
-        parsed_contents = {'dolar': [], 'euro': []}
+            df = pd.DataFrame(parsed_by_currency).set_index("indice_tiempo")
+            df.sort_index(inplace=True)
+            df.columns = pd.MultiIndex.from_tuples([self.create_multi_index_column(col) for col in df.columns])
+            df_panel = df.stack([-5, -4, -3, -2, -1], dropna=False).reset_index()
+            df_panel.columns = ["indice_tiempo", "coin", "entity", "channel", "flow", "hour", "value"]
+            df_panel.columns = ["indice_tiempo", "moneda", "entidad_bancaria", "canal", "flujo", "hora", "valor"]
+            df_panel["indice_tiempo"] = df_panel["indice_tiempo"].apply(lambda x: x)
+            df_panel["valor"] = df_panel["valor"].apply(lambda x: x if x and x > 0 else None)
 
-        for p in parsed:
-            for k, v in p.items():
-                if k == 'indice_tiempo':
-                    time = p['indice_tiempo']
-                else:
-                    result = k.split("_")
-                    if result[2] == 'dolar':
-                        panel = {}
-                        panel['indice_tiempo'] = time
-                        panel['coin'] = result[2]
-                        panel['entity'] = result[3]
-                        panel['channel'] = result[4]
-                        panel['flow'] = result[5]
-                        panel['hour'] = result[6]
-                        panel['value'] = v
-                        parsed_contents['dolar'].append(panel)
-                    elif result[2] == 'euro':
-                        panel = {}
-                        panel['indice_tiempo'] = time
-                        panel['coin'] = result[2]
-                        panel['entity'] = result[3]
-                        panel['channel'] = result[4]
-                        panel['flow'] = result[5]
-                        panel['hour'] = result[6]
-                        panel['value'] = v
-                        parsed_contents['euro'].append(panel)
-        intermediate_panel_data.extend(
-            parsed_contents['dolar'] + parsed_contents['euro']
-        )
-        l = len(intermediate_panel_data)
-        for i in range(0, l):
-            for j in range(0, l-i-1):
-                if (intermediate_panel_data[j]['indice_tiempo'] > intermediate_panel_data[j + 1]['indice_tiempo']):
-                    tempo = intermediate_panel_data[j]
-                    intermediate_panel_data[j]= intermediate_panel_data[j + 1]
-                    intermediate_panel_data[j + 1]= tempo
+            intermediate_panel_data.extend(df_panel.to_dict(orient="records"))
+
         return intermediate_panel_data
 
     def reorder_parsed(self, parsed):
         l = len(parsed)
         for v in parsed.values():
-            for i in range(0, l): 
+            for i in range(0, l):
                 for j in range(0, l-i-1):
                     if v and len(v) > 1:
                         if (v[j]['indice_tiempo'] > v[j + 1]['indice_tiempo']):
@@ -276,71 +260,50 @@ class BCRATCEScraper(BCRAScraper):
             fecha de fin que va a tomar como referencia el scraper
         """
         _parsed = {'dolar': [], 'euro': []}
-        coin_dfs = {}
 
-        intermediate_panel_df = self.read_intermediate_panel_dataframe()
-        intermediate_panel_df.set_index(['indice_tiempo'], inplace=True)
+        df_panel = self.read_intermediate_panel_dataframe()
 
-        if not intermediate_panel_df.empty:
-            coin_dfs = {'dolar': {}, 'euro': {}}
+        if not df_panel.empty:
+            df_pivot_dolar = df_panel[df_panel.moneda == "dolar"].pivot_table(
+                index="indice_tiempo",
+                columns=["entidad_bancaria", "canal", "flujo", "hora"],
+                values="valor",
+                aggfunc=sum,
+                dropna=False
+            )
+            df_pivot_dolar = df_pivot_dolar.replace([0], [None])
+            flatten_columns = [self.create_field_title(col, "dolar") for col in df_pivot_dolar.columns]
+            df_pivot_dolar.columns = flatten_columns
+            df_pivot_dolar.reset_index(inplace=True)
 
-            for coin in ['dolar', 'euro']:
-                for entity in self.entities:
-                    for channel in ['mostrador', 'electronico']:
-                        for flow in ['compra', 'venta']:
-                            for hour in [11, 13, 15]:
-                                for k in self.coins.keys():
-                                    type =\
-                                        (
-                                            f'tc_ars_{k}_{entity}_{channel}_'
-                                            f'{flow}_{hour}hs'
-                                        )
-                                    coin_dfs[k][type] =\
-                                        intermediate_panel_df.loc[
-                                        (intermediate_panel_df[
-                                            'coin'] == k) &
-                                        (intermediate_panel_df[
-                                            'entity'] == entity) &
-                                        (intermediate_panel_df[
-                                            'channel'] == channel) &
-                                        (intermediate_panel_df[
-                                            'flow'] == flow) &
-                                        (intermediate_panel_df[
-                                            'hour'] == f'{hour}hs')
-                                    ][['value']]
+            df_pivot_euro = df_panel[df_panel.moneda == "euro"].pivot_table(
+                index="indice_tiempo", 
+                columns=["entidad_bancaria", "canal", "flujo", "hora"], 
+                values="valor",
+                aggfunc=sum,
+                dropna=False
+            )
+            df_pivot_euro = df_pivot_euro.replace([0], [None])
+            flatten_columns = [self.create_field_title(col, "euro") for col in df_pivot_euro.columns]
+            df_pivot_euro.columns = flatten_columns
+            df_pivot_euro.reset_index(inplace=True)
 
-                                    coin_dfs[k][type].rename(
-                                        columns={'value': f'{type}'},
-                                        inplace=True
-                                    )
-                                    if coin_dfs[k][type].empty:
-                                        del(coin_dfs[k][type])
-
-            coins_df = {}
-            for coin in ['dolar', 'euro']:
-                coins_df[coin] = reduce(
-                    lambda df1, df2: df1.merge(
-                        df2, left_on='indice_tiempo', right_on='indice_tiempo'
-                    ),
-                    coin_dfs[coin].values(),
-                )
-
-            for coin in ['dolar', 'euro']:
-                for r in coins_df[coin].to_records():
-                    parsed_row = {}
-
-                    columns = ['indice_tiempo']
-                    columns.extend([v for v in coin_dfs[coin].keys()])
-
-                    for index, column in enumerate(columns):
-                        if column == 'indice_tiempo':
-                            parsed_row[column] = datetime.strptime(r[index], "%Y-%m-%d").date()
-                        else:
-                            parsed_row[column] = r[index]
-
-                    if parsed_row:
-                        _parsed[coin].append(parsed_row)
+            _parsed['dolar'] = df_pivot_dolar.to_dict(orient="records")
+            _parsed['euro'] = df_pivot_euro.to_dict(orient="records")
         return _parsed
+
+    def create_field_title(self, col_multi_index, coin):
+        """Convierte columnas muli index a nombre de campo plano."""
+        
+        entity, channel, flow, hour = col_multi_index
+        field_title = "tc_ars_{coin}_{entity}_{channel}_{flow}_{hour}".format(
+            coin=coin,
+            entity=entity,
+            channel=channel,
+            flow=flow,
+            hour=hour
+        )
+        return field_title
 
     def write_intermediate_panel(self, rows, intermediate_panel_path):
         """
@@ -352,14 +315,13 @@ class BCRATCEScraper(BCRAScraper):
         """
         header = [
             'indice_tiempo',
-            'coin',
-            'entity',
-            'channel',
-            'flow',
-            'hour',
-            'value'
+            'moneda',
+            'entidad_bancaria',
+            'canal',
+            'flujo',
+            'hora',
+            'valor'
         ]
-
         with open(intermediate_panel_path, 'w') as intermediate_panel:
             writer = DictWriter(intermediate_panel, fieldnames=header)
             writer.writeheader()
@@ -387,10 +349,7 @@ class BCRATCEScraper(BCRAScraper):
         intermediate_panel_dataframe = pd.read_csv(
             self.intermediate_panel_path,
             converters={
-                'serie_tiempo': lambda _: _,
-                'coin': lambda _: str(_),
-                'type': lambda _: str(_),
-                'value': lambda _: Decimal(_) if _ else None
+                'valor': lambda _: Decimal(_) if _ else None
             }
         )
         return intermediate_panel_dataframe
@@ -404,12 +363,9 @@ class BCRATCEScraper(BCRAScraper):
         ----------
         parsed: Iterable
         """
-        _parsed = (
-            [p for p in parsed['dolar']] + [p for p in parsed['euro']]
-        )
 
         intermediate_panel_data = self.get_intermediate_panel_data_from_parsed(
-            _parsed
+            parsed
         )
         self.write_intermediate_panel(intermediate_panel_data, self.intermediate_panel_path)
 
@@ -465,7 +421,6 @@ class BCRATCEScraper(BCRAScraper):
                 parsed = self.intermediate_panel_data_has_date(intermediate_panel_data, single_date)
                 parsed_contents['dolar'].append(parsed['dolar'])
                 parsed_contents['euro'].append(parsed['euro'])
-
         return parsed_contents, intermediate_panel_data
 
     def parse_content(self, content, single_date, coin, entities):
@@ -513,12 +468,11 @@ class BCRATCEScraper(BCRAScraper):
                     cols = row.find_all('td')
                     parsed[
                         'indice_tiempo'
-                        ] = single_date.date()
+                        ] = single_date.strftime("%Y-%m-%d")
                     for hour in ['11', '13', '15']:
                         parsed = self.parse_hour(v, k, hour, coin, parsed, cols)
                 result.update(parsed)
             parsed_contents.append(result)
-
             return parsed_contents
         except:
             parsed_contents.append(parsed)
@@ -553,7 +507,7 @@ class BCRATCEScraper(BCRAScraper):
         for k in entities.keys():
             parsed[
                 'indice_tiempo'
-                ] = day.date()
+                ] = (day.date()).strftime("%Y-%m-%d")
             parsed[
                 f'tc_ars_{coin}_{k}_mostrador_compra_11hs'
                 ] = ''
@@ -623,7 +577,7 @@ class BCRATCEScraper(BCRAScraper):
                                 '-'.join([_[2], _[1], _[0]])
                             )
                         else:
-                            preprocessed_date = date.fromisoformat(row[k])
+                            preprocessed_date = row[k]
                     else:
                         preprocessed_date = row[k]
                     preprocessed_row['indice_tiempo'] = preprocessed_date

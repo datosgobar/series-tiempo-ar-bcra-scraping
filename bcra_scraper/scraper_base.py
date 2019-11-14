@@ -150,5 +150,5 @@ class BCRAScraper:
 
         if not self.skip_intermediate_panel_data:
             self.save_intermediate_panel(intermediate_panel_data)
-        
+
         return parsed
