@@ -82,10 +82,13 @@ class BCRAExchangeRateScraper(BCRAScraper):
         """
         content = {}
         day_count = (end_date - start_date).days + 1
+        if day_count < 0:
+            day_count = 0
         cont = 0
         bar = progressbar.ProgressBar(max_value=day_count, redirect_stdout=True, \
             widgets=[progressbar.Bar('=', '[', ']'), '', progressbar.Percentage()])
         bar.start()
+
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
             if not self.intermediate_panel_data_has_date(intermediate_panel_data, single_date):
@@ -96,6 +99,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
             cont += 1
             bar.update(cont)
         bar.finish()
+
         return content
 
     def intermediate_panel_data_has_date(self, intermediate_panel_data, single_date):
@@ -177,7 +181,6 @@ class BCRAExchangeRateScraper(BCRAScraper):
                     )
 
             break
-
         return content
 
     def parse_contents(self, content, start_date, end_date, intermediate_panel_data):
@@ -282,7 +285,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
             parsed['indice_tiempo'] = day
             parsed['tp_usd'] = ''
             parsed['tc_local'] = ''
-            
+
             if body.find('td', text=re.compile(day)):
                 if day == body.find('td', text=re.compile(day)).text.strip():
                     row = body.find('td', text=re.compile(day)).parent
@@ -291,7 +294,8 @@ class BCRAExchangeRateScraper(BCRAScraper):
                     parsed['indice_tiempo'] = cols[0].text.strip()
                     parsed['tp_usd'] = cols[1].text[5:].strip()
                     parsed['tc_local'] = cols[2].text[5:].strip()
-                parsed_contents.append(parsed)
+            parsed_contents.append(parsed)
+
             return parsed_contents
         except:
             return parsed_contents
@@ -512,7 +516,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
         )
         return intermediate_panel_dataframe
 
-    def preprocess_start_date(self, start_date):
+    def preprocess_start_date(self, start_date, end_date):
         counter = 1
         tries = self.tries
 
@@ -527,8 +531,12 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
                 if not start_date.strftime("%d/%m/%Y") in elem.text:
                     logging.warning(f'La fecha {start_date.strftime("%d/%m/%Y")} no existe')
-                    start_date = start_date + timedelta(days=1)
-                    logging.warning(f'La nueva fecha de inicio es {start_date}')
+                    if start_date <= end_date:
+                        start_date = start_date + timedelta(days=1)
+                        logging.warning(f'La nueva fecha de inicio es {start_date}')
+                    else:
+                        logging.warning('La fecha de inicio no puede ser mayor a la fecha de fin')
+                        return start_date
                 else:
                     return start_date
 
