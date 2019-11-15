@@ -7,7 +7,6 @@ import re
 
 from bs4 import BeautifulSoup
 from pandas import pandas as pd
-from pyinstrument import Profiler
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -98,7 +97,7 @@ class BCRATCEScraper(BCRAScraper):
         bar.start()
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
-            if not self.intermediate_panel_data_has_date(intermediate_panel_data, single_date):
+            if not self.day_content_in_panel(intermediate_panel_data, single_date):
                 for k, v in self.coins.items():
                     content = {}
                     fetched = self.fetch_content(single_date, v)
@@ -111,7 +110,11 @@ class BCRATCEScraper(BCRAScraper):
 
         return contents
 
-    def intermediate_panel_data_has_date(self, intermediate_panel_data, single_date):
+    def day_content_in_panel(self, intermediate_panel_data, single_date):
+        """
+        Devuelve un diccionario con los valores para esa fecha en
+        el panel intermedio.
+        """
         _content = {}
         if intermediate_panel_data:
             for k, v in intermediate_panel_data.items():
@@ -197,13 +200,6 @@ class BCRATCEScraper(BCRAScraper):
 
         return content_dict
 
-    def create_multi_index_column(self, field_title):
-        """Crea multi index desarmando el título de un campo."""
-        
-        tc, ars, coin, entity, channel, flow, hour = field_title.split("_")
-
-        return (coin, entity, channel, flow, hour)
-
     def get_intermediate_panel_data_from_parsed(self, parsed):
         """
         Recorre parsed y por cada registro genera un diccionario
@@ -214,22 +210,33 @@ class BCRATCEScraper(BCRAScraper):
         ----------
         parsed : lista de diccionarios por moneda
         """
+
         intermediate_panel_data = []
         for currency in ["dolar", "euro"]:
             parsed_by_currency = parsed[currency]
 
-            df = pd.DataFrame(parsed_by_currency).set_index("indice_tiempo")
-            df.sort_index(inplace=True)
-            df.columns = pd.MultiIndex.from_tuples([self.create_multi_index_column(col) for col in df.columns])
-            df_panel = df.stack([-5, -4, -3, -2, -1], dropna=False).reset_index()
-            df_panel.columns = ["indice_tiempo", "coin", "entity", "channel", "flow", "hour", "value"]
-            df_panel.columns = ["indice_tiempo", "moneda", "entidad_bancaria", "canal", "flujo", "hora", "valor"]
-            df_panel["indice_tiempo"] = df_panel["indice_tiempo"].apply(lambda x: x)
-            df_panel["valor"] = df_panel["valor"].apply(lambda x: x if x and x > 0 else None)
+            df_panel = self.parsed_to_panel_dataframe(parsed_by_currency)
 
             intermediate_panel_data.extend(df_panel.to_dict(orient="records"))
 
         return intermediate_panel_data
+
+    def parsed_to_panel_dataframe(self, parsed_by_currency):
+        def create_multi_index_column(field_title):
+            """Crea multi index desarmando el título de un campo."""
+            tc, ars, coin, entity, channel, flow, hour = field_title.split("_")
+            return (coin, entity, channel, flow, hour)
+
+        df = pd.DataFrame(parsed_by_currency).set_index("indice_tiempo")
+        df.sort_index(inplace=True)
+        df.columns = pd.MultiIndex.from_tuples([create_multi_index_column(col) for col in df.columns])
+        df_panel = df.stack([-5, -4, -3, -2, -1], dropna=False).reset_index()
+        df_panel.columns = ["indice_tiempo", "coin", "entity", "channel", "flow", "hour", "value"]
+        df_panel.columns = ["indice_tiempo", "moneda", "entidad_bancaria", "canal", "flujo", "hora", "valor"]
+        df_panel["indice_tiempo"] = df_panel["indice_tiempo"].apply(lambda x: x)
+        df_panel["valor"] = df_panel["valor"].apply(lambda x: x if x and x > 0 else None)
+
+        return df_panel
 
     def reorder_parsed(self, parsed):
         l = len(parsed)
@@ -264,46 +271,35 @@ class BCRATCEScraper(BCRAScraper):
         df_panel = self.read_intermediate_panel_dataframe()
 
         if not df_panel.empty:
-            df_pivot_dolar = df_panel[df_panel.moneda == "dolar"].pivot_table(
+            for coin in ['dolar', 'euro']:
+                _parsed[coin] = self.get_pivot_table_coin(df_panel, coin).to_dict(orient="records")
+        return _parsed
+
+    def get_pivot_table_coin(self, df_panel, coin):
+        def create_field_title(col_multi_index, coin):
+            """Convierte columnas muli index a nombre de campo plano."""
+            entity, channel, flow, hour = col_multi_index
+            field_title = "tc_ars_{coin}_{entity}_{channel}_{flow}_{hour}".format(
+                coin=coin,
+                entity=entity,
+                channel=channel,
+                flow=flow,
+                hour=hour
+            )
+            return field_title
+
+        df_pivot_coin = df_panel[df_panel.moneda == coin].pivot_table(
                 index="indice_tiempo",
                 columns=["entidad_bancaria", "canal", "flujo", "hora"],
                 values="valor",
                 aggfunc=sum,
                 dropna=False
-            )
-            df_pivot_dolar = df_pivot_dolar.replace([0], [None])
-            flatten_columns = [self.create_field_title(col, "dolar") for col in df_pivot_dolar.columns]
-            df_pivot_dolar.columns = flatten_columns
-            df_pivot_dolar.reset_index(inplace=True)
-
-            df_pivot_euro = df_panel[df_panel.moneda == "euro"].pivot_table(
-                index="indice_tiempo", 
-                columns=["entidad_bancaria", "canal", "flujo", "hora"], 
-                values="valor",
-                aggfunc=sum,
-                dropna=False
-            )
-            df_pivot_euro = df_pivot_euro.replace([0], [None])
-            flatten_columns = [self.create_field_title(col, "euro") for col in df_pivot_euro.columns]
-            df_pivot_euro.columns = flatten_columns
-            df_pivot_euro.reset_index(inplace=True)
-
-            _parsed['dolar'] = df_pivot_dolar.to_dict(orient="records")
-            _parsed['euro'] = df_pivot_euro.to_dict(orient="records")
-        return _parsed
-
-    def create_field_title(self, col_multi_index, coin):
-        """Convierte columnas muli index a nombre de campo plano."""
-        
-        entity, channel, flow, hour = col_multi_index
-        field_title = "tc_ars_{coin}_{entity}_{channel}_{flow}_{hour}".format(
-            coin=coin,
-            entity=entity,
-            channel=channel,
-            flow=flow,
-            hour=hour
         )
-        return field_title
+        df_pivot_coin = df_pivot_coin.replace([0], [None])
+        flatten_columns = [create_field_title(col, coin) for col in df_pivot_coin.columns]
+        df_pivot_coin.columns = flatten_columns
+        df_pivot_coin.reset_index(inplace=True)
+        return df_pivot_coin
 
     def write_intermediate_panel(self, rows, intermediate_panel_path):
         """
@@ -394,7 +390,7 @@ class BCRATCEScraper(BCRAScraper):
 
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
-            if not self.intermediate_panel_data_has_date(intermediate_panel_data, single_date):
+            if not self.day_content_in_panel(intermediate_panel_data, single_date):
                 for content in contents:
                     for k, v in content.items():
                         content_date = content[k].get('indice_tiempo')
@@ -418,7 +414,7 @@ class BCRATCEScraper(BCRAScraper):
                                             if not type(intermediate_panel_data) == list:
                                                 intermediate_panel_data['euro'].append(d)
             else:
-                parsed = self.intermediate_panel_data_has_date(intermediate_panel_data, single_date)
+                parsed = self.day_content_in_panel(intermediate_panel_data, single_date)
                 parsed_contents['dolar'].append(parsed['dolar'])
                 parsed_contents['euro'].append(parsed['euro'])
         return parsed_contents, intermediate_panel_data
