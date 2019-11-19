@@ -271,6 +271,9 @@ class BCRATCEScraper(BCRAScraper):
         return _parsed
 
     def get_pivot_table_coin(self, df_panel, coin):
+        """
+        Recibe un diccionario a partir del cual genera una tabla pivot por moneda como dataframe.
+        """
         def create_field_title(col_multi_index, coin):
             """Convierte columnas muli index a nombre de campo plano."""
             entity, channel, flow, hour = col_multi_index
