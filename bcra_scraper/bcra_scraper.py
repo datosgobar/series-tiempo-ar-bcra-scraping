@@ -538,7 +538,7 @@ def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_c
         parsed = scraper.run(start_date, end_date)
 
         if parsed:
-            parsed = scraper.reorder_parsed(parsed)
+            # parsed = scraper.reorder_parsed(parsed)
             for coin in ['dolar', 'euro']:
                 csv_header = get_csv_header(coin, config)
                 if coin == 'dolar':

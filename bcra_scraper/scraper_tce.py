@@ -91,10 +91,10 @@ class BCRATCEScraper(BCRAScraper):
         """
         contents = []
         day_count = (end_date - start_date).days + 1
-        # cont = 0
-        # bar = progressbar.ProgressBar(max_value=day_count, redirect_stdout=True, \
-        #     widgets=[progressbar.Bar('=', '[', ']'), '', progressbar.Percentage()])
-        # bar.start()
+        cont = 0
+        bar = progressbar.ProgressBar(max_value=day_count, redirect_stdout=True, \
+            widgets=[progressbar.Bar('=', '[', ']'), '', progressbar.Percentage()])
+        bar.start()
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
             if not self.day_content_in_panel(intermediate_panel_data, single_date):
@@ -104,9 +104,9 @@ class BCRATCEScraper(BCRAScraper):
                     if fetched:
                         content[k] = fetched
                     contents.append(content)
-        #     cont += 1
-        #     bar.update(cont)
-        # bar.finish()
+            cont += 1
+            bar.update(cont)
+        bar.finish()
 
         return contents
 
@@ -244,18 +244,6 @@ class BCRATCEScraper(BCRAScraper):
         df_panel["valor"] = df_panel["valor"].apply(lambda x: x if x and x > 0 else None)
 
         return df_panel
-
-    def reorder_parsed(self, parsed):
-        l = len(parsed)
-        for v in parsed.values():
-            for i in range(0, l):
-                for j in range(0, l-i-1):
-                    if v and len(v) > 1:
-                        if (v[j]['indice_tiempo'] > v[j + 1]['indice_tiempo']):
-                            tempo = v[j]
-                            v[j]= v[j + 1]
-                            v[j + 1]= tempo
-        return parsed
 
     def parse_from_intermediate_panel(self):
         """
