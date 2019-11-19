@@ -91,10 +91,10 @@ class BCRATCEScraper(BCRAScraper):
         """
         contents = []
         day_count = (end_date - start_date).days + 1
-        cont = 0
-        bar = progressbar.ProgressBar(max_value=day_count, redirect_stdout=True, \
-            widgets=[progressbar.Bar('=', '[', ']'), '', progressbar.Percentage()])
-        bar.start()
+        # cont = 0
+        # bar = progressbar.ProgressBar(max_value=day_count, redirect_stdout=True, \
+        #     widgets=[progressbar.Bar('=', '[', ']'), '', progressbar.Percentage()])
+        # bar.start()
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
             if not self.day_content_in_panel(intermediate_panel_data, single_date):
@@ -104,9 +104,9 @@ class BCRATCEScraper(BCRAScraper):
                     if fetched:
                         content[k] = fetched
                     contents.append(content)
-            cont += 1
-            bar.update(cont)
-        bar.finish()
+        #     cont += 1
+        #     bar.update(cont)
+        # bar.finish()
 
         return contents
 
@@ -222,6 +222,13 @@ class BCRATCEScraper(BCRAScraper):
         return intermediate_panel_data
 
     def parsed_to_panel_dataframe(self, parsed_by_currency):
+        """
+        Recibe una lista de diccionarios a partir de la cual crea el dataframe del panel.
+
+        Parameters
+        ----------
+        parsed_by_currency: lista de diccionarios por día de una moneda.
+        """
         def create_multi_index_column(field_title):
             """Crea multi index desarmando el título de un campo."""
             tc, ars, coin, entity, channel, flow, hour = field_title.split("_")
