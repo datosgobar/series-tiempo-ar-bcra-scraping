@@ -215,15 +215,16 @@ class BCRATCEScraper(BCRAScraper):
         for currency in ["dolar", "euro"]:
             parsed_by_currency = parsed[currency]
 
-            df_panel = self.parsed_to_panel_dataframe(parsed_by_currency)
+            panel_by_coin = self.parsed_to_panel_dataframe(parsed_by_currency)
 
-            intermediate_panel_data.extend(df_panel.to_dict(orient="records"))
+            intermediate_panel_data.extend(panel_by_coin)
 
         return intermediate_panel_data
 
     def parsed_to_panel_dataframe(self, parsed_by_currency):
         """
         Recibe una lista de diccionarios a partir de la cual crea el dataframe del panel.
+        Devuelve una lista de diccionarios con los datos del panel a partir de lo que recibe.
 
         Parameters
         ----------
@@ -242,8 +243,9 @@ class BCRATCEScraper(BCRAScraper):
         df_panel.columns = ["indice_tiempo", "moneda", "entidad_bancaria", "canal", "flujo", "hora", "valor"]
         df_panel["indice_tiempo"] = df_panel["indice_tiempo"].apply(lambda x: x)
         df_panel["valor"] = df_panel["valor"].apply(lambda x: x if x and x > 0 else None)
+        panel_data = df_panel.to_dict(orient="records")
 
-        return df_panel
+        return panel_data
 
     def parse_from_intermediate_panel(self):
         """
