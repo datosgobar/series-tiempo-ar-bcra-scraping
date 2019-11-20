@@ -269,19 +269,19 @@ class BCRATCEScraper(BCRAScraper):
 
         if not df_panel.empty:
             for coin in ['dolar', 'euro']:
-                _parsed[coin] = self.get_pivot_table_coin(df_panel, coin).to_dict(orient="records")
+                _parsed[coin] = self.get_pivot_table_coin(df_panel, coin)
         return _parsed
 
     def get_pivot_table_coin(self, df_panel, coin):
         """
-        Recibe un diccionario a partir del cual genera una tabla pivot por moneda como dataframe.
+        Recibe un dataframe a partir del cual genera una tabla pivot.
+        Devuelve una lista de diccionarios.
 
         Parameters
         ----------
         df_panel: dataframe con los datos del panel intermedio.
         coin : string con el nombre de la moneda.
         """
-        breakpoint()
         def create_field_title(col_multi_index, coin):
             """Convierte columnas muli index a nombre de campo plano."""
             entity, channel, flow, hour = col_multi_index
@@ -305,7 +305,8 @@ class BCRATCEScraper(BCRAScraper):
         flatten_columns = [create_field_title(col, coin) for col in df_pivot_coin.columns]
         df_pivot_coin.columns = flatten_columns
         df_pivot_coin.reset_index(inplace=True)
-        return df_pivot_coin
+        pivot_table_data = df_pivot_coin.to_dict(orient="records")
+        return pivot_table_data
 
     def write_intermediate_panel(self, rows, intermediate_panel_path):
         """
