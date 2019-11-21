@@ -98,14 +98,14 @@ class BCRALiborScraper(BCRAScraper):
         bar.start()
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
-            if not self.intermediate_panel_data_has_date(intermediate_panel_data, single_date):
+            if not self.day_content_in_panel(intermediate_panel_data, single_date):
                 contents.append(self.fetch_day_content(single_date))
             cont += 1
             bar.update(cont)
         bar.finish()
         return contents
 
-    def intermediate_panel_data_has_date(self, intermediate_panel_data, single_date):
+    def day_content_in_panel(self, intermediate_panel_data, single_date):
         content = []
         if single_date in intermediate_panel_data:
             content = intermediate_panel_data[single_date]
@@ -174,7 +174,7 @@ class BCRALiborScraper(BCRAScraper):
         day_count = (end_date - start_date).days + 1
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
-            panel_parsed = self.intermediate_panel_data_has_date(intermediate_panel_data, single_date)
+            panel_parsed = self.day_content_in_panel(intermediate_panel_data, single_date)
             if not panel_parsed:
                 for content in contents:
                     if single_date.strftime("%Y-%m-%d") in content:
