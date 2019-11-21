@@ -221,7 +221,7 @@ class BCRATCEScraper(BCRAScraper):
 
         return intermediate_panel_data
 
-    def parsed_to_panel_dataframe(self, parsed_by_currency):
+    def parsed_to_panel_dataframe(self, parsed):
         """
         Recibe una lista de diccionarios a partir de la cual crea el dataframe del panel.
         Devuelve una lista de diccionarios con los datos del panel a partir de lo que recibe.
@@ -235,7 +235,7 @@ class BCRATCEScraper(BCRAScraper):
             tc, ars, coin, entity, channel, flow, hour = field_title.split("_")
             return (coin, entity, channel, flow, hour)
 
-        df = pd.DataFrame(parsed_by_currency).set_index("indice_tiempo")
+        df = pd.DataFrame(parsed).set_index("indice_tiempo")
         df.sort_index(inplace=True)
         df.columns = pd.MultiIndex.from_tuples([create_multi_index_column(col) for col in df.columns])
         df_panel = df.stack([-5, -4, -3, -2, -1], dropna=False).reset_index()
