@@ -269,10 +269,10 @@ class BCRATCEScraper(BCRAScraper):
 
         if not df_panel.empty:
             for coin in ['dolar', 'euro']:
-                _parsed[coin] = self.get_pivot_table_coin(df_panel, coin)
+                _parsed[coin] = self.get_parsed_by_currency(df_panel, coin)
         return _parsed
 
-    def get_pivot_table_coin(self, df_panel, coin):
+    def get_parsed_by_currency(self, df_panel, coin):
         """
         Recibe un dataframe a partir del cual genera una tabla pivot.
         Devuelve una lista de diccionarios.
@@ -305,8 +305,8 @@ class BCRATCEScraper(BCRAScraper):
         flatten_columns = [create_field_title(col, coin) for col in df_pivot_coin.columns]
         df_pivot_coin.columns = flatten_columns
         df_pivot_coin.reset_index(inplace=True)
-        pivot_table_data = df_pivot_coin.to_dict(orient="records")
-        return pivot_table_data
+        parsed_by_currency = df_pivot_coin.to_dict(orient="records")
+        return parsed_by_currency
 
     def write_intermediate_panel(self, rows, intermediate_panel_path):
         """
