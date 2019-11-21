@@ -215,9 +215,9 @@ class BCRATCEScraper(BCRAScraper):
         for currency in ["dolar", "euro"]:
             parsed_by_currency = parsed[currency]
 
-            panel_by_coin = self.parsed_to_panel_dataframe(parsed_by_currency)
+            panel_by_currency = self.parsed_to_panel_dataframe(parsed_by_currency)
 
-            intermediate_panel_data.extend(panel_by_coin)
+            intermediate_panel_data.extend(panel_by_currency)
 
         return intermediate_panel_data
 
