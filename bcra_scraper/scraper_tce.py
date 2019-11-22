@@ -92,8 +92,8 @@ class BCRATCEScraper(BCRAScraper):
         contents = []
         day_count = (end_date - start_date).days + 1
         cont = 0
-        bar = progressbar.ProgressBar(max_value=day_count, redirect_stdout=True, \
-            widgets=[progressbar.Bar('=', '[', ']'), '', progressbar.Percentage()])
+        bar = progressbar.ProgressBar(max_value=day_count, redirect_stdout=True,
+                                      widgets=[progressbar.Bar('=', '[', ']'), '', progressbar.Percentage()])
         bar.start()
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
@@ -159,7 +159,8 @@ class BCRATCEScraper(BCRAScraper):
                 element_present = EC.presence_of_element_located(
                     (By.NAME, 'moneda')
                 )
-                element = WebDriverWait(browser_driver, 0).until(element_present)
+                element = WebDriverWait(
+                    browser_driver, 0).until(element_present)
 
                 options = element.find_elements_by_tag_name('option')
                 valid = self.validate_coin_in_configuration_file(coin, options)
@@ -215,7 +216,8 @@ class BCRATCEScraper(BCRAScraper):
         for currency in ["dolar", "euro"]:
             parsed_by_currency = parsed[currency]
 
-            panel_by_currency = self.parsed_to_panel_dataframe(parsed_by_currency)
+            panel_by_currency = self.parsed_to_panel_dataframe(
+                parsed_by_currency)
 
             intermediate_panel_data.extend(panel_by_currency)
 
@@ -237,12 +239,17 @@ class BCRATCEScraper(BCRAScraper):
 
         df = pd.DataFrame(parsed).set_index("indice_tiempo")
         df.sort_index(inplace=True)
-        df.columns = pd.MultiIndex.from_tuples([create_multi_index_column(col) for col in df.columns])
+        df.columns = pd.MultiIndex.from_tuples(
+            [create_multi_index_column(col) for col in df.columns])
         df_panel = df.stack([-5, -4, -3, -2, -1], dropna=False).reset_index()
-        df_panel.columns = ["indice_tiempo", "coin", "entity", "channel", "flow", "hour", "value"]
-        df_panel.columns = ["indice_tiempo", "moneda", "entidad_bancaria", "canal", "flujo", "hora", "valor"]
-        df_panel["indice_tiempo"] = df_panel["indice_tiempo"].apply(lambda x: x)
-        df_panel["valor"] = df_panel["valor"].apply(lambda x: x if x and x > 0 else None)
+        df_panel.columns = ["indice_tiempo", "coin",
+                            "entity", "channel", "flow", "hour", "value"]
+        df_panel.columns = ["indice_tiempo", "moneda",
+                            "entidad_bancaria", "canal", "flujo", "hora", "valor"]
+        df_panel["indice_tiempo"] = df_panel[
+            "indice_tiempo"].apply(lambda x: x)
+        df_panel["valor"] = df_panel["valor"].apply(
+            lambda x: x if x and x > 0 else None)
         panel_data = df_panel.to_dict(orient="records")
 
         return panel_data
@@ -294,15 +301,18 @@ class BCRATCEScraper(BCRAScraper):
             )
             return field_title
 
+        df_panel.columns = ['indice_tiempo', 'moneda', 'entidad_bancaria',
+                            'canal', 'flujo', 'hora', 'valor']
         df_pivot_coin = df_panel[df_panel.moneda == coin].pivot_table(
-                index="indice_tiempo",
-                columns=["entidad_bancaria", "canal", "flujo", "hora"],
-                values="valor",
-                aggfunc=sum,
-                dropna=False
+            index="indice_tiempo",
+            columns=["entidad_bancaria", "canal", "flujo", "hora"],
+            values="valor",
+            aggfunc=sum,
+            dropna=False
         )
         df_pivot_coin = df_pivot_coin.replace([0], [None])
-        flatten_columns = [create_field_title(col, coin) for col in df_pivot_coin.columns]
+        flatten_columns = [create_field_title(
+            col, coin) for col in df_pivot_coin.columns]
         df_pivot_coin.columns = flatten_columns
         df_pivot_coin.reset_index(inplace=True)
         parsed_by_currency = df_pivot_coin.to_dict(orient="records")
@@ -370,7 +380,8 @@ class BCRATCEScraper(BCRAScraper):
         intermediate_panel_data = self.get_intermediate_panel_data_from_parsed(
             parsed
         )
-        self.write_intermediate_panel(intermediate_panel_data, self.intermediate_panel_path)
+        self.write_intermediate_panel(
+            intermediate_panel_data, self.intermediate_panel_path)
 
     def parse_contents(self, contents, start_date, end_date, intermediate_panel_data):
         """
@@ -403,25 +414,31 @@ class BCRATCEScraper(BCRAScraper):
                         content_date = content[k].get('indice_tiempo')
                         if single_date.strftime("%Y-%m-%d") == content_date:
                             day_content = content[k].get('content')
-                            parsed = self.parse_content(day_content, single_date, k, self.entities)
+                            parsed = self.parse_content(
+                                day_content, single_date, k, self.entities)
                             if parsed:
                                 for p in parsed:
                                     if k == 'dolar':
                                         preprocess_dict = {}
-                                        preprocess_dict = self.preprocess_rows([p])
+                                        preprocess_dict = self.preprocess_rows([
+                                                                               p])
                                         for d in preprocess_dict:
                                             parsed_contents['dolar'].append(d)
                                             if not type(intermediate_panel_data) == list:
-                                                intermediate_panel_data['dolar'].append(d)
+                                                intermediate_panel_data[
+                                                    'dolar'].append(d)
                                     else:
                                         preprocess_dict = {}
-                                        preprocess_dict = self.preprocess_rows([p])
+                                        preprocess_dict = self.preprocess_rows([
+                                                                               p])
                                         for d in preprocess_dict:
                                             parsed_contents['euro'].append(d)
                                             if not type(intermediate_panel_data) == list:
-                                                intermediate_panel_data['euro'].append(d)
+                                                intermediate_panel_data[
+                                                    'euro'].append(d)
             else:
-                parsed = self.day_content_in_panel(intermediate_panel_data, single_date)
+                parsed = self.day_content_in_panel(
+                    intermediate_panel_data, single_date)
                 parsed_contents['dolar'].append(parsed['dolar'])
                 parsed_contents['euro'].append(parsed['euro'])
         return parsed_contents, intermediate_panel_data
@@ -449,7 +466,7 @@ class BCRATCEScraper(BCRAScraper):
         try:
             table = soup.find(
                 class_='table table-BCRA table-bordered table-hover ' +
-                    'table-responsive'
+                'table-responsive'
             )
             parsed_contents = []
             result = {}
@@ -467,13 +484,15 @@ class BCRATCEScraper(BCRAScraper):
 
             for k, v in entities.items():
                 if body.find('td', text=re.compile(v.get('name'))):
-                    row = body.find('td', text=re.compile(v.get('name'))).parent
+                    row = body.find(
+                        'td', text=re.compile(v.get('name'))).parent
                     cols = row.find_all('td')
                     parsed[
                         'indice_tiempo'
-                        ] = single_date.strftime("%Y-%m-%d")
+                    ] = single_date.strftime("%Y-%m-%d")
                     for hour in ['11', '13', '15']:
-                        parsed = self.parse_hour(v, k, hour, coin, parsed, cols)
+                        parsed = self.parse_hour(
+                            v, k, hour, coin, parsed, cols)
                 result.update(parsed)
             parsed_contents.append(result)
             return parsed_contents
@@ -501,7 +520,7 @@ class BCRATCEScraper(BCRAScraper):
             for f in ['compra', 'venta']:
                 parsed[
                     f'tc_ars_{coin}_{entity}_{k}_{f}_{hour}hs'
-                    ] =\
+                ] =\
                     (cols[mapping_values[f'{k}_{f}_{hour}']].text.strip())
         return parsed
 
@@ -510,50 +529,49 @@ class BCRATCEScraper(BCRAScraper):
         for k in entities.keys():
             parsed[
                 'indice_tiempo'
-                ] = (day.date()).strftime("%Y-%m-%d")
+            ] = (day.date()).strftime("%Y-%m-%d")
             parsed[
                 f'tc_ars_{coin}_{k}_mostrador_compra_11hs'
-                ] = ''
+            ] = ''
             parsed[
                 f'tc_ars_{coin}_{k}_mostrador_compra_13hs'
-                ] = ''
+            ] = ''
             parsed[
                 f'tc_ars_{coin}_{k}_mostrador_compra_15hs'
-                ] = ''
+            ] = ''
             parsed[
                 f'tc_ars_{coin}_{k}_electronico_compra_11hs'
-                ] = ''
+            ] = ''
             parsed[
                 f'tc_ars_{coin}_{k}_electronico_compra_13hs'
-                ] = ''
+            ] = ''
             parsed[
                 f'tc_ars_{coin}_{k}_electronico_compra_15hs'
-                ] = ''
+            ] = ''
             parsed[
                 f'tc_ars_{coin}_{k}_mostrador_venta_11hs'
-                ] = ''
+            ] = ''
             parsed[
                 f'tc_ars_{coin}_{k}_mostrador_venta_13hs'
-                ] = ''
+            ] = ''
             parsed[
                 f'tc_ars_{coin}_{k}_mostrador_venta_15hs'
-                ] = ''
+            ] = ''
             parsed[
                 f'tc_ars_{coin}_{k}_electronico_venta_11hs'
-                ] = ''
+            ] = ''
             parsed[
                 f'tc_ars_{coin}_{k}_electronico_venta_13hs'
-                ] = ''
+            ] = ''
             parsed[
                 f'tc_ars_{coin}_{k}_electronico_venta_15hs'
-                ] = ''
+            ] = ''
         return parsed
-
 
     def _preprocess_rows(self, parsed):
         parsed['dolar'] = self.preprocess_rows(
-                parsed['dolar']
-                )
+            parsed['dolar']
+        )
         parsed['euro'] = self.preprocess_rows(parsed['euro'])
 
         return parsed
@@ -589,10 +607,10 @@ class BCRATCEScraper(BCRAScraper):
                         preprocessed_row[k] = None
                     else:
                         preprocessed_row[k] = (
-                                    Decimal((row[k]).replace(',', '.'))
-                                    if isinstance(row[k], str)
-                                    else row[k]
-                                )
+                            Decimal((row[k]).replace(',', '.'))
+                            if isinstance(row[k], str)
+                            else row[k]
+                        )
 
             preprocessed_rows.append(preprocessed_row)
 
