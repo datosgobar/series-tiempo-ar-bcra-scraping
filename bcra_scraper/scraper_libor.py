@@ -98,18 +98,24 @@ class BCRALiborScraper(BCRAScraper):
         bar.start()
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
-            if not self.intermediate_panel_data_has_date(intermediate_panel_data, single_date):
+            if not self.day_content_in_panel(intermediate_panel_data, single_date):
                 contents.append(self.fetch_day_content(single_date))
             cont += 1
             bar.update(cont)
         bar.finish()
         return contents
 
-    def intermediate_panel_data_has_date(self, intermediate_panel_data, single_date):
-        content = []
-        for data in intermediate_panel_data:
-            if single_date.strftime("%Y-%m-%d") == data['indice_tiempo'].strftime("%Y-%m-%d"):
-                content = data
+    def day_content_in_panel(self, intermediate_panel_data, single_date):
+        """
+        Recibe la data del panel intermedio y una fecha.
+        Obtiene la data del panel para ese día.
+
+        Parameters
+        ----------
+        single_date : date
+        intermediate_panel_data: dict
+        """
+        content = intermediate_panel_data.get(single_date, {})
         return content
 
     def fetch_day_content(self, single_date):
@@ -175,16 +181,17 @@ class BCRALiborScraper(BCRAScraper):
         day_count = (end_date - start_date).days + 1
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
-            if not self.intermediate_panel_data_has_date(intermediate_panel_data, single_date):
+            panel_parsed = self.day_content_in_panel(intermediate_panel_data, single_date)
+            if not panel_parsed:
                 for content in contents:
                     if single_date.strftime("%Y-%m-%d") in content:
                         parsed = self.parse_day_content(single_date.strftime("%Y-%m-%d"), content[single_date.strftime("%Y-%m-%d")])
                         if parsed:
-                            _parsed = self._preprocess_rows([parsed])
-                            parsed_contents.extend(_parsed)
-                            intermediate_panel_data.extend(_parsed)
+                            _parsed = self._preprocess_rows(parsed)
+                            parsed_contents.append(_parsed)
+                            intermediate_panel_data[single_date] = _parsed
             else:
-                parsed_contents.append(self.intermediate_panel_data_has_date(intermediate_panel_data, single_date))
+                parsed_contents.append(panel_parsed)
         return parsed_contents, intermediate_panel_data
 
     def parse_day_content(self, single_date, content):
@@ -257,29 +264,26 @@ class BCRALiborScraper(BCRAScraper):
         rows : Iterable
             Iterable que contiene la información scrapeada
         """
-        preprocessed_rows = []
-        for row in rows:
-            preprocessed_row = {}
-            if type(row['indice_tiempo']) == str:
-                preprocessed_row['indice_tiempo'] = date.fromisoformat(
-                    row['indice_tiempo']
-                )
-            else:
-                preprocessed_row['indice_tiempo'] = row['indice_tiempo']
+        preprocessed_row = {}
+        if type(rows['indice_tiempo']) == str:
+            preprocessed_row['indice_tiempo'] = date.fromisoformat(
+                rows['indice_tiempo']
+            )
+        else:
+            preprocessed_row['indice_tiempo'] = rows['indice_tiempo']
 
-            for rate in rates:
-                if rate in row:
-                    if row[rate]:
-                        preprocessed_row[rates[rate]] = Decimal(
-                            str(row[rate]).replace(',', '.')
-                        )/100
-                    else:
-                        preprocessed_row[rates[rate]] = None
+        for rate in rates:
+            if rate in rows:
+                if rows[rate]:
+                    preprocessed_row[rates[rate]] = Decimal(
+                        str(rows[rate]).replace(',', '.')
+                    )/100
                 else:
-                    preprocessed_row[rates[rate]] = row[rates[rate]]
+                    preprocessed_row[rates[rate]] = None
+            else:
+                preprocessed_row[rates[rate]] = rows[rates[rate]]
 
-            preprocessed_rows.append(preprocessed_row)
-        return preprocessed_rows
+        return preprocessed_row
 
     def preprocess_header(self, rates):
         """
@@ -312,7 +316,7 @@ class BCRALiborScraper(BCRAScraper):
         rate_dfs = {}
         data = []
         if parsed:
-            data = [[v for v in p.values()] for p in parsed]
+            data = [[v for v in p.values()] for p in parsed.values()]
         columns = ['indice_tiempo']
         columns.extend([v for v in self.rates.keys()])
 
@@ -382,7 +386,7 @@ class BCRALiborScraper(BCRAScraper):
         end_date : date
             fecha de fin que va a tomar como referencia el scraper
         """
-        _parsed = []
+        _parsed = {}
         rate_dfs = {}
         columns = ['indice_tiempo']
         columns.extend([v for v in self.rates.values()])
@@ -416,7 +420,7 @@ class BCRALiborScraper(BCRAScraper):
                         parsed_row[column] = r[index]
 
                 if parsed_row:
-                    _parsed.append(parsed_row)
+                    _parsed[parsed_row['indice_tiempo']] = parsed_row
         return _parsed
 
     def read_intermediate_panel_dataframe(self):

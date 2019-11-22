@@ -229,7 +229,6 @@ def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor
         parsed = scraper.run(start_date, end_date)
 
         processed_header = scraper.preprocess_header(scraper.rates)
-
         write_file(processed_header, parsed, libor_file_path)
 
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -538,7 +537,6 @@ def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_c
         parsed = scraper.run(start_date, end_date)
 
         if parsed:
-            # parsed = scraper.reorder_parsed(parsed)
             for coin in ['dolar', 'euro']:
                 csv_header = get_csv_header(coin, config)
                 if coin == 'dolar':
