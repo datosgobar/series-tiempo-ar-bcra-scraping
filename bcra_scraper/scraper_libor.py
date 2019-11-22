@@ -106,9 +106,16 @@ class BCRALiborScraper(BCRAScraper):
         return contents
 
     def day_content_in_panel(self, intermediate_panel_data, single_date):
-        content = []
-        if single_date in intermediate_panel_data:
-            content = intermediate_panel_data[single_date]
+        """
+        Recibe la data del panel intermedio y una fecha.
+        Obtiene la data del panel para ese día.
+
+        Parameters
+        ----------
+        single_date : date
+        intermediate_panel_data: dict
+        """
+        content = intermediate_panel_data.get(single_date, {})
         return content
 
     def fetch_day_content(self, single_date):
