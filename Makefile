@@ -74,4 +74,4 @@ tce:
 exchange_rates:
 # 	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper exchange-rates --start-date=31/01/1935
 # 	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper exchange-rates --start-date=03/01/1980
-	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper exchange-rates --start-date=01/07/2019
+	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper exchange-rates --start-date=01/09/2019
