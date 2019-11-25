@@ -404,7 +404,7 @@ class BCRALiborScraper(BCRAScraper):
                 type=type
             )
             return field_title
-
+        _parsed = {}
         columns = ['indice_tiempo']
         columns.extend([v for v in self.rates.values()])
         if not df_panel.empty:
