@@ -310,40 +310,36 @@ class BCRALiborScraper(BCRAScraper):
 
         Parameters
         ----------
-        parsed : lista de diccionarios por moneda
+        parsed : dict
         """
-        intermediate_panel_data = []
-        rate_dfs = {}
-        data = []
-        if parsed:
-            data = [[v for v in p.values()] for p in parsed.values()]
-        columns = ['indice_tiempo']
-        columns.extend([v for v in self.rates.keys()])
-
-        rate_dfs_panel = pd.DataFrame(
-            data=[],
-            columns=['indice_tiempo', 'value', 'type']
-        )
-
-        df = pd.DataFrame(data, columns=columns)
-        df = df.sort_values(['indice_tiempo'])
-        df.drop_duplicates(subset="indice_tiempo", keep='first', inplace=True)
-
-        for k in self.rates.keys():
-            rate_dfs[k] = df[['indice_tiempo', k]].copy()
-            rate_dfs[k]['type'] = k
-            rate_dfs[k].rename(columns={k: 'value'}, inplace=True)
-            rate_dfs_panel = rate_dfs_panel.append(rate_dfs[k])
-
-        intermediate_panel_data = [
-            {
-                'indice_tiempo': r[1],
-                'type': r[3],
-                'value': r[2],
-            }
-            for r in rate_dfs_panel.to_records()
-        ]
+        intermediate_panel_data = self.parsed_to_panel_dataframe(parsed)
         return intermediate_panel_data
+
+    def parsed_to_panel_dataframe(self, parsed):
+        """
+        Recibe un diccionario, y a partir de sus valores crea el dataframe del panel.
+        Devuelve una lista de diccionarios con los datos del panel a partir de lo que recibe.
+
+        Parameters
+        ----------
+        parsed: dict
+        """
+        def create_multi_index_column(field_title):
+            """Crea multi index desarmando el título de un campo."""
+            libor, day_type, days = field_title.split("_")
+            return (day_type, days)
+
+        df = pd.DataFrame(parsed.values()).set_index("indice_tiempo")
+        df = df[['libor_30_dias', 'libor_60_dias', 'libor_90_dias', 'libor_180_dias', 'libor_360_dias']]
+        df.sort_index(inplace=True)
+        df.columns = pd.MultiIndex.from_tuples([create_multi_index_column(col) for col in df.columns])
+        df.columns = df.columns.droplevel(level=1)
+        df_panel = df.stack([-1], dropna=False).reset_index()
+        df_panel.columns = ["indice_tiempo", "type", "value"]
+        df_panel["indice_tiempo"] = df_panel["indice_tiempo"].apply(lambda x: x)
+        df_panel["value"] = df_panel["value"].apply(lambda x: x if x and x > 0 else None)
+        panel_data = df_panel.to_dict(orient='records')
+        return panel_data
 
     def write_intermediate_panel(self, rows, intermediate_panel_path):
         """
@@ -386,41 +382,48 @@ class BCRALiborScraper(BCRAScraper):
         end_date : date
             fecha de fin que va a tomar como referencia el scraper
         """
-        _parsed = {}
-        rate_dfs = {}
+        parsed = {}
+        df_panel = self.read_intermediate_panel_dataframe()
+        parsed = self.get_parsed(df_panel)
+        return parsed
+
+    def get_parsed(self, df_panel):
+        """
+        Recibe un dataframe a partir del cual genera una tabla pivot.
+        Devuelve un diccionario con el día como clave, y otro diccionario
+        con los datos de ese día como valor.
+
+        Parameters
+        ----------
+        df_panel: dataframe con los datos del panel intermedio.
+        """
+        def create_field_title(col_multi_index):
+            """Convierte columnas multi index a nombre de campo plano."""
+            type = col_multi_index
+            field_title = "libor_{type}_dias".format(
+                type=type
+            )
+            return field_title
+
         columns = ['indice_tiempo']
         columns.extend([v for v in self.rates.values()])
-
-        intermediate_panel_df = self.read_intermediate_panel_dataframe()
-        intermediate_panel_df.set_index(['indice_tiempo'], inplace=True)
-
-        if not intermediate_panel_df.empty:
-            for k, v in self.rates.items():
-                rate_dfs[v] = intermediate_panel_df.loc[
-                    intermediate_panel_df['type'] == k
-                ][['value']]
-                rate_dfs[v].rename(columns={'value': v}, inplace=True)
-            rates_df = reduce(
-                lambda df1, df2: df1.merge(
-                    df2, left_on='indice_tiempo', right_on='indice_tiempo'
-                ),
-                rate_dfs.values(),
+        if not df_panel.empty:
+            df_pivot = df_panel.pivot_table(
+                index="indice_tiempo",
+                columns=["type"],
+                values="value",
+                aggfunc=sum,
+                dropna=False
             )
-
-            for r in rates_df.to_records():
-                parsed_row = {}
-
-                columns = ['indice_tiempo']
-                columns.extend([v for v in self.rates.values()])
-
-                for index, column in enumerate(columns):
-                    if column == 'indice_tiempo':
-                        parsed_row[column] = datetime.strptime(r[index], "%Y-%m-%d").date()
-                    else:
-                        parsed_row[column] = r[index]
-
-                if parsed_row:
-                    _parsed[parsed_row['indice_tiempo']] = parsed_row
+            df_pivot = df_pivot.replace([0], [None])
+            flatten_columns = [create_field_title(col) for col in df_pivot.columns]
+            df_pivot.columns = flatten_columns
+            df_pivot.reset_index(inplace=True)
+            df_pivot['indice_tiempo'] = pd.to_datetime(df_pivot['indice_tiempo'], format="%Y-%m-%d", errors='ignore', infer_datetime_format=True)
+            df_pivot['indice_tiempo'] = df_pivot['indice_tiempo'].dt.date
+            df_pivot['index'] = df_pivot['indice_tiempo']
+            df_pivot.set_index(['index'], inplace=True)
+            _parsed = df_pivot.to_dict(orient="index")
         return _parsed
 
     def read_intermediate_panel_dataframe(self):
