@@ -100,11 +100,10 @@ class BCRASMLScraper(BCRAScraper):
 
     def intermediate_panel_data_has_date(self, intermediate_panel_data, single_date):
         _content = {}
-        if intermediate_panel_data:
-            for k, v in intermediate_panel_data.items():
-                for d in v:
-                    if single_date.strftime("%Y-%m-%d") == d['indice_tiempo'].strftime("%Y-%m-%d"):
-                        _content[k] = d
+        for coin in ['peso_uruguayo', 'real']:
+            _content[coin] = intermediate_panel_data.get(coin).get(single_date, {})
+        if not _content[coin]:
+            _content = {}
         return _content
 
     def validate_coin_in_configuration_file(self, coin, options):
@@ -185,7 +184,6 @@ class BCRASMLScraper(BCRAScraper):
         end_date : date
             fecha de fin que va a tomar como referencia el scraper
         """
-
         parsed_contents = []
         parsed_peso_uruguayo, parsed_real = {}, {}
         parsed_contents = {'peso_uruguayo': [], 'real': []}
@@ -218,7 +216,7 @@ class BCRASMLScraper(BCRAScraper):
             for p in preprocess_dict:
                 parsed_contents['peso_uruguayo'].append(p)
                 if not type(intermediate_panel_data) == list:
-                    intermediate_panel_data['peso_uruguayo'].append(p)
+                    intermediate_panel_data['peso_uruguayo'][k] = p
 
         for k, v in parsed_real.items():
             preprocess_dict = {}
@@ -227,7 +225,7 @@ class BCRASMLScraper(BCRAScraper):
             for p in preprocess_dict:
                 parsed_contents['real'].append(p)
                 if not type(intermediate_panel_data) == list:
-                    intermediate_panel_data['real'].append(p)
+                    intermediate_panel_data['real'][k] = p
 
         return parsed_contents, intermediate_panel_data
 
@@ -248,7 +246,6 @@ class BCRASMLScraper(BCRAScraper):
         end_date : date
             fecha de fin que va a tomar como referencia el scraper
         """
-
         soup = BeautifulSoup(content, "html.parser")
         try:
             table = soup.find('table')
@@ -268,12 +265,13 @@ class BCRASMLScraper(BCRAScraper):
 
             head_rows = head.find_all('tr')
             parsed_content = []
+
             day = single_date.strftime("%d/%m/%Y")
             for header in head_rows:
                 headers = header.find_all('th')
                 parsed = {}
                 parsed['coin'] = coin
-                parsed['indice_tiempo'] = day
+                parsed['indice_tiempo'] = single_date
                 parsed[headers[1].text] = ''
                 parsed[headers[2].text] = ''
                 parsed[headers[3].text] = ''
@@ -283,7 +281,7 @@ class BCRASMLScraper(BCRAScraper):
                     row = body.find('td', text=day).parent
                     cols = row.find_all('td')
                     parsed['coin'] = coin
-                    parsed['indice_tiempo'] = cols[0].text
+                    parsed['indice_tiempo'] = single_date
                     parsed[headers[1].text] = cols[1].text.strip()
                     parsed[headers[2].text] = cols[2].text.strip()
                     parsed[headers[3].text] = cols[3].text.strip()
@@ -353,35 +351,37 @@ class BCRASMLScraper(BCRAScraper):
         parsed : lista de diccionarios por moneda
         """
         intermediate_panel_data = []
-        if parsed:
-            for c in self.coins.keys():
-                if c == 'peso_uruguayo':
-                    types = []
-                    types.extend(self.types['peso_uruguayo'].values())
-                else:
-                    types = []
-                    types.extend(self.types['real'].values())
+        for currency in ["peso_uruguayo", "real"]:
+            parsed_by_currency = parsed[currency]
 
-                for r in parsed[c]:
-                    for t in types:
-                        if t in r.keys():
-                            panel_row = {
-                                'indice_tiempo': r['indice_tiempo'],
-                                'coin': c,
-                                'type': t,
-                                'value': r[t],
-                            }
-                            intermediate_panel_data.append(panel_row)
-            l = len(intermediate_panel_data)
-            for i in range(0, l):
-                for j in range(0, l-i-1):
-                    if (intermediate_panel_data[j]['indice_tiempo'] > intermediate_panel_data[j + 1]['indice_tiempo']):
-                        tempo = intermediate_panel_data[j]
-                        intermediate_panel_data[j]= intermediate_panel_data[j + 1]
-                        intermediate_panel_data[j + 1]= tempo
-        else:
-            return []
+            panel_by_currency = self.parsed_to_panel_dataframe(
+                parsed_by_currency, currency)
+
+            intermediate_panel_data.extend(panel_by_currency)
         return intermediate_panel_data
+
+    def parsed_to_panel_dataframe(self, parsed, coin):
+        """
+        Recibe una lista de diccionarios a partir de la cual crea el dataframe del panel.
+        Devuelve una lista de diccionarios con los datos del panel a partir de lo que recibe.
+
+        Parameters
+        ----------
+        parsed_by_currency: lista de diccionarios por día de una moneda.
+        """
+        df = pd.DataFrame(parsed.values()).set_index("indice_tiempo")
+        df.sort_index(inplace=True)
+        df_panel = df.stack([-1], dropna=False).reset_index()
+        df_panel["coin"] = coin
+        df_panel.columns = ["indice_tiempo", "type", "value", "coin"]
+        df_panel = df_panel[["indice_tiempo", "coin", "type", "value"]]
+        df_panel["indice_tiempo"] = df_panel[
+            "indice_tiempo"].apply(lambda x: x)
+        df_panel["value"] = df_panel["value"].apply(
+            lambda x: x if x and x > 0 else None)
+        panel_data = df_panel.to_dict(orient="records")
+
+        return panel_data
 
     def reorder_parsed(self, parsed):
         l = len(parsed)
@@ -406,51 +406,48 @@ class BCRASMLScraper(BCRAScraper):
         end_date : date
             fecha de fin que va a tomar como referencia el scraper
         """
-        _parsed = {'peso_uruguayo': [], 'real': []}
-        coin_dfs = {}
-        intermediate_panel_df = self.read_intermediate_panel_dataframe()
-
-        intermediate_panel_df.set_index(['indice_tiempo'], inplace=True)
-
-        if not intermediate_panel_df.empty:
-            coin_dfs = {'peso_uruguayo': {}, 'real': {}}
-            for k in self.coins.keys():
-                for type in self.types[k].values():
-                    coin_dfs[k][type] = intermediate_panel_df.loc[
-                        (intermediate_panel_df['type'] == type) &
-                        (intermediate_panel_df['coin'] == k)
-                    ][['value']]
-                    coin_dfs[k][type].rename(
-                        columns={'value': f'{k}_{type}'}, inplace=True
-                    )
-                    if coin_dfs[k][type].empty:
-                        (coin_dfs[k][type] == '0.0')
-
-            coins_df = {}
-            for type in ['peso_uruguayo', 'real']:
-                coins_df[type] = reduce(
-                    lambda df1, df2: df1.merge(
-                        df2, left_on='indice_tiempo', right_on='indice_tiempo'
-                    ),
-                    coin_dfs[type].values(),
-                )
-
-            for type in ['peso_uruguayo', 'real']:
-                for r in coins_df[type].to_records():
-                    parsed_row = {}
-
-                    columns = ['indice_tiempo']
-                    columns.extend([v for v in coin_dfs[type].keys()])
-
-                    for index, column in enumerate(columns):
-                        if column == 'indice_tiempo':
-                            parsed_row[column] = datetime.strptime(r[index], "%Y-%m-%d").date()
-                        else:
-                            parsed_row[column] = r[index]
-
-                    if parsed_row:
-                        _parsed[type].append(parsed_row)
+        _parsed = {'peso_uruguayo': {}, 'real': {}}
+        df_panel = self.read_intermediate_panel_dataframe()
+        if not df_panel.empty:
+            for coin in ['peso_uruguayo', 'real']:
+                _parsed[coin] = self.get_parsed_by_currency(df_panel, coin)
         return _parsed
+
+    def get_parsed_by_currency(self, df_panel, coin):
+        """
+        Recibe un dataframe a partir del cual genera una tabla pivot.
+        Devuelve una lista de diccionarios.
+
+        Parameters
+        ----------
+        df_panel: dataframe con los datos del panel intermedio.
+        coin : string con el nombre de la moneda.
+        """
+        def create_field_title(col_multi_index, coin):
+            """Convierte columnas muli index a nombre de campo plano."""
+            field_title = f"{col_multi_index}"
+            return field_title
+
+        df_panel.columns = ['indice_tiempo', 'coin', 'type',
+                            'value']
+        df_pivot_coin = df_panel[df_panel.coin == coin].pivot_table(
+            index="indice_tiempo",
+            columns=["type"],
+            values="value",
+            aggfunc=sum,
+            dropna=False
+        )
+        df_pivot_coin = df_pivot_coin.replace([0], [None])
+        flatten_columns = [create_field_title(
+            col, coin) for col in df_pivot_coin.columns]
+        df_pivot_coin.columns = flatten_columns
+        df_pivot_coin.reset_index(inplace=True)
+        df_pivot_coin['indice_tiempo'] = pd.to_datetime(df_pivot_coin['indice_tiempo'], format="%Y-%m-%d", errors='ignore', infer_datetime_format=True)
+        df_pivot_coin['indice_tiempo'] = df_pivot_coin['indice_tiempo'].dt.date
+        df_pivot_coin['index'] = df_pivot_coin['indice_tiempo']
+        df_pivot_coin.set_index(['index'], inplace=True)
+        parsed_by_currency = df_pivot_coin.to_dict(orient="index")
+        return parsed_by_currency
 
     def write_intermediate_panel(self, rows, intermediate_panel_path):
         """
