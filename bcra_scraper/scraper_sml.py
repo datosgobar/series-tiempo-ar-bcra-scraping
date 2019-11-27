@@ -423,11 +423,6 @@ class BCRASMLScraper(BCRAScraper):
         df_panel: dataframe con los datos del panel intermedio.
         coin : string con el nombre de la moneda.
         """
-        def create_field_title(col_multi_index, coin):
-            """Convierte columnas muli index a nombre de campo plano."""
-            field_title = f"{col_multi_index}"
-            return field_title
-
         df_panel.columns = ['indice_tiempo', 'coin', 'type',
                             'value']
         df_pivot_coin = df_panel[df_panel.coin == coin].pivot_table(
@@ -438,9 +433,6 @@ class BCRASMLScraper(BCRAScraper):
             dropna=False
         )
         df_pivot_coin = df_pivot_coin.replace([0], [None])
-        flatten_columns = [create_field_title(
-            col, coin) for col in df_pivot_coin.columns]
-        df_pivot_coin.columns = flatten_columns
         df_pivot_coin.reset_index(inplace=True)
         df_pivot_coin['indice_tiempo'] = pd.to_datetime(df_pivot_coin['indice_tiempo'], format="%Y-%m-%d", errors='ignore', infer_datetime_format=True)
         df_pivot_coin['indice_tiempo'] = df_pivot_coin['indice_tiempo'].dt.date
