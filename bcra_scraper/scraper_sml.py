@@ -393,17 +393,6 @@ class BCRASMLScraper(BCRAScraper):
 
         return panel_data
 
-    def reorder_parsed(self, parsed):
-        l = len(parsed)
-        for i in range(0, l): 
-            for j in range(0, l-i-1):
-                if parsed and len(parsed) > 1:
-                    if (parsed[j]['indice_tiempo'] > parsed[j + 1]['indice_tiempo']):
-                        tempo = parsed[j]
-                        parsed[j] = parsed[j + 1]
-                        parsed[j + 1] = tempo
-        return parsed
-
     def parse_from_intermediate_panel(self):
         """
         Lee el dataframe del panel intermedio.

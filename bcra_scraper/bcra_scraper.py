@@ -428,8 +428,6 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
         parsed = scraper.run(start_date, end_date)
 
         if parsed:
-            parsed['peso_uruguayo'] = scraper.reorder_parsed(parsed['peso_uruguayo'])
-            parsed['real'] = scraper.reorder_parsed(parsed['real'])
             for k  in parsed.keys():
                 if k == 'peso_uruguayo':
                     csv_header = ['indice_tiempo']
