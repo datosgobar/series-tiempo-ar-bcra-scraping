@@ -388,6 +388,8 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
         validate_coins_key_config(config)
         validate_coins_key_has_values(config)
         validate_dates(start_date, end_date)
+        start_date = start_date.date()
+        end_date = end_date.date()
 
         peso_uruguayo_file_path = validate_file_path(uruguayo_csv_path, config, file_path_key='peso_uruguayo_file_path')
         real_file_path = validate_file_path(real_csv_path, config, file_path_key='real_file_path')
@@ -426,8 +428,6 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
         parsed = scraper.run(start_date, end_date)
 
         if parsed:
-            parsed['peso_uruguayo'] = scraper.reorder_parsed(parsed['peso_uruguayo'])
-            parsed['real'] = scraper.reorder_parsed(parsed['real'])
             for k  in parsed.keys():
                 if k == 'peso_uruguayo':
                     csv_header = ['indice_tiempo']
