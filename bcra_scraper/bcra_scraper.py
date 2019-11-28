@@ -388,8 +388,8 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
         validate_coins_key_config(config)
         validate_coins_key_has_values(config)
         validate_dates(start_date, end_date)
-        start_date = date(start_date.year, start_date.month, start_date.day)
-        end_date = date(end_date.year, end_date.month, end_date.day)
+        start_date = start_date.date()
+        end_date = end_date.date()
 
         peso_uruguayo_file_path = validate_file_path(uruguayo_csv_path, config, file_path_key='peso_uruguayo_file_path')
         real_file_path = validate_file_path(real_csv_path, config, file_path_key='real_file_path')
