@@ -219,21 +219,24 @@ class BCRASMLScraper(BCRAScraper):
             preprocess_dict = {}
             v['indice_tiempo'] = k
             preprocess_dict = self.preprocess_rows([v])
+            coin = 'peso_uruguayo'
             for p in preprocess_dict:
-                parsed_contents['peso_uruguayo'].append(p)
-                if not type(intermediate_panel_data) == list:
-                    intermediate_panel_data['peso_uruguayo'][k] = p
+                self.coin_parsed_contents(coin, p, intermediate_panel_data, k, parsed_contents)
 
         for k, v in parsed_real.items():
             preprocess_dict = {}
             v['indice_tiempo'] = k
             preprocess_dict = self.preprocess_rows([v])
+            coin = 'real'
             for p in preprocess_dict:
-                parsed_contents['real'].append(p)
-                if not type(intermediate_panel_data) == list:
-                    intermediate_panel_data['real'][k] = p
+                self.coin_parsed_contents(coin, p, intermediate_panel_data, k, parsed_contents)
 
         return parsed_contents, intermediate_panel_data
+
+    def coin_parsed_contents(self, coin, preprocess_dict, intermediate_panel_data, single_date, parsed_contents):
+        parsed_contents[coin].append(preprocess_dict)
+        if not type(intermediate_panel_data) == list:
+            intermediate_panel_data[coin][single_date] = preprocess_dict
 
     def parse_content(self, content, coin, single_date):
         """
