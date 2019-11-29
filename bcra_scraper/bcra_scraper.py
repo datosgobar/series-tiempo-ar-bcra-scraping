@@ -286,6 +286,8 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
         validate_coins_key_config(config)
         validate_coins_key_has_values(config)
         validate_dates(start_date, end_date)
+        start_date = start_date.date()
+        end_date = end_date.date()
 
         tp_file_path = validate_file_path(tp_csv_path, config, file_path_key='tp_file_path')
         tc_file_path = validate_file_path(tc_csv_path, config, file_path_key='tc_file_path')
@@ -322,8 +324,6 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
         parsed = scraper.run(start_date, end_date)
 
         if parsed:
-            parsed['tc_local'] = scraper.reorder_parsed(parsed['tc_local'])
-            parsed['tp_usd'] = scraper.reorder_parsed(parsed['tp_usd'])
             coins = config.get('coins')
             csv_header = ['indice_tiempo']
             csv_header.extend([v for v in coins.keys()])
