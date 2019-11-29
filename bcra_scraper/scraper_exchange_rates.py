@@ -200,9 +200,8 @@ class BCRAExchangeRateScraper(BCRAScraper):
         end_date : date
             fecha de fin que va a tomar como referencia el scraper
         """
-        parsed_contents = []
-        parsed_tc_local, parsed_tp_usd = {}, {}
         parsed_contents = {'tc_local': [], 'tp_usd': []}
+        parsed_tc_type = {'tc_local': {}, 'tp_usd': {}}
         day_count = (end_date - start_date).days + 1
 
         for single_date in (start_date + timedelta(n)
@@ -216,37 +215,26 @@ class BCRAExchangeRateScraper(BCRAScraper):
                     parsed = self.parse_coin(v, single_date, k)
                     if parsed:
                         for p in parsed:
-                            if p['indice_tiempo'] not in parsed_tc_local.keys():
-                                parsed_tc_local[p['indice_tiempo']] = {}
-                            parsed_tc_local[p['indice_tiempo']][p['moneda']] =\
-                                p['tc_local']
-                            if p['indice_tiempo'] not in parsed_tp_usd.keys():
-                                parsed_tp_usd[p['indice_tiempo']] = {}
-                            parsed_tp_usd[p['indice_tiempo']][p['moneda']] =\
-                                p['tp_usd']
+                            for exchange_type in ['tc_local', 'tp_usd']:
+                                if p['indice_tiempo'] not in parsed_tc_type[exchange_type].keys():
+                                    parsed_tc_type[exchange_type][p['indice_tiempo']] = {}
+                                parsed_tc_type[exchange_type][p['indice_tiempo']][p['moneda']] =\
+                                    p[exchange_type]
 
-        for k, v in parsed_tc_local.items():
-            preprocess_dict = {}
-            v['indice_tiempo'] = k
-            preprocess_dict = self.preprocess_rows([v])
-            exchange_type = 'tc_local'
-            for p in preprocess_dict:
-                self.coin_parsed_contents(exchange_type, p, intermediate_panel_data, k, parsed_contents)
-
-        for k, v in parsed_tp_usd.items():
-            preprocess_dict = {}
-            v['indice_tiempo'] = k
-            preprocess_dict = self.preprocess_rows([v])
-            exchange_type = 'tp_usd'
-            for p in preprocess_dict:
-                self.coin_parsed_contents(exchange_type, p, intermediate_panel_data, k, parsed_contents)
+        for exchange_type in ['tc_local', 'tp_usd']:
+            for k, v in parsed_tc_type[exchange_type].items():
+                self.exchange_type_parsed_contents(exchange_type, k, v, parsed_contents, intermediate_panel_data)
 
         return parsed_contents, intermediate_panel_data
 
-    def exchange_type_parsed_contents(self, exchange_type, preprocess_dict, intermediate_panel_data, single_date, parsed_contents):
-        parsed_contents[exchange_type].append(preprocess_dict)
-        if not type(intermediate_panel_data) == list:
-            intermediate_panel_data[exchange_type][single_date] = preprocess_dict
+    def exchange_type_parsed_contents(self, exchange_type, single_date, day_content, parsed_contents, intermediate_panel_data):
+        preprocess_dict = {}
+        day_content['indice_tiempo'] = single_date
+        preprocess_dict = self.preprocess_rows([day_content])
+        for p in preprocess_dict:
+            parsed_contents[exchange_type].append(p)
+            if not type(intermediate_panel_data) == list:
+                intermediate_panel_data[exchange_type][single_date] = p
 
     def parse_coin(self, content, single_date, coin):
         """
