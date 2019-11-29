@@ -228,6 +228,22 @@ class BCRAExchangeRateScraper(BCRAScraper):
         return parsed_contents, intermediate_panel_data
 
     def exchange_type_parsed_contents(self, exchange_type, single_date, day_content, parsed_contents, intermediate_panel_data):
+        """
+        Agrega los datos procesados a parsed_contents y a intermediate_panel_data.
+
+        Parameters
+        ----------
+        exchange_type: str
+            Tipo de cambio (tc_local, o tp_usd)
+        single_date: date
+            Fecha con formato Date
+        day_content: dict
+            Valores para ese día
+        parsed_content: dict
+            Contiene los dos tipos de cambio como clave, y una lista como valor
+        intermediate_panel_data: dict
+            Contiene los dos tipos de cambio como clave, y un dict como valor
+        """
         preprocess_dict = {}
         day_content['indice_tiempo'] = single_date
         preprocess_dict = self.preprocess_rows([day_content])
