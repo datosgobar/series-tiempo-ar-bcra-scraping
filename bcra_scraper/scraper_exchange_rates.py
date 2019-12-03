@@ -386,7 +386,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
         parsed : lista de diccionarios por moneda
         """
         intermediate_panel_data = []
-        if parsed:
+        if parsed['tc_local'] and parsed['tp_usd']:
             for exchange_type in ["tc_local", "tp_usd"]:
                 parsed_by_currency = parsed[exchange_type]
 
@@ -542,3 +542,19 @@ class BCRAExchangeRateScraper(BCRAScraper):
                         f'La conexion de internet ha fallado para la fecha {start_date}. Reintentando...'
                     )
                     counter = counter + 1
+
+    def delete_date_from_panel(self, intermediate_panel_data, single_date):
+        for coin in ['tc_local', 'tp_usd']:
+            del intermediate_panel_data[coin][single_date]
+        return intermediate_panel_data
+
+    def get_status(self, parsed):
+
+        def parsed_coin_is_empty(parsed_coin):
+            is_empty = any(
+                [parsed_coin[k]for k in parsed_coin.keys() - ['indice_tiempo']]
+            )
+
+            return is_empty
+
+        return any(parsed_coin_is_empty(p) for p in parsed.values())

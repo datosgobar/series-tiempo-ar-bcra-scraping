@@ -607,3 +607,19 @@ class BCRATCEScraper(BCRAScraper):
             preprocessed_rows.append(preprocessed_row)
 
         return preprocessed_rows
+
+    def delete_date_from_panel(self, intermediate_panel_data, single_date):
+        for coin in ['dolar', 'euro']:
+            del intermediate_panel_data[coin][single_date]
+        return intermediate_panel_data
+
+    def get_status(self, parsed):
+
+        def parsed_coin_is_empty(parsed_coin):
+            is_empty = any(
+                [parsed_coin[k]for k in parsed_coin.keys() - ['indice_tiempo']]
+            )
+
+            return is_empty
+
+        return any(parsed_coin_is_empty(p) for p in parsed.values())

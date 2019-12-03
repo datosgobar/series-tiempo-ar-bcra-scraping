@@ -35,7 +35,7 @@ class BCRAScraper:
         y los devuelve en un iterable
     """
 
-    def __init__(self, url, skip_intermediate_panel_data, *args, **kwargs):
+    def __init__(self, url, skip_intermediate_panel_data, skip_refetch_dates, *args, **kwargs):
         """
         Parameters
         ----------
@@ -52,6 +52,7 @@ class BCRAScraper:
         self.timeout = kwargs.get('timeout', None)
         self.tries = kwargs.get('tries', 1)
         self.skip_intermediate_panel_data = skip_intermediate_panel_data
+        self.skip_refetch_dates = skip_refetch_dates
 
     def _create_browser_driver(self):
         """
@@ -124,6 +125,23 @@ class BCRAScraper:
     def preprocess_end_date(self, end_date):
         return end_date
 
+    def clean_date_values_in_panel(self, intermediate_panel_data, start_date, end_date):
+        endure = True
+        single_date = end_date
+        while endure and single_date >= start_date:
+            in_panel, parsed = self.day_content_in_panel(intermediate_panel_data, single_date)
+            if in_panel:
+                if not self.check_empty_date(parsed):
+                    intermediate_panel_data = self.delete_date_from_panel(intermediate_panel_data, single_date)
+                else:
+                    endure = False
+            single_date = single_date - timedelta(days=1)
+        return intermediate_panel_data
+
+    def check_empty_date(self, parsed):
+        status = self.get_status(parsed)
+        return status
+
     def run(self, start_date, end_date):
         """
         Inicializa un iterable. Llama a los métodos para obtener y scrapear
@@ -145,6 +163,8 @@ class BCRAScraper:
         end_date = self.preprocess_end_date(end_date)
 
         intermediate_panel_data = [] if self.skip_intermediate_panel_data else self.parse_from_intermediate_panel()
+        if not self.skip_refetch_dates:
+            intermediate_panel_data = self.clean_date_values_in_panel(intermediate_panel_data, start_date, end_date)
         contents = self.fetch_contents(start_date, end_date, intermediate_panel_data)
         parsed, intermediate_panel_data = self.parse_contents(contents, start_date, end_date, intermediate_panel_data)
 

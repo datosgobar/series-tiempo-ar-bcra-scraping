@@ -498,3 +498,19 @@ class BCRASMLScraper(BCRAScraper):
             parsed
         )
         self.write_intermediate_panel(intermediate_panel_data, self.intermediate_panel_path)
+
+    def delete_date_from_panel(self, intermediate_panel_data, single_date):
+        for coin in ['peso_uruguayo', 'real']:
+            del intermediate_panel_data[coin][single_date]
+        return intermediate_panel_data
+
+    def get_status(self, parsed):
+
+        def parsed_coin_is_empty(parsed_coin):
+            is_empty = any(
+                [parsed_coin[k]for k in parsed_coin.keys() - ['indice_tiempo']]
+            )
+
+            return is_empty
+
+        return any(parsed_coin_is_empty(p) for p in parsed.values())
