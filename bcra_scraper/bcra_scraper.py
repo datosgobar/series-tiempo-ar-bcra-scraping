@@ -183,14 +183,14 @@ def cli(ctx):
     type=str
 )
 @click.option(
-    '--skip-refetch-dates',
+    '--skip-clean-dates',
     default=False,
     is_flag=True,
     help=('Use este flag para no volver a visitar las últimas fechas que tengan missings')
 )
 @click.pass_context
 def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor_csv_path,
-          intermediate_panel_path, skip_refetch_dates, *args, **kwargs):
+          intermediate_panel_path, skip_clean_dates, *args, **kwargs):
     validate_dates(start_date, end_date)
     start_date = start_date.date()
     end_date = end_date.date()
@@ -230,7 +230,7 @@ def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor
             rates=config.get('rates'),
             skip_intermediate_panel_data=skip_intermediate_panel_data,
             intermediate_panel_path=intermediate_panel_path,
-            skip_refetch_dates=skip_refetch_dates
+            skip_clean_dates=skip_clean_dates
         )
 
         parsed = scraper.run(start_date, end_date)
@@ -281,14 +281,14 @@ def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor
     type=str
 )
 @click.option(
-    '--skip-refetch-dates',
+    '--skip-clean-dates',
     default=False,
     is_flag=True,
     help=('Use este flag para no volver a visitar las últimas fechas que tengan missings')
 )
 @click.pass_context
 def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_data,
-                   tp_csv_path, tc_csv_path, intermediate_panel_path, skip_refetch_dates):
+                   tp_csv_path, tc_csv_path, intermediate_panel_path, skip_clean_dates):
 
     try:
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -333,7 +333,7 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
             coins=config.get('coins'),
             skip_intermediate_panel_data=skip_intermediate_panel_data,
             intermediate_panel_path=intermediate_panel_path,
-            skip_refetch_dates=skip_refetch_dates
+            skip_clean_dates=skip_clean_dates
         )
         parsed = scraper.run(start_date, end_date)
 
@@ -390,14 +390,14 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
     type=str
 )
 @click.option(
-    '--skip-refetch-dates',
+    '--skip-clean-dates',
     default=False,
     is_flag=True,
     help=('Use este flag para no volver a visitar las últimas fechas que tengan missings')
 )
 @click.pass_context
 def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguayo_csv_path,
-        real_csv_path, intermediate_panel_path, skip_refetch_dates):
+        real_csv_path, intermediate_panel_path, skip_clean_dates):
 
     try:
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -443,7 +443,7 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
             types=config.get('types'),
             skip_intermediate_panel_data=skip_intermediate_panel_data,
             intermediate_panel_path=intermediate_panel_path,
-            skip_refetch_dates=skip_refetch_dates
+            skip_clean_dates=skip_clean_dates
         )
 
         parsed = scraper.run(start_date, end_date)
@@ -507,14 +507,14 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
     type=str
 )
 @click.option(
-    '--skip-refetch-dates',
+    '--skip-clean-dates',
     default=False,
     is_flag=True,
     help=('Use este flag para no volver a visitar las últimas fechas que tengan missings')
 )
 @click.pass_context
 def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_csv_path,
-        euro_csv_path, intermediate_panel_path, skip_refetch_dates):
+        euro_csv_path, intermediate_panel_path, skip_clean_dates):
 
     try:
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -562,7 +562,7 @@ def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_c
             entities=config.get('entities'),
             skip_intermediate_panel_data=skip_intermediate_panel_data,
             intermediate_panel_path=intermediate_panel_path,
-            skip_refetch_dates=skip_refetch_dates
+            skip_clean_dates=skip_clean_dates
         )
         parsed = scraper.run(start_date, end_date)
 

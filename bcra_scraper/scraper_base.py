@@ -35,7 +35,7 @@ class BCRAScraper:
         y los devuelve en un iterable
     """
 
-    def __init__(self, url, skip_intermediate_panel_data, skip_refetch_dates, *args, **kwargs):
+    def __init__(self, url, skip_intermediate_panel_data, skip_clean_dates, *args, **kwargs):
         """
         Parameters
         ----------
@@ -52,7 +52,7 @@ class BCRAScraper:
         self.timeout = kwargs.get('timeout', None)
         self.tries = kwargs.get('tries', 1)
         self.skip_intermediate_panel_data = skip_intermediate_panel_data
-        self.skip_refetch_dates = skip_refetch_dates
+        self.skip_clean_dates = skip_clean_dates
 
     def _create_browser_driver(self):
         """
@@ -163,7 +163,7 @@ class BCRAScraper:
         end_date = self.preprocess_end_date(end_date)
 
         intermediate_panel_data = [] if self.skip_intermediate_panel_data else self.parse_from_intermediate_panel()
-        if not self.skip_refetch_dates:
+        if not self.skip_clean_dates:
             intermediate_panel_data = self.clean_date_values_in_panel(intermediate_panel_data, start_date, end_date)
         contents = self.fetch_contents(start_date, end_date, intermediate_panel_data)
         parsed, intermediate_panel_data = self.parse_contents(contents, start_date, end_date, intermediate_panel_data)
