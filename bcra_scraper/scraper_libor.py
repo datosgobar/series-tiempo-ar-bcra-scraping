@@ -425,6 +425,7 @@ class BCRALiborScraper(BCRAScraper):
             df_pivot.columns = flatten_columns
             df_pivot.reset_index(inplace=True)
             df_pivot['indice_tiempo'] = pd.to_datetime(df_pivot['indice_tiempo'], format="%Y-%m-%d", errors='ignore', infer_datetime_format=True)
+            # Se pasa primero a datetime y después a date porque si se trata de pasar directo a date rompe.
             df_pivot['indice_tiempo'] = df_pivot['indice_tiempo'].dt.date
             df_pivot['index'] = df_pivot['indice_tiempo']
             df_pivot.set_index(['index'], inplace=True)
