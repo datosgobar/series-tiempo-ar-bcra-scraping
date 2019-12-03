@@ -234,10 +234,12 @@ class BCRATCEScraper(BCRAScraper):
         ----------
         parsed_by_currency: lista de diccionarios por día de una moneda.
         """
+
         def create_multi_index_column(field_title):
             """Crea multi index desarmando el título de un campo."""
             tc, ars, coin, entity, channel, flow, hour = field_title.split("_")
             return (coin, entity, channel, flow, hour)
+
         df = pd.DataFrame(parsed.values()).set_index("indice_tiempo")
         df.sort_index(inplace=True)
         df.columns = pd.MultiIndex.from_tuples(
