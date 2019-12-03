@@ -183,10 +183,10 @@ def cli(ctx):
     type=str
 )
 @click.option(
-    '--skip-clean-dates',
+    '--skip-clean-last-dates',
     default=False,
     is_flag=True,
-    help=('Use este flag para no volver a visitar las últimas fechas que tengan missings')
+    help=('Use este flag para no volver a visitar las últimas fechas que no tengan datos')
 )
 @click.pass_context
 def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor_csv_path,
@@ -281,10 +281,10 @@ def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor
     type=str
 )
 @click.option(
-    '--skip-clean-dates',
+    '--skip-clean-last-dates',
     default=False,
     is_flag=True,
-    help=('Use este flag para no volver a visitar las últimas fechas que tengan missings')
+    help=('Use este flag para no volver a visitar las últimas fechas que no tengan datos')
 )
 @click.pass_context
 def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_data,
@@ -390,10 +390,10 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
     type=str
 )
 @click.option(
-    '--skip-clean-dates',
+    '--skip-clean-last-dates',
     default=False,
     is_flag=True,
-    help=('Use este flag para no volver a visitar las últimas fechas que tengan missings')
+    help=('Use este flag para no volver a visitar las últimas fechas que no tengan datos')
 )
 @click.pass_context
 def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguayo_csv_path,
@@ -507,10 +507,10 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
     type=str
 )
 @click.option(
-    '--skip-clean-dates',
+    '--skip-clean-last-dates',
     default=False,
     is_flag=True,
-    help=('Use este flag para no volver a visitar las últimas fechas que tengan missings')
+    help=('Use este flag para no volver a visitar las últimas fechas que no tengan datos')
 )
 @click.pass_context
 def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_csv_path,
