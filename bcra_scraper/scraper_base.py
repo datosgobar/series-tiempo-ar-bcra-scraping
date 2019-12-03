@@ -159,10 +159,6 @@ class BCRAScraper:
             single_date = single_date - timedelta(days=1)
         return intermediate_panel_data
 
-    def check_empty_date(self, parsed):
-        status = self.get_status(parsed)
-        return status
-
     def run(self, start_date, end_date):
         """
         Inicializa un iterable. Llama a los métodos para obtener y scrapear

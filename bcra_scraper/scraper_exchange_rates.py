@@ -548,7 +548,14 @@ class BCRAExchangeRateScraper(BCRAScraper):
             del intermediate_panel_data[coin][single_date]
         return intermediate_panel_data
 
-    def get_status(self, parsed):
+    def check_empty_date(self, parsed):
+        """
+        Chequea si hay datos en parsed para esa fecha.
+
+        Parameters
+        ----------
+        parsed: diccionario con los datos del panel intermedio para un día.
+        """
 
         def parsed_coin_is_empty(parsed_coin):
             is_empty = any(

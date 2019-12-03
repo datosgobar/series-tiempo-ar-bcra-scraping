@@ -465,6 +465,13 @@ class BCRALiborScraper(BCRAScraper):
         del intermediate_panel_data[single_date]
         return intermediate_panel_data
 
-    def get_status(self, parsed):
+    def check_empty_date(self, parsed):
+        """
+        Chequea si hay datos en parsed para esa fecha.
+
+        Parameters
+        ----------
+        parsed: diccionario con los datos del panel intermedio para un día.
+        """
         valid_keys = parsed.keys() - ['indice_tiempo']
         return any(parsed[k] for k in valid_keys)
