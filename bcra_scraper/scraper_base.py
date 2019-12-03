@@ -131,7 +131,22 @@ class BCRAScraper:
     def preprocess_end_date(self, end_date):
         return end_date
 
-    def clean_date_values_in_panel(self, intermediate_panel_data, start_date, end_date):
+    def clean_last_dates_values_in_panel(self, intermediate_panel_data, start_date, end_date):
+        """
+        Limpia las últimas fechas del panel intermedio, con respecto a la fecha de inicio y fecha de fin,
+        que no tengan valores.
+
+        Parameters
+        ----------
+        intermediate_panel_data: dict
+            Diccionario que posee la data del panel intermedio.
+
+        start_date: date
+            Fecha de inicio que toma como referencia el scraper.
+
+        end_date : date
+            Fecha de fin que va a tomar como referencia el scraper.
+        """
         endure = True
         single_date = end_date
         while endure and single_date >= start_date:
@@ -169,7 +184,7 @@ class BCRAScraper:
         end_date = self.preprocess_end_date(end_date)
         intermediate_panel_data = [] if self.skip_intermediate_panel_data else self.parse_from_intermediate_panel()
         if not self.skip_clean_dates:
-            intermediate_panel_data = self.clean_date_values_in_panel(intermediate_panel_data, start_date, end_date)
+            intermediate_panel_data = self.clean_last_dates_values_in_panel(intermediate_panel_data, start_date, end_date)
         contents = self.fetch_contents(start_date, end_date, intermediate_panel_data)
         parsed, intermediate_panel_data = self.parse_contents(contents, start_date, end_date, intermediate_panel_data)
 
