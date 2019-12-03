@@ -116,12 +116,11 @@ class BCRALiborScraper(BCRAScraper):
         single_date : date
         intermediate_panel_data: dict
         """
-        in_panel, day_content = False, {}
+        in_panel, content = False, {}
         content = intermediate_panel_data.get(single_date, {})
         if content:
             in_panel = True
-            day_content = content
-        return in_panel, day_content
+        return in_panel, content
 
     def fetch_day_content(self, single_date):
         """
