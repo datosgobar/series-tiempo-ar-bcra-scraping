@@ -319,6 +319,7 @@ class BCRATCEScraper(BCRAScraper):
         df_pivot_coin.columns = flatten_columns
         df_pivot_coin.reset_index(inplace=True)
         df_pivot_coin['indice_tiempo'] = pd.to_datetime(df_pivot_coin['indice_tiempo'], format="%Y-%m-%d", errors='ignore', infer_datetime_format=True)
+        # Se pasa primero a datetime y después a date porque si se trata de pasar directo a date rompe.
         df_pivot_coin['indice_tiempo'] = df_pivot_coin['indice_tiempo'].dt.date
         df_pivot_coin['index'] = df_pivot_coin['indice_tiempo']
         df_pivot_coin.set_index(['index'], inplace=True)
