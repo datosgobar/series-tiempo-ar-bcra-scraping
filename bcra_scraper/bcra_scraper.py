@@ -500,6 +500,8 @@ def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_c
         validate_dates(start_date, end_date)
         validate_entities_key_config(config)
         validate_entities_key_has_values(config)
+        start_date = start_date.date()
+        end_date = end_date.date()
 
         dolar_file_path = validate_file_path(dolar_csv_path, config, file_path_key='dolar_file_path')
         euro_file_path = validate_file_path(euro_csv_path, config, file_path_key='euro_file_path')
