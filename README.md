@@ -73,3 +73,7 @@ Luego, editar los archivos config_email.yaml y config_general.json con los pará
 ### Saltear uso del panel intermedio
 
 * bcra_scraper libor --start-date=01/04/2019 --skip-intermediate-panel-data
+
+### Para no volver a visitar las últimas fechas que no tengan datos
+
+* bcra_scraper libor --start-date=01/04/2019 --skip-clean-last-dates
