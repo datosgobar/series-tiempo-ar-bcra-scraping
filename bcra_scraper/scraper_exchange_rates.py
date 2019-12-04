@@ -386,7 +386,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
         parsed : lista de diccionarios por moneda
         """
         intermediate_panel_data = []
-        if parsed:
+        if parsed['tc_local'] and parsed['tp_usd']:
             for exchange_type in ["tc_local", "tp_usd"]:
                 parsed_by_currency = parsed[exchange_type]
 
@@ -476,6 +476,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
         df_pivot_coin = df_pivot_coin.replace([0], [None])
         df_pivot_coin.reset_index(inplace=True)
         df_pivot_coin['indice_tiempo'] = pd.to_datetime(df_pivot_coin['indice_tiempo'], format="%Y-%m-%d", errors='ignore', infer_datetime_format=True)
+        # Se pasa primero a datetime y después a date porque si se trata de pasar directo a date rompe.
         df_pivot_coin['indice_tiempo'] = df_pivot_coin['indice_tiempo'].dt.date
         df_pivot_coin['index'] = df_pivot_coin['indice_tiempo']
         df_pivot_coin.set_index(['index'], inplace=True)
@@ -542,3 +543,26 @@ class BCRAExchangeRateScraper(BCRAScraper):
                         f'La conexion de internet ha fallado para la fecha {start_date}. Reintentando...'
                     )
                     counter = counter + 1
+
+    def delete_date_from_panel(self, intermediate_panel_data, single_date):
+        for coin in ['tc_local', 'tp_usd']:
+            del intermediate_panel_data[coin][single_date]
+        return intermediate_panel_data
+
+    def check_empty_date(self, parsed):
+        """
+        Chequea si hay datos en parsed para esa fecha.
+
+        Parameters
+        ----------
+        parsed: diccionario con los datos del panel intermedio para un día.
+        """
+
+        def parsed_coin_is_empty(parsed_coin):
+            is_empty = any(
+                [parsed_coin[k]for k in parsed_coin.keys() - ['indice_tiempo']]
+            )
+
+            return is_empty
+
+        return any(parsed_coin_is_empty(p) for p in parsed.values())
