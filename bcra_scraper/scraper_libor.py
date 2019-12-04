@@ -98,7 +98,8 @@ class BCRALiborScraper(BCRAScraper):
         bar.start()
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
-            if not self.day_content_in_panel(intermediate_panel_data, single_date):
+            in_panel, day_content = self.day_content_in_panel(intermediate_panel_data, single_date)
+            if not in_panel:
                 contents.append(self.fetch_day_content(single_date))
             cont += 1
             bar.update(cont)
@@ -115,8 +116,11 @@ class BCRALiborScraper(BCRAScraper):
         single_date : date
         intermediate_panel_data: dict
         """
+        in_panel, content = False, {}
         content = intermediate_panel_data.get(single_date, {})
-        return content
+        if content:
+            in_panel = True
+        return in_panel, content
 
     def fetch_day_content(self, single_date):
         """
@@ -181,8 +185,10 @@ class BCRALiborScraper(BCRAScraper):
         day_count = (end_date - start_date).days + 1
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
-            panel_parsed = self.day_content_in_panel(intermediate_panel_data, single_date)
-            if not panel_parsed:
+            in_panel, parsed = self.day_content_in_panel(intermediate_panel_data, single_date)
+            if in_panel:
+                parsed_contents.append(parsed)
+            else:
                 for content in contents:
                     if single_date.strftime("%Y-%m-%d") in content:
                         parsed = self.parse_day_content(single_date.strftime("%Y-%m-%d"), content[single_date.strftime("%Y-%m-%d")])
@@ -190,8 +196,6 @@ class BCRALiborScraper(BCRAScraper):
                             _parsed = self._preprocess_rows(parsed)
                             parsed_contents.append(_parsed)
                             intermediate_panel_data[single_date] = _parsed
-            else:
-                parsed_contents.append(panel_parsed)
         return parsed_contents, intermediate_panel_data
 
     def parse_day_content(self, single_date, content):
@@ -420,6 +424,7 @@ class BCRALiborScraper(BCRAScraper):
             df_pivot.columns = flatten_columns
             df_pivot.reset_index(inplace=True)
             df_pivot['indice_tiempo'] = pd.to_datetime(df_pivot['indice_tiempo'], format="%Y-%m-%d", errors='ignore', infer_datetime_format=True)
+            # Se pasa primero a datetime y después a date porque si se trata de pasar directo a date rompe.
             df_pivot['indice_tiempo'] = df_pivot['indice_tiempo'].dt.date
             df_pivot['index'] = df_pivot['indice_tiempo']
             df_pivot.set_index(['index'], inplace=True)
@@ -455,3 +460,18 @@ class BCRALiborScraper(BCRAScraper):
             }
         )
         return intermediate_panel_dataframe
+
+    def delete_date_from_panel(self, intermediate_panel_data, single_date):
+        del intermediate_panel_data[single_date]
+        return intermediate_panel_data
+
+    def check_empty_date(self, parsed):
+        """
+        Chequea si hay datos en parsed para esa fecha.
+
+        Parameters
+        ----------
+        parsed: diccionario con los datos del panel intermedio para un día.
+        """
+        valid_keys = parsed.keys() - ['indice_tiempo']
+        return any(parsed[k] for k in valid_keys)

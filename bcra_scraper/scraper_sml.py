@@ -434,6 +434,7 @@ class BCRASMLScraper(BCRAScraper):
         df_pivot_coin = df_pivot_coin.replace([0], [None])
         df_pivot_coin.reset_index(inplace=True)
         df_pivot_coin['indice_tiempo'] = pd.to_datetime(df_pivot_coin['indice_tiempo'], format="%Y-%m-%d", errors='ignore', infer_datetime_format=True)
+        # Se pasa primero a datetime y después a date porque si se trata de pasar directo a date rompe.
         df_pivot_coin['indice_tiempo'] = df_pivot_coin['indice_tiempo'].dt.date
         df_pivot_coin['index'] = df_pivot_coin['indice_tiempo']
         df_pivot_coin.set_index(['index'], inplace=True)
@@ -498,3 +499,26 @@ class BCRASMLScraper(BCRAScraper):
             parsed
         )
         self.write_intermediate_panel(intermediate_panel_data, self.intermediate_panel_path)
+
+    def delete_date_from_panel(self, intermediate_panel_data, single_date):
+        for coin in ['peso_uruguayo', 'real']:
+            del intermediate_panel_data[coin][single_date]
+        return intermediate_panel_data
+
+    def check_empty_date(self, parsed):
+        """
+        Chequea si hay datos en parsed para esa fecha.
+
+        Parameters
+        ----------
+        parsed: diccionario con los datos del panel intermedio para un día.
+        """
+
+        def parsed_coin_is_empty(parsed_coin):
+            is_empty = any(
+                [parsed_coin[k]for k in parsed_coin.keys() - ['indice_tiempo']]
+            )
+
+            return is_empty
+
+        return any(parsed_coin_is_empty(p) for p in parsed.values())

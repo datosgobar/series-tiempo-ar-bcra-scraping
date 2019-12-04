@@ -35,7 +35,7 @@ class BCRAScraper:
         y los devuelve en un iterable
     """
 
-    def __init__(self, url, skip_intermediate_panel_data, *args, **kwargs):
+    def __init__(self, url, *args, **kwargs):
         """
         Parameters
         ----------
@@ -43,15 +43,22 @@ class BCRAScraper:
             Una cadena que representa una url válida, usada para obtener
             el contenido a ser scrapeado. Una URL se considera válida cuando su
             contenido no está vacio.
+        timeout : int
+            Tiempo de intervalo para cada request.
+        tries: int
+            Cantidad de intentos de request para cada fecha.
         skip_intermediate_panel_data : bool
             Flag para indicar si se debe saltear o leer un archivo intermedio
-            con formato panel
+            con formato panel.
+        skip_clean_dates : bool
+            Flag para indicar si se deben limpiar las últimas fechas del panel intermedio o no.
         """
         self.browser_driver = None
         self.url = url
         self.timeout = kwargs.get('timeout', None)
         self.tries = kwargs.get('tries', 1)
-        self.skip_intermediate_panel_data = skip_intermediate_panel_data
+        self.skip_intermediate_panel_data = kwargs.get('skip_intermediate_panel_data')
+        self.skip_clean_last_dates = kwargs.get('skip_clean_last_dates')
 
     def _create_browser_driver(self):
         """
@@ -124,6 +131,34 @@ class BCRAScraper:
     def preprocess_end_date(self, end_date):
         return end_date
 
+    def clean_last_dates_values_in_panel(self, intermediate_panel_data, start_date, end_date):
+        """
+        Limpia las últimas fechas del panel intermedio, con respecto a la fecha de inicio y fecha de fin,
+        que no tengan valores.
+
+        Parameters
+        ----------
+        intermediate_panel_data: dict
+            Diccionario que posee la data del panel intermedio.
+
+        start_date: date
+            Fecha de inicio que toma como referencia el scraper.
+
+        end_date : date
+            Fecha de fin que va a tomar como referencia el scraper.
+        """
+        endure = True
+        single_date = end_date
+        while endure and single_date >= start_date:
+            in_panel, parsed = self.day_content_in_panel(intermediate_panel_data, single_date)
+            if in_panel:
+                if not self.check_empty_date(parsed):
+                    intermediate_panel_data = self.delete_date_from_panel(intermediate_panel_data, single_date)
+                else:
+                    endure = False
+            single_date = single_date - timedelta(days=1)
+        return intermediate_panel_data
+
     def run(self, start_date, end_date):
         """
         Inicializa un iterable. Llama a los métodos para obtener y scrapear
@@ -143,8 +178,9 @@ class BCRAScraper:
         parsed = []
         start_date = self.preprocess_start_date(start_date, end_date)
         end_date = self.preprocess_end_date(end_date)
-
         intermediate_panel_data = [] if self.skip_intermediate_panel_data else self.parse_from_intermediate_panel()
+        if not self.skip_clean_dates:
+            intermediate_panel_data = self.clean_last_dates_values_in_panel(intermediate_panel_data, start_date, end_date)
         contents = self.fetch_contents(start_date, end_date, intermediate_panel_data)
         parsed, intermediate_panel_data = self.parse_contents(contents, start_date, end_date, intermediate_panel_data)
 
