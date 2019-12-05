@@ -77,7 +77,7 @@ class BCRALiborScraper(BCRAScraper):
 
         super(BCRALiborScraper, self).__init__(url, *args, **kwargs)
 
-    def fetch_contents(self, start_date, end_date, intermediate_panel_data):
+    def fetch_contents(self, start_date, end_date, intermediate_panel_data, content):
         """
         Recorre un rango de fechas y llama a un método.
         Retorna un iterable donde cada elemento es un String, o una lista
@@ -90,7 +90,7 @@ class BCRALiborScraper(BCRAScraper):
         end_date: date
             fecha de fin que va a tomar como referencia el scraper
         """
-        contents = []
+        contents = {}
         day_count = (end_date - start_date).days + 1
         cont = 0
         bar = progressbar.ProgressBar(max_value=day_count, redirect_stdout=True, \
@@ -98,9 +98,12 @@ class BCRALiborScraper(BCRAScraper):
         bar.start()
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
-            in_panel, day_content = self.day_content_in_panel(intermediate_panel_data, single_date)
-            if not in_panel:
-                contents.append(self.fetch_day_content(single_date))
+            if single_date not in content:
+                in_panel, day_content = self.day_content_in_panel(intermediate_panel_data, single_date)
+                if not in_panel:
+                    contents[single_date] = self.fetch_day_content(single_date)
+            else:
+                logging.warning(f'La fecha {single_date} fue descargada en el primer ciclo.')
             cont += 1
             bar.update(cont)
         bar.finish()
@@ -132,7 +135,6 @@ class BCRALiborScraper(BCRAScraper):
         single_date : date
             fecha que va a tomar como referencia el scraper
         """
-        content_dict = {}
         content = ''
         counter = 1
         tries = self.tries
@@ -147,7 +149,6 @@ class BCRALiborScraper(BCRAScraper):
                 element = WebDriverWait(browser_driver, 0).until(element_present)
                 element.send_keys(single_date.strftime("%d/%m/%Y") + Keys.RETURN)
                 content = browser_driver.page_source
-                content_dict[f'{single_date.strftime("%Y-%m-%d")}'] = content
             
             except NoSuchElementException:
                 raise InvalidConfigurationError(
@@ -169,9 +170,9 @@ class BCRALiborScraper(BCRAScraper):
 
             break
 
-        return content_dict
+        return content
 
-    def parse_contents(self, contents, start_date, end_date, intermediate_panel_data):
+    def parse_contents(self, contents, start_date, end_date, intermediate_panel_data, parsed_days):
         """
         Retorna un iterable donde cada elemento es un String, o una lista
             vacía si no hay contenidos.
@@ -185,13 +186,13 @@ class BCRALiborScraper(BCRAScraper):
         day_count = (end_date - start_date).days + 1
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
-            in_panel, parsed = self.day_content_in_panel(intermediate_panel_data, single_date)
-            if in_panel:
-                parsed_contents.append(parsed)
-            else:
-                for content in contents:
-                    if single_date.strftime("%Y-%m-%d") in content:
-                        parsed = self.parse_day_content(single_date.strftime("%Y-%m-%d"), content[single_date.strftime("%Y-%m-%d")])
+            if single_date not in parsed_days:
+                in_panel, parsed = self.day_content_in_panel(intermediate_panel_data, single_date)
+                if in_panel:
+                    parsed_contents.append(parsed)
+                else:
+                    if single_date in contents:
+                        parsed = self.parse_day_content(single_date, contents[single_date])
                         if parsed:
                             _parsed = self._preprocess_rows(parsed)
                             parsed_contents.append(_parsed)

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from csv import DictWriter
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from email.utils import formatdate
 from json import JSONDecodeError
 import json
@@ -144,6 +144,13 @@ def get_csv_header(coin, config):
                         )
     return csv_header
 
+def generate_dates_range(first_date, last_date):
+    delta = last_date - first_date
+    dates_range = []
+    for i in range(delta.days + 1):
+        dates_range.append(first_date + timedelta(days=i))
+    return dates_range
+
 
 @click.group()
 @click.pass_context
@@ -160,6 +167,16 @@ def cli(ctx):
 @click.option(
     '--end-date',
     default=get_default_end_date,
+    type=click.DateTime(formats=['%d/%m/%Y']),
+    )
+@click.option(
+    '--refetch-from',
+    default=None,
+    type=click.DateTime(formats=['%d/%m/%Y']),
+    )
+@click.option(
+    '--refetch-to',
+    default=None,
     type=click.DateTime(formats=['%d/%m/%Y']),
     )
 @click.option(
@@ -189,11 +206,15 @@ def cli(ctx):
     help=('Use este flag para no volver a visitar las últimas fechas que no tengan datos')
 )
 @click.pass_context
-def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor_csv_path,
+def libor(ctx, start_date, end_date, refetch_from, refetch_to, config, skip_intermediate_panel_data, libor_csv_path,
           intermediate_panel_path, skip_clean_last_dates, *args, **kwargs):
     validate_dates(start_date, end_date)
     start_date = start_date.date()
     end_date = end_date.date()
+    refetch_dates_range = []
+    if refetch_from and refetch_to:
+        refetch_dates_range = generate_dates_range(refetch_from.date(), refetch_to.date())
+    # breakpoint()
 
     try:
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -233,7 +254,7 @@ def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor
             skip_clean_last_dates=skip_clean_last_dates
         )
 
-        parsed = scraper.run(start_date, end_date)
+        parsed = scraper.run(start_date, end_date, refetch_dates_range)
 
         processed_header = scraper.preprocess_header(scraper.rates)
         write_file(processed_header, parsed, libor_file_path)

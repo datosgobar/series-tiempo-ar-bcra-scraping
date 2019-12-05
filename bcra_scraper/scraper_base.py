@@ -159,7 +159,7 @@ class BCRAScraper:
             single_date = single_date - timedelta(days=1)
         return intermediate_panel_data
 
-    def run(self, start_date, end_date):
+    def run(self, start_date, end_date, refetch_dates_range):
         """
         Inicializa un iterable. Llama a los métodos para obtener y scrapear
         los contenidos, y los ingresa en el iterable.
@@ -178,11 +178,23 @@ class BCRAScraper:
         parsed = []
         start_date = self.preprocess_start_date(start_date, end_date)
         end_date = self.preprocess_end_date(end_date)
+        new_intermediate_panel_data = {}
         intermediate_panel_data = [] if self.skip_intermediate_panel_data else self.parse_from_intermediate_panel()
         if not self.skip_clean_last_dates:
             intermediate_panel_data = self.clean_last_dates_values_in_panel(intermediate_panel_data, start_date, end_date)
-        contents = self.fetch_contents(start_date, end_date, intermediate_panel_data)
-        parsed, intermediate_panel_data = self.parse_contents(contents, start_date, end_date, intermediate_panel_data)
+        contents = self.fetch_contents(start_date, end_date, intermediate_panel_data, content={})
+        parsed, intermediate_panel_data = self.parse_contents(contents, start_date, end_date, intermediate_panel_data, parsed_days={})
+
+        if refetch_dates_range:
+            new_start_date = refetch_dates_range[0]
+            new_end_date = refetch_dates_range[-1]
+            refetched_contents = self.fetch_contents(new_start_date, new_end_date, intermediate_panel_data, contents)
+            refetched_parsed, new_intermediate_panel_data = self.parse_contents(refetched_contents, new_start_date, new_end_date, new_intermediate_panel_data, parsed)
+
+            contents.update(refetched_contents)
+            for p in refetched_parsed:
+                parsed.append(p)
+            intermediate_panel_data.update(new_intermediate_panel_data)
 
         if not self.skip_intermediate_panel_data:
             self.save_intermediate_panel(intermediate_panel_data)
