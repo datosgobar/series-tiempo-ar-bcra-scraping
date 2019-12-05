@@ -214,7 +214,6 @@ def libor(ctx, start_date, end_date, refetch_from, refetch_to, config, skip_inte
     refetch_dates_range = []
     if refetch_from and refetch_to:
         refetch_dates_range = generate_dates_range(refetch_from.date(), refetch_to.date())
-    # breakpoint()
 
     try:
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
