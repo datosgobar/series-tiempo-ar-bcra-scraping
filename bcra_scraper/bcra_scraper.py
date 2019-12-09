@@ -277,6 +277,16 @@ def libor(ctx, start_date, end_date, refetch_from, refetch_to, config, skip_inte
     type=click.DateTime(formats=['%d/%m/%Y']),
     )
 @click.option(
+    '--refetch-from',
+    default=None,
+    type=click.DateTime(formats=['%d/%m/%Y']),
+    )
+@click.option(
+    '--refetch-to',
+    default=None,
+    type=click.DateTime(formats=['%d/%m/%Y']),
+    )
+@click.option(
     '--config',
     default='config_general.json',
     type=click.Path(exists=True),
@@ -307,7 +317,7 @@ def libor(ctx, start_date, end_date, refetch_from, refetch_to, config, skip_inte
     help=('Use este flag para no volver a visitar las últimas fechas que no tengan datos')
 )
 @click.pass_context
-def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_data,
+def exchange_rates(ctx, start_date, end_date, refetch_from, refetch_to, config, skip_intermediate_panel_data,
                    tp_csv_path, tc_csv_path, intermediate_panel_path, skip_clean_last_dates):
 
     try:
@@ -321,6 +331,9 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
         validate_dates(start_date, end_date)
         start_date = start_date.date()
         end_date = end_date.date()
+        refetch_dates_range = []
+        if refetch_from and refetch_to:
+            refetch_dates_range = generate_dates_range(refetch_from.date(), refetch_to.date())
 
         tp_file_path = validate_file_path(tp_csv_path, config, file_path_key='tp_file_path')
         tc_file_path = validate_file_path(tc_csv_path, config, file_path_key='tc_file_path')
@@ -355,15 +368,15 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
             intermediate_panel_path=intermediate_panel_path,
             skip_clean_last_dates=skip_clean_last_dates
         )
-        parsed = scraper.run(start_date, end_date)
+        parsed = scraper.run(start_date, end_date, refetch_dates_range)
 
         if parsed:
             coins = config.get('coins')
             csv_header = ['indice_tiempo']
             csv_header.extend([v for v in coins.keys()])
-            write_file(csv_header, parsed['tp_usd'], tp_file_path)
 
-            write_file(csv_header, parsed['tc_local'], tc_file_path)
+            write_file(csv_header, parsed['tp_usd'].values(), tp_file_path)
+            write_file(csv_header, parsed['tc_local'].values(), tc_file_path)
 
         else:
             click.echo("No se encontraron resultados")
