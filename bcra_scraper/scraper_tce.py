@@ -102,7 +102,8 @@ class BCRATCEScraper(BCRAScraper):
                 if not in_panel:
                     for k, v in self.coins.items():
                         fetched = self.fetch_content(single_date, v)
-                        contents[k][single_date] = fetched
+                        if fetched:
+                            contents[k][single_date] = fetched
             else:
                 logging.warning(f'La fecha {single_date} fue descargada en el primer ciclo.')
             cont += 1
@@ -439,13 +440,11 @@ class BCRATCEScraper(BCRAScraper):
                                 day_content, single_date, k, self.entities)
                             if parsed:
                                 for p in parsed:
-                                    for coin in ['dolar', 'euro']:
-                                        if k == coin:
-                                            preprocess_dict = {}
-                                            preprocess_dict = self.preprocess_rows([p])
-                                            for d in preprocess_dict:
-                                                parsed_contents[coin][single_date] = d
-                                                intermediate_panel_data[coin][single_date] = d
+                                    preprocess_dict = {}
+                                    preprocess_dict = self.preprocess_rows([p])
+                                    for d in preprocess_dict:
+                                        parsed_contents[k][single_date] = d
+                                        intermediate_panel_data[k][single_date] = d
         return parsed_contents, intermediate_panel_data
 
     def parse_content(self, content, single_date, coin, entities):
