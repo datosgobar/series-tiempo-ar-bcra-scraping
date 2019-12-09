@@ -126,10 +126,10 @@ def validate_file_path(file_path, config, file_path_key):
     return file_path
 
 def filter_parsed(parsed, csv_header):
-    for r in parsed:
-        for k in list(r.keys()):
-            if k not in csv_header:
-                r.pop(k)
+    for v in list(parsed.values()):
+        for r in list(v):
+            if r not in csv_header:
+                v.pop(r)
     return parsed
 
 def get_csv_header(coin, config):
@@ -386,6 +386,16 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
     type=click.DateTime(formats=['%d/%m/%Y']),
 )
 @click.option(
+    '--refetch-from',
+    default=None,
+    type=click.DateTime(formats=['%d/%m/%Y']),
+    )
+@click.option(
+    '--refetch-to',
+    default=None,
+    type=click.DateTime(formats=['%d/%m/%Y']),
+    )
+@click.option(
     '--config',
     default='config_general.json',
     type=click.Path(exists=True),
@@ -416,7 +426,7 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
     help=('Use este flag para no volver a visitar las últimas fechas que no tengan datos')
 )
 @click.pass_context
-def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguayo_csv_path,
+def sml(ctx, config, start_date, end_date, refetch_from, refetch_to, skip_intermediate_panel_data, uruguayo_csv_path,
         real_csv_path, intermediate_panel_path, skip_clean_last_dates):
 
     try:
@@ -430,6 +440,9 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
         validate_dates(start_date, end_date)
         start_date = start_date.date()
         end_date = end_date.date()
+        refetch_dates_range = []
+        if refetch_from and refetch_to:
+            refetch_dates_range = generate_dates_range(refetch_from.date(), refetch_to.date())
 
         peso_uruguayo_file_path = validate_file_path(uruguayo_csv_path, config, file_path_key='peso_uruguayo_file_path')
         real_file_path = validate_file_path(real_csv_path, config, file_path_key='real_file_path')
@@ -466,7 +479,7 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
             skip_clean_last_dates=skip_clean_last_dates
         )
 
-        parsed = scraper.run(start_date, end_date)
+        parsed = scraper.run(start_date, end_date, refetch_dates_range)
 
         if parsed:
             for k  in parsed.keys():
@@ -503,6 +516,16 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
     type=click.DateTime(formats=['%d/%m/%Y']),
     )
 @click.option(
+    '--refetch-from',
+    default=None,
+    type=click.DateTime(formats=['%d/%m/%Y']),
+    )
+@click.option(
+    '--refetch-to',
+    default=None,
+    type=click.DateTime(formats=['%d/%m/%Y']),
+    )
+@click.option(
     '--config',
     default='config_general.json',
     type=click.Path(exists=True),
@@ -533,7 +556,7 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
     help=('Use este flag para no volver a visitar las últimas fechas que no tengan datos')
 )
 @click.pass_context
-def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_csv_path,
+def tce(ctx, config, start_date, end_date, refetch_from, refetch_to, skip_intermediate_panel_data, dolar_csv_path,
         euro_csv_path, intermediate_panel_path, skip_clean_last_dates):
 
     try:
@@ -549,6 +572,9 @@ def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_c
         validate_entities_key_has_values(config)
         start_date = start_date.date()
         end_date = end_date.date()
+        refetch_dates_range = []
+        if refetch_from and refetch_to:
+            refetch_dates_range = generate_dates_range(refetch_from.date(), refetch_to.date())
 
         dolar_file_path = validate_file_path(dolar_csv_path, config, file_path_key='dolar_file_path')
         euro_file_path = validate_file_path(euro_csv_path, config, file_path_key='euro_file_path')
@@ -584,7 +610,7 @@ def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_c
             intermediate_panel_path=intermediate_panel_path,
             skip_clean_last_dates=skip_clean_last_dates
         )
-        parsed = scraper.run(start_date, end_date)
+        parsed = scraper.run(start_date, end_date, refetch_dates_range)
 
         if parsed:
             for coin in ['dolar', 'euro']:
@@ -595,7 +621,7 @@ def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_c
                     csv_name = euro_file_path
 
                 filtered_parsed = filter_parsed(parsed[coin], csv_header)
-                write_file(csv_header, filtered_parsed, csv_name)
+                write_file(csv_header, filtered_parsed.values(), csv_name)
 
         else:
             click.echo("No se encontraron resultados")

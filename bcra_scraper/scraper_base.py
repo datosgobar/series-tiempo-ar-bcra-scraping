@@ -178,25 +178,23 @@ class BCRAScraper:
         parsed = []
         start_date = self.preprocess_start_date(start_date, end_date)
         end_date = self.preprocess_end_date(end_date)
-        new_intermediate_panel_data = {}
+        refetch_intermediate_panel_data = self.get_refetch_intermediate_panel_data()
         intermediate_panel_data = [] if self.skip_intermediate_panel_data else self.parse_from_intermediate_panel()
         if not self.skip_clean_last_dates:
             intermediate_panel_data = self.clean_last_dates_values_in_panel(intermediate_panel_data, start_date, end_date)
-        contents = self.fetch_contents(start_date, end_date, intermediate_panel_data, content={})
+        contents = self.fetch_contents(start_date, end_date, intermediate_panel_data, fetched_contents={})
         parsed, intermediate_panel_data = self.parse_contents(contents, start_date, end_date, intermediate_panel_data, parsed_days={})
 
         if refetch_dates_range:
-            new_start_date = refetch_dates_range[0]
-            new_end_date = refetch_dates_range[-1]
-            refetched_contents = self.fetch_contents(new_start_date, new_end_date, intermediate_panel_data, contents)
-            refetched_parsed, new_intermediate_panel_data = self.parse_contents(refetched_contents, new_start_date, new_end_date, new_intermediate_panel_data, parsed)
+            refetch_start_date = refetch_dates_range[0]
+            refetch_end_date = refetch_dates_range[-1]
+            refetched_contents = self.fetch_contents(refetch_start_date, refetch_end_date, refetch_intermediate_panel_data, contents)
+            refetched_parsed, refetch_intermediate_panel_data = self.parse_contents(refetched_contents, refetch_start_date, refetch_end_date, refetch_intermediate_panel_data, parsed)
 
             contents.update(refetched_contents)
-            for p in refetched_parsed:
-                parsed.append(p)
-            intermediate_panel_data.update(new_intermediate_panel_data)
+            parsed = self.merge_parsed(parsed, refetched_parsed)
+            intermediate_panel_data = self.merge_parsed(intermediate_panel_data, refetch_intermediate_panel_data)
 
         if not self.skip_intermediate_panel_data:
             self.save_intermediate_panel(intermediate_panel_data)
-
         return parsed
