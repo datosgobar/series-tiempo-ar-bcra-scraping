@@ -77,7 +77,7 @@ class BCRALiborScraper(BCRAScraper):
 
         super(BCRALiborScraper, self).__init__(url, *args, **kwargs)
 
-    def fetch_contents(self, start_date, end_date, intermediate_panel_data, content):
+    def fetch_contents(self, start_date, end_date, intermediate_panel_data, fetched_contents):
         """
         Recorre un rango de fechas y llama a un método.
         Retorna un iterable donde cada elemento es un String, o una lista
@@ -92,21 +92,21 @@ class BCRALiborScraper(BCRAScraper):
         """
         contents = {}
         day_count = (end_date - start_date).days + 1
-        cont = 0
-        bar = progressbar.ProgressBar(max_value=day_count, redirect_stdout=True, \
-            widgets=[progressbar.Bar('=', '[', ']'), '', progressbar.Percentage()])
-        bar.start()
+        # cont = 0
+        # bar = progressbar.ProgressBar(max_value=day_count, redirect_stdout=True, \
+        #     widgets=[progressbar.Bar('=', '[', ']'), '', progressbar.Percentage()])
+        # bar.start()
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
-            if single_date not in content:
+            if single_date not in fetched_contents:
                 in_panel, day_content = self.day_content_in_panel(intermediate_panel_data, single_date)
                 if not in_panel:
                     contents[single_date] = self.fetch_day_content(single_date)
             else:
                 logging.warning(f'La fecha {single_date} fue descargada en el primer ciclo.')
-            cont += 1
-            bar.update(cont)
-        bar.finish()
+        #     cont += 1
+        #     bar.update(cont)
+        # bar.finish()
         return contents
 
     def day_content_in_panel(self, intermediate_panel_data, single_date):
@@ -172,7 +172,7 @@ class BCRALiborScraper(BCRAScraper):
 
         return content
 
-    def parse_contents(self, contents, start_date, end_date, intermediate_panel_data, parsed_days):
+    def parse_contents(self, contents, start_date, end_date, intermediate_panel_data):
         """
         Retorna un iterable donde cada elemento es un String, o una lista
             vacía si no hay contenidos.
@@ -182,21 +182,21 @@ class BCRALiborScraper(BCRAScraper):
         contents : Iterable
             Contenidos que van a ser parseados
         """
-        parsed_contents = []
+        parsed_contents = {}
         day_count = (end_date - start_date).days + 1
+
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
-            if single_date not in parsed_days:
-                in_panel, parsed = self.day_content_in_panel(intermediate_panel_data, single_date)
-                if in_panel:
-                    parsed_contents.append(parsed)
-                else:
-                    if single_date in contents:
-                        parsed = self.parse_day_content(single_date, contents[single_date])
-                        if parsed:
-                            _parsed = self._preprocess_rows(parsed)
-                            parsed_contents.append(_parsed)
-                            intermediate_panel_data[single_date] = _parsed
+            in_panel, parsed = self.day_content_in_panel(intermediate_panel_data, single_date)
+            if in_panel:
+                parsed_contents[single_date] = parsed
+            else:
+                if single_date in contents:
+                    parsed = self.parse_day_content(single_date, contents[single_date])
+                    if parsed:
+                        _parsed = self._preprocess_rows(parsed)
+                        parsed_contents[single_date] = _parsed
+                        intermediate_panel_data[single_date] = _parsed
         return parsed_contents, intermediate_panel_data
 
     def parse_day_content(self, single_date, content):
@@ -476,3 +476,11 @@ class BCRALiborScraper(BCRAScraper):
         """
         valid_keys = parsed.keys() - ['indice_tiempo']
         return any(parsed[k] for k in valid_keys)
+
+    def get_refetch_intermediate_panel_data(self):
+        return {}
+
+    def merge_parsed(self, parsed, refetched_parsed):
+        merged_parsed = {}
+        merged_parsed = {**parsed, **refetched_parsed}
+        return merged_parsed

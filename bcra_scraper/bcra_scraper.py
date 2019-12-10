@@ -256,7 +256,8 @@ def libor(ctx, start_date, end_date, refetch_from, refetch_to, config, skip_inte
         parsed = scraper.run(start_date, end_date, refetch_dates_range)
 
         processed_header = scraper.preprocess_header(scraper.rates)
-        write_file(processed_header, parsed, libor_file_path)
+
+        write_file(processed_header, parsed.values(), libor_file_path)
 
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='libor')
