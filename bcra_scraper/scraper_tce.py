@@ -404,7 +404,7 @@ class BCRATCEScraper(BCRAScraper):
         self.write_intermediate_panel(
             intermediate_panel_data, self.intermediate_panel_path)
 
-    def parse_contents(self, contents, start_date, end_date, intermediate_panel_data, parsed_days):
+    def parse_contents(self, contents, start_date, end_date, intermediate_panel_data):
         """
         Retorna un diccionario que tiene como clave cada moneda
         y como valor una lista con un diccionario que tiene los
@@ -427,24 +427,23 @@ class BCRATCEScraper(BCRAScraper):
         day_count = (end_date - start_date).days + 1
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
-            if single_date not in parsed_days:
-                in_panel, parsed = self.day_content_in_panel(intermediate_panel_data, single_date)
-                if in_panel:
-                    parsed_contents['dolar'][single_date] = parsed['dolar']
-                    parsed_contents['euro'][single_date] = parsed['euro']
-                else:
-                    for k in self.coins:
-                        if contents[k]:
-                            day_content = contents[k][single_date]
-                            parsed = self.parse_content(
-                                day_content, single_date, k, self.entities)
-                            if parsed:
-                                for p in parsed:
-                                    preprocess_dict = {}
-                                    preprocess_dict = self.preprocess_rows([p])
-                                    for d in preprocess_dict:
-                                        parsed_contents[k][single_date] = d
-                                        intermediate_panel_data[k][single_date] = d
+            in_panel, parsed = self.day_content_in_panel(intermediate_panel_data, single_date)
+            if in_panel:
+                parsed_contents['dolar'][single_date] = parsed['dolar']
+                parsed_contents['euro'][single_date] = parsed['euro']
+            else:
+                for k in self.coins:
+                    if contents[k]:
+                        day_content = contents[k][single_date]
+                        parsed = self.parse_content(
+                            day_content, single_date, k, self.entities)
+                        if parsed:
+                            for p in parsed:
+                                preprocess_dict = {}
+                                preprocess_dict = self.preprocess_rows([p])
+                                for d in preprocess_dict:
+                                    parsed_contents[k][single_date] = d
+                                    intermediate_panel_data[k][single_date] = d
         return parsed_contents, intermediate_panel_data
 
     def parse_content(self, content, single_date, coin, entities):
