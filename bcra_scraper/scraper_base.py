@@ -67,7 +67,7 @@ class BCRAScraper:
         """
         if which("chromedriver"):
             options = webdriver.ChromeOptions()
-            options.headless = False
+            options.headless = True
 
             browser_driver = webdriver.Chrome(options=options)
             if self.timeout:
