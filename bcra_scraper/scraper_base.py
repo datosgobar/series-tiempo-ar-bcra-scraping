@@ -67,7 +67,7 @@ class BCRAScraper:
         """
         if which("chromedriver"):
             options = webdriver.ChromeOptions()
-            options.headless = True
+            options.headless = False
 
             browser_driver = webdriver.Chrome(options=options)
             if self.timeout:
@@ -131,7 +131,7 @@ class BCRAScraper:
     def preprocess_end_date(self, end_date):
         return end_date
 
-    def clean_last_dates_values_in_panel(self, intermediate_panel_data, start_date, end_date):
+    def clean_last_dates_values_in_panel(self, intermediate_panel_data, start_date, end_date, refetch_end_date):
         """
         Limpia las últimas fechas del panel intermedio, con respecto a la fecha de inicio y fecha de fin,
         que no tengan valores.
@@ -154,10 +154,12 @@ class BCRAScraper:
             if in_panel:
                 if not self.check_empty_date(parsed):
                     intermediate_panel_data = self.delete_date_from_panel(intermediate_panel_data, single_date)
+                    if refetch_end_date == single_date:
+                        refetch_end_date = refetch_end_date - timedelta(days=1)
                 else:
                     endure = False
             single_date = single_date - timedelta(days=1)
-        return intermediate_panel_data
+        return intermediate_panel_data, refetch_end_date
 
     def run(self, start_date, end_date, refetch_dates_range):
         """
@@ -175,20 +177,21 @@ class BCRAScraper:
         end_date : date
             fecha de fin que va a tomar como referencia el scraper
         """
+
         parsed = []
         start_date = self.preprocess_start_date(start_date, end_date)
         end_date = self.preprocess_end_date(end_date)
         refetch_intermediate_panel_data = self.get_refetch_intermediate_panel_data()
         intermediate_panel_data = [] if self.skip_intermediate_panel_data else self.parse_from_intermediate_panel()
+        refetch_start_date = refetch_dates_range[0] if refetch_dates_range else None
+        refetch_end_date = refetch_dates_range[-1] if refetch_dates_range else None
 
         if not self.skip_clean_last_dates:
-            intermediate_panel_data = self.clean_last_dates_values_in_panel(intermediate_panel_data, start_date, end_date)
+            intermediate_panel_data, refetch_end_date = self.clean_last_dates_values_in_panel(intermediate_panel_data, start_date, end_date, refetch_end_date)
         contents = self.fetch_contents(start_date, end_date, intermediate_panel_data, fetched_contents={})
         parsed, intermediate_panel_data = self.parse_contents(contents, start_date, end_date, intermediate_panel_data)
 
         if refetch_dates_range:
-            refetch_start_date = refetch_dates_range[0]
-            refetch_end_date = refetch_dates_range[-1]
             refetched_contents = self.fetch_contents(refetch_start_date, refetch_end_date, refetch_intermediate_panel_data, contents)
             refetched_parsed, refetch_intermediate_panel_data = self.parse_contents(refetched_contents, refetch_start_date, refetch_end_date, refetch_intermediate_panel_data)
 

@@ -202,7 +202,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
             break
         return content
 
-    def parse_contents(self, contents, start_date, end_date, intermediate_panel_data, parsed_days):
+    def parse_contents(self, contents, start_date, end_date, intermediate_panel_data):
         """
         Recorre un iterable que posee los html y llama a un método.
         Retorna una lista de diccionarios con los contenidos parseados
