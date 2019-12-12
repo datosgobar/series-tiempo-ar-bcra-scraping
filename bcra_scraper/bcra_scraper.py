@@ -500,15 +500,14 @@ def sml(ctx, config, start_date, end_date, refetch_from, refetch_to, skip_interm
                 if k == 'peso_uruguayo':
                     csv_header = ['indice_tiempo']
                     csv_header.extend(config['types']['peso_uruguayo'].values())
-
-                    write_file(csv_header, parsed['peso_uruguayo'], peso_uruguayo_file_path)
+                    write_file(csv_header, parsed['peso_uruguayo'].values(), peso_uruguayo_file_path)
 
 
                 elif k == 'real':
                     csv_header = ['indice_tiempo']
                     csv_header.extend(config['types']['real'].values())
 
-                    write_file(csv_header, parsed['real'], real_file_path)
+                    write_file(csv_header, parsed['real'].values(), real_file_path)
 
         else:
             click.echo("No se encontraron resultados")

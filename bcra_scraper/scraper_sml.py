@@ -69,7 +69,7 @@ class BCRASMLScraper(BCRAScraper):
         super(BCRASMLScraper, self)\
             .__init__(url, *args, **kwargs)
 
-    def fetch_contents(self, start_date, end_date, intermediate_panel_data):
+    def fetch_contents(self, start_date, end_date, intermediate_panel_data, fetched_contents):
         """
         Función que a traves de un loop llama a un método
         y regresa un diccionario con el html de cada moneda.
@@ -80,7 +80,7 @@ class BCRASMLScraper(BCRAScraper):
             Diccionario que contiene las monedas
         """
 
-        contents = {}
+        contents = {'peso_uruguayo': {}, 'real': {}}
         day_count = (end_date - start_date).days + 1
         cont = 0
         bar = progressbar.ProgressBar(max_value=day_count, redirect_stdout=True, \
@@ -88,16 +88,33 @@ class BCRASMLScraper(BCRAScraper):
         bar.start()
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
-            in_panel, day_content = self.day_content_in_panel(intermediate_panel_data, single_date)
-            if not in_panel:
-                for k, v in self.coins.items():
-                    fetched = self.fetch_content(v)
-                    if fetched:
-                        contents[k] = fetched
+            if not self.day_in_fetched_contents(fetched_contents, single_date):
+                in_panel, day_content = self.day_content_in_panel(intermediate_panel_data, single_date)
+                if not in_panel:
+                    for k, v in self.coins.items():
+                        fetched = self.fetch_content(v)
+                        if fetched:
+                            contents[k][single_date] = fetched
+            else:
+                logging.warning(f'La fecha {single_date} fue descargada en el primer ciclo.')
             cont += 1
             bar.update(cont)
         bar.finish()
         return contents
+
+    def day_in_fetched_contents(self, fetched_contents, single_date):
+        """
+        Chequea si la fecha se encuentra en los contenidos
+        descargados en el primer ciclo,
+        y devuelve el booleano correspondiente.
+        """
+        in_fetched_contents = False
+        for coin in ['peso_uruguayo', 'real']:
+            data = fetched_contents.get(coin, None)
+            if data:
+                if single_date in data:
+                    in_fetched_contents = True
+        return in_fetched_contents
 
     def day_content_in_panel(self, intermediate_panel_data, single_date):
         in_panel, day_content = False, {'peso_uruguayo': {}, 'real': {}}
@@ -189,9 +206,7 @@ class BCRASMLScraper(BCRAScraper):
         end_date : date
             fecha de fin que va a tomar como referencia el scraper
         """
-        parsed_contents = []
-        parsed_peso_uruguayo, parsed_real = {}, {}
-        parsed_contents = {'peso_uruguayo': [], 'real': []}
+        parsed_contents = {'peso_uruguayo': {}, 'real': {}}
         day_count = (end_date - start_date).days + 1
 
         for single_date in (start_date + timedelta(n)
@@ -199,44 +214,29 @@ class BCRASMLScraper(BCRAScraper):
             in_panel, parsed = self.day_content_in_panel(intermediate_panel_data, single_date)
 
             if in_panel:
-                parsed_contents['peso_uruguayo'].append(parsed['peso_uruguayo'])
-                parsed_contents['real'].append(parsed['real'])
+                parsed_contents['peso_uruguayo'][single_date] = parsed['peso_uruguayo']
+                parsed_contents['real'][single_date] = parsed['real']
             else:
-                for k, v in contents.items():
-                    parsed = self.parse_content(v, k, single_date)
-                    if parsed:
-                        for p in parsed:
-                            if p['coin'] == 'peso_uruguayo':
-                                parsed_peso_uruguayo[p['indice_tiempo']] = {}
-                                for k, v in self.types[p['coin']].items():
-                                    parsed_peso_uruguayo[p['indice_tiempo']][v] = p[k]
-                            else:
-                                parsed_real[p['indice_tiempo']] = {}
-                                for k, v in self.types[p['coin']].items():
-                                    parsed_real[p['indice_tiempo']][v] = p[k]
+                for coin in self.coins.keys():
+                    if contents[coin]:
+                        parsed = self.parse_content(contents[coin][single_date], coin, single_date)
+                        if parsed:
+                            for p in parsed:
+                                preprocess_dict = {}
+                                preprocess_dict = self.preprocess_rows([p])
+                                for d in preprocess_dict:
+                                    for k, v in self.types[d['coin']].items():
+                                        if d['indice_tiempo'] not in parsed_contents[coin].keys():
+                                            parsed_contents[coin][d['indice_tiempo']] = {}
+                                        parsed_contents[coin][d['indice_tiempo']][v] = d[k]
+                                        parsed_contents[coin][d['indice_tiempo']]['indice_tiempo'] = d['indice_tiempo']
 
-        for k, v in parsed_peso_uruguayo.items():
-            preprocess_dict = {}
-            v['indice_tiempo'] = k
-            preprocess_dict = self.preprocess_rows([v])
-            coin = 'peso_uruguayo'
-            for p in preprocess_dict:
-                self.coin_parsed_contents(coin, p, intermediate_panel_data, k, parsed_contents)
-
-        for k, v in parsed_real.items():
-            preprocess_dict = {}
-            v['indice_tiempo'] = k
-            preprocess_dict = self.preprocess_rows([v])
-            coin = 'real'
-            for p in preprocess_dict:
-                self.coin_parsed_contents(coin, p, intermediate_panel_data, k, parsed_contents)
+                                        if d['indice_tiempo'] not in intermediate_panel_data[coin].keys():
+                                            intermediate_panel_data[coin][d['indice_tiempo']] = {}
+                                        intermediate_panel_data[coin][d['indice_tiempo']][v] = d[k]
+                                        intermediate_panel_data[coin][d['indice_tiempo']]['indice_tiempo'] = d['indice_tiempo']
 
         return parsed_contents, intermediate_panel_data
-
-    def coin_parsed_contents(self, coin, preprocess_dict, intermediate_panel_data, single_date, parsed_contents):
-        parsed_contents[coin].append(preprocess_dict)
-        if not type(intermediate_panel_data) == list:
-            intermediate_panel_data[coin][single_date] = preprocess_dict
 
     def parse_content(self, content, coin, single_date):
         """
@@ -323,27 +323,30 @@ class BCRASMLScraper(BCRAScraper):
             preprocessed_row = {}
 
             for k in row.keys():
-                if k == 'indice_tiempo':
-                    if type(row[k]) == str:
-                        if '/' in row[k]:
-                            _ = row[k].split('/')
-                            preprocessed_date = date.fromisoformat(
-                                '-'.join([_[2], _[1], _[0]])
+                if k != 'coin':
+                    if k == 'indice_tiempo':
+                        if type(row[k]) == str:
+                            if '/' in row[k]:
+                                _ = row[k].split('/')
+                                preprocessed_date = date.fromisoformat(
+                                    '-'.join([_[2], _[1], _[0]])
+                                )
+                            else:
+                                preprocessed_date = date.fromisoformat(row[k])
+                        else:
+                            preprocessed_date = row[k]
+                        preprocessed_row['indice_tiempo'] = preprocessed_date
+                    else:
+                        if row[k]:
+                            preprocessed_row[k] = (
+                                Decimal((row[k]).replace(',', '.'))
+                                if isinstance(row[k], str)
+                                else row[k]
                             )
                         else:
-                            preprocessed_date = date.fromisoformat(row[k])
-                    else:
-                        preprocessed_date = row[k]
-                    preprocessed_row['indice_tiempo'] = preprocessed_date
+                            preprocessed_row[k] = row[k]
                 else:
-                    if row[k]:
-                        preprocessed_row[k] = (
-                            Decimal((row[k]).replace(',', '.'))
-                            if isinstance(row[k], str)
-                            else row[k]
-                        )
-                    else:
-                        preprocessed_row[k] = row[k]
+                    preprocessed_row[k] = row[k]
 
             preprocessed_rows.append(preprocessed_row)
 
@@ -522,3 +525,12 @@ class BCRASMLScraper(BCRAScraper):
             return is_empty
 
         return any(parsed_coin_is_empty(p) for p in parsed.values())
+
+    def get_refetch_intermediate_panel_data(self):
+        return {'peso_uruguayo': {}, 'real': {}}
+
+    def merge_parsed(self, parsed, refetched_parsed):
+        merged_parsed = {'peso_uruguayo': {}, 'real': {}}
+        for coin in ['peso_uruguayo', 'real']:
+            merged_parsed[coin] = {**parsed[coin], **refetched_parsed[coin]}
+        return merged_parsed
