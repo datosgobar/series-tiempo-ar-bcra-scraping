@@ -10,6 +10,7 @@ import logging
 import os
 
 import click
+from pyfiglet import Figlet
 
 from bcra_scraper.exceptions import InvalidConfigurationError
 from bcra_scraper.mails import Email
@@ -197,7 +198,9 @@ def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor
 
     try:
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        logging.basicConfig(level=logging.WARNING)
+        logging.basicConfig(format='%(message)s', level=logging.INFO)
+        logging.info(Figlet(font='standard').renderText('scraper libor'))
+        logging.info(f"Inicio de tiempo de ejecución: {execution_start_time}")
         config = read_config(file_path=config, command=ctx.command.name)
         libor_file_path = validate_file_path(libor_csv_path, config, file_path_key='libor_file_path')
         intermediate_panel_path = validate_file_path(intermediate_panel_path, config, file_path_key='intermediate_panel_path')
@@ -239,6 +242,7 @@ def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor
         write_file(processed_header, parsed, libor_file_path)
 
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        logging.info(f"Fin de tiempo de ejecución: {execution_end_time}")
         Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='libor')
 
     except InvalidConfigurationError as err:
@@ -292,7 +296,10 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
 
     try:
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        logging.basicConfig(level=logging.WARNING)
+        logging.basicConfig(format='%(message)s', level=logging.INFO)
+        logging.info(Figlet(font='standard').renderText('scraper'))
+        logging.info(Figlet(font='standard').renderText('exchange rates'))
+        logging.info(f"Inicio de tiempo de ejecución: {execution_start_time}")
         config = read_config(file_path=config, command=ctx.command.name)
         validate_url_config(config)
         validate_url_has_value(config)
@@ -348,6 +355,7 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
         else:
             click.echo("No se encontraron resultados")
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        logging.info(f"Fin de tiempo de ejecución: {execution_end_time}")
         Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='exchange-rates')
 
     except InvalidConfigurationError as err:
@@ -401,7 +409,9 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
 
     try:
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        logging.basicConfig(level=logging.WARNING)
+        logging.basicConfig(format='%(message)s', level=logging.INFO)
+        logging.info(Figlet(font='standard').renderText('scraper sml'))
+        logging.info(f"Inicio de tiempo de ejecución: {execution_start_time}")
         config = read_config(file_path=config, command=ctx.command.name)
         validate_url_config(config)
         validate_url_has_value(config)
@@ -466,6 +476,7 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
         else:
             click.echo("No se encontraron resultados")
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        logging.info(f"Fin de tiempo de ejecución: {execution_end_time}")
         Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='sml')
     except InvalidConfigurationError as err:
         click.echo(err)
@@ -518,7 +529,9 @@ def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_c
 
     try:
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        logging.basicConfig(level=logging.WARNING)
+        logging.basicConfig(format='%(message)s', level=logging.INFO)
+        logging.info(Figlet(font='standard').renderText('scraper tce'))
+        logging.info(f"Inicio de tiempo de ejecución: {execution_start_time}")
         config = read_config(file_path=config, command=ctx.command.name)
         validate_url_config(config)
         validate_url_has_value(config)
@@ -580,6 +593,7 @@ def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_c
         else:
             click.echo("No se encontraron resultados")
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        logging.info(f"Fin de tiempo de ejecución: {execution_end_time}")
         Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='tce')
 
     except InvalidConfigurationError as err:
