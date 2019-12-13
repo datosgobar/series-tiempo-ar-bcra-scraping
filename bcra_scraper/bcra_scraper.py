@@ -8,6 +8,7 @@ from json import JSONDecodeError
 import json
 import logging
 import os
+import time
 
 import click
 
@@ -197,6 +198,7 @@ def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor
 
     try:
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        execution_start_hour = time.time()
         logging.basicConfig(level=logging.WARNING)
         config = read_config(file_path=config, command=ctx.command.name)
         libor_file_path = validate_file_path(libor_csv_path, config, file_path_key='libor_file_path')
@@ -239,7 +241,11 @@ def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor
         write_file(processed_header, parsed, libor_file_path)
 
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='libor')
+        execution_end_hour = time.time()
+        hours, rem = divmod(execution_end_hour - execution_start_hour, 3600)
+        minutes, seconds = divmod(rem, 60)
+        execution_total_time = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
+        Email().send_validation_group_email(execution_start_time, execution_end_time, execution_total_time, start_date, end_date, skip_intermediate_panel_data, identifier='libor')
 
     except InvalidConfigurationError as err:
         click.echo(err)
@@ -292,6 +298,7 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
 
     try:
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        execution_start_hour = time.time()
         logging.basicConfig(level=logging.WARNING)
         config = read_config(file_path=config, command=ctx.command.name)
         validate_url_config(config)
@@ -348,7 +355,11 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
         else:
             click.echo("No se encontraron resultados")
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='exchange-rates')
+        execution_end_hour = time.time()
+        hours, rem = divmod(execution_end_hour - execution_start_hour, 3600)
+        minutes, seconds = divmod(rem, 60)
+        execution_total_time = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
+        Email().send_validation_group_email(execution_start_time, execution_end_time, execution_total_time, start_date, end_date, skip_intermediate_panel_data, identifier='exchange-rates')
 
     except InvalidConfigurationError as err:
         click.echo(err)
@@ -401,6 +412,7 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
 
     try:
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        execution_start_hour = time.time()
         logging.basicConfig(level=logging.WARNING)
         config = read_config(file_path=config, command=ctx.command.name)
         validate_url_config(config)
@@ -466,7 +478,11 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
         else:
             click.echo("No se encontraron resultados")
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='sml')
+        execution_end_hour = time.time()
+        hours, rem = divmod(execution_end_hour - execution_start_hour, 3600)
+        minutes, seconds = divmod(rem, 60)
+        execution_total_time = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
+        Email().send_validation_group_email(execution_start_time, execution_end_time, execution_total_time, start_date, end_date, skip_intermediate_panel_data, identifier='sml')
     except InvalidConfigurationError as err:
         click.echo(err)
 
@@ -518,6 +534,7 @@ def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_c
 
     try:
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        execution_start_hour = time.time()
         logging.basicConfig(level=logging.WARNING)
         config = read_config(file_path=config, command=ctx.command.name)
         validate_url_config(config)
@@ -580,7 +597,11 @@ def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_c
         else:
             click.echo("No se encontraron resultados")
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='tce')
+        execution_end_hour = time.time()
+        hours, rem = divmod(execution_end_hour - execution_start_hour, 3600)
+        minutes, seconds = divmod(rem, 60)
+        execution_total_time = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
+        Email().send_validation_group_email(execution_start_time, execution_end_time, execution_total_time, start_date, end_date, skip_intermediate_panel_data, identifier='tce')
 
     except InvalidConfigurationError as err:
         click.echo(err)
