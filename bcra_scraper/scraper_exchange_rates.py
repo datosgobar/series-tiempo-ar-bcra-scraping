@@ -568,7 +568,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
         return any(parsed_coin_is_empty(p) for p in parsed.values())
 
-    def get_refetch_intermediate_panel_data(self):
+    def empty_refetch_data(self):
         return {'tc_local': {}, 'tp_usd': {}}
 
     def merge_parsed(self, parsed, refetched_parsed):

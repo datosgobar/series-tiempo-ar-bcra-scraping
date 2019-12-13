@@ -477,7 +477,7 @@ class BCRALiborScraper(BCRAScraper):
         valid_keys = parsed.keys() - ['indice_tiempo']
         return any(parsed[k] for k in valid_keys)
 
-    def get_refetch_intermediate_panel_data(self):
+    def empty_refetch_data(self):
         return {}
 
     def merge_parsed(self, parsed, refetched_parsed):

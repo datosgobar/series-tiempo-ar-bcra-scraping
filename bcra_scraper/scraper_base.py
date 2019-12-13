@@ -135,6 +135,8 @@ class BCRAScraper:
         """
         Limpia las últimas fechas del panel intermedio, con respecto a la fecha de inicio y fecha de fin,
         que no tengan valores.
+        Actualiza y devuelve refetch_end_date, de modo que la fecha de refetch_end_date
+        no quede mayor a la fecha end_date.
 
         Parameters
         ----------
@@ -145,6 +147,9 @@ class BCRAScraper:
             Fecha de inicio que toma como referencia el scraper.
 
         end_date : date
+            Fecha de fin que va a tomar como referencia el scraper.
+
+        refetch_end_date : date
             Fecha de fin que va a tomar como referencia el scraper.
         """
         endure = True
@@ -181,7 +186,7 @@ class BCRAScraper:
         parsed = []
         start_date = self.preprocess_start_date(start_date, end_date)
         end_date = self.preprocess_end_date(end_date)
-        refetch_intermediate_panel_data = self.get_refetch_intermediate_panel_data()
+        refetch_intermediate_panel_data = self.empty_refetch_data()
         intermediate_panel_data = [] if self.skip_intermediate_panel_data else self.parse_from_intermediate_panel()
         refetch_start_date = refetch_dates_range[0] if refetch_dates_range else None
         refetch_end_date = refetch_dates_range[-1] if refetch_dates_range else None
