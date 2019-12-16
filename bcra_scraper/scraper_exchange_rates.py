@@ -106,6 +106,9 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
         return contents
 
+    def empty_fetched_contents(self):
+        return {'tc_local': {}, 'tp_usd': {}}
+
     def day_in_fetched_contents(self, fetched_contents, single_date):
         """
         Chequea si la fecha se encuentra en los contenidos

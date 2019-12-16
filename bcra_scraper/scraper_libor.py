@@ -109,6 +109,9 @@ class BCRALiborScraper(BCRAScraper):
         bar.finish()
         return contents
 
+    def empty_fetched_contents(self):
+        return {}
+
     def day_content_in_panel(self, intermediate_panel_data, single_date):
         """
         Recibe la data del panel intermedio y una fecha.

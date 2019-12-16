@@ -102,6 +102,9 @@ class BCRASMLScraper(BCRAScraper):
         bar.finish()
         return contents
 
+    def empty_fetched_contents(self):
+        return {'peso_uruguayo': {}, 'real': {}}
+
     def day_in_fetched_contents(self, fetched_contents, single_date):
         """
         Chequea si la fecha se encuentra en los contenidos

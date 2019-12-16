@@ -186,6 +186,7 @@ class BCRAScraper:
         parsed = []
         start_date = self.preprocess_start_date(start_date, end_date)
         end_date = self.preprocess_end_date(end_date)
+        fetched_contents = self.empty_fetched_contents()
         refetch_intermediate_panel_data = self.empty_refetch_data()
         intermediate_panel_data = [] if self.skip_intermediate_panel_data else self.parse_from_intermediate_panel()
         refetch_start_date = refetch_dates_range[0] if refetch_dates_range else None
@@ -193,7 +194,7 @@ class BCRAScraper:
 
         if not self.skip_clean_last_dates:
             intermediate_panel_data, refetch_end_date = self.clean_last_dates_values_in_panel(intermediate_panel_data, start_date, end_date, refetch_end_date)
-        contents = self.fetch_contents(start_date, end_date, intermediate_panel_data, fetched_contents={})
+        contents = self.fetch_contents(start_date, end_date, intermediate_panel_data, fetched_contents)
         parsed, intermediate_panel_data = self.parse_contents(contents, start_date, end_date, intermediate_panel_data)
 
         if refetch_dates_range:

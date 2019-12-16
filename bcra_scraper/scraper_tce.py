@@ -112,6 +112,9 @@ class BCRATCEScraper(BCRAScraper):
 
         return contents
 
+    def empty_fetched_contents(self):
+        return {'dolar': {}, 'euro': {}}
+
     def day_in_fetched_contents(self, fetched_contents, single_date):
         """
         Chequea si la fecha se encuentra en los contenidos
