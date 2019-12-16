@@ -92,10 +92,10 @@ class BCRALiborScraper(BCRAScraper):
         """
         contents = {}
         day_count = (end_date - start_date).days + 1
-        # cont = 0
-        # bar = progressbar.ProgressBar(max_value=day_count, redirect_stdout=True, \
-        #     widgets=[progressbar.Bar('=', '[', ']'), '', progressbar.Percentage()])
-        # bar.start()
+        cont = 0
+        bar = progressbar.ProgressBar(max_value=day_count, redirect_stdout=True, \
+            widgets=[progressbar.Bar('=', '[', ']'), '', progressbar.Percentage()])
+        bar.start()
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
             if single_date not in fetched_contents:
@@ -104,9 +104,9 @@ class BCRALiborScraper(BCRAScraper):
                     contents[single_date] = self.fetch_day_content(single_date)
             else:
                 logging.warning(f'La fecha {single_date} fue descargada en el primer ciclo.')
-        #     cont += 1
-        #     bar.update(cont)
-        # bar.finish()
+            cont += 1
+            bar.update(cont)
+        bar.finish()
         return contents
 
     def day_content_in_panel(self, intermediate_panel_data, single_date):
