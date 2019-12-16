@@ -101,14 +101,14 @@ def validate_dates(start_date, end_date):
             "La fecha de fin no puede ser mayor a la fecha actual"
         )
 
-def validate_refetch_dates(start_date, end_date, refetch_from, refetch_to):
-    if refetch_from < start_date:
+def validate_refetch_dates(start_date, end_date, refetch_start_date, refetch_end_date):
+    if refetch_start_date < start_date:
         raise InvalidConfigurationError(
-            "La fecha de refetch_from no debe ser menor a la fecha de inicio"
+            "La fecha de refetch_start_date no debe ser menor a la fecha de inicio"
         )
-    elif refetch_to > end_date:
+    elif refetch_end_date > end_date:
         raise InvalidConfigurationError(
-            "La fecha de refetch_from no puede ser mayor a la fecha de fin"
+            "La fecha de refetch_end_date no puede ser mayor a la fecha de fin"
         )
 
 
@@ -180,12 +180,12 @@ def cli(ctx):
     type=click.DateTime(formats=['%d/%m/%Y']),
     )
 @click.option(
-    '--refetch-from',
+    '--refetch-start-date',
     default=None,
     type=click.DateTime(formats=['%d/%m/%Y']),
     )
 @click.option(
-    '--refetch-to',
+    '--refetch-end-date',
     default=None,
     type=click.DateTime(formats=['%d/%m/%Y']),
     )
@@ -216,16 +216,16 @@ def cli(ctx):
     help=('Use este flag para no volver a visitar las últimas fechas que no tengan datos')
 )
 @click.pass_context
-def libor(ctx, start_date, end_date, refetch_from, refetch_to, config, skip_intermediate_panel_data, libor_csv_path,
+def libor(ctx, start_date, end_date, refetch_start_date, refetch_end_date, config, skip_intermediate_panel_data, libor_csv_path,
           intermediate_panel_path, skip_clean_last_dates, *args, **kwargs):
     try:
         validate_dates(start_date, end_date)
         start_date = start_date.date()
         end_date = end_date.date()
         refetch_dates_range = []
-        if refetch_from and refetch_to:
-            validate_refetch_dates(start_date, end_date, refetch_from.date(), refetch_to.date())
-            refetch_dates_range = generate_dates_range(refetch_from.date(), refetch_to.date())
+        if refetch_start_date and refetch_end_date:
+            validate_refetch_dates(start_date, end_date, refetch_start_date.date(), refetch_end_date.date())
+            refetch_dates_range = generate_dates_range(refetch_start_date.date(), refetch_end_date.date())
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         logging.basicConfig(level=logging.WARNING)
         config = read_config(file_path=config, command=ctx.command.name)
@@ -288,12 +288,12 @@ def libor(ctx, start_date, end_date, refetch_from, refetch_to, config, skip_inte
     type=click.DateTime(formats=['%d/%m/%Y']),
     )
 @click.option(
-    '--refetch-from',
+    '--refetch-start-date',
     default=None,
     type=click.DateTime(formats=['%d/%m/%Y']),
     )
 @click.option(
-    '--refetch-to',
+    '--refetch-end-date',
     default=None,
     type=click.DateTime(formats=['%d/%m/%Y']),
     )
@@ -328,7 +328,7 @@ def libor(ctx, start_date, end_date, refetch_from, refetch_to, config, skip_inte
     help=('Use este flag para no volver a visitar las últimas fechas que no tengan datos')
 )
 @click.pass_context
-def exchange_rates(ctx, start_date, end_date, refetch_from, refetch_to, config, skip_intermediate_panel_data,
+def exchange_rates(ctx, start_date, end_date, refetch_start_date, refetch_end_date, config, skip_intermediate_panel_data,
                    tp_csv_path, tc_csv_path, intermediate_panel_path, skip_clean_last_dates):
 
     try:
@@ -343,9 +343,9 @@ def exchange_rates(ctx, start_date, end_date, refetch_from, refetch_to, config, 
         start_date = start_date.date()
         end_date = end_date.date()
         refetch_dates_range = []
-        if refetch_from and refetch_to:
-            validate_refetch_dates(start_date, end_date, refetch_from.date(), refetch_to.date())
-            refetch_dates_range = generate_dates_range(refetch_from.date(), refetch_to.date())
+        if refetch_start_date and refetch_end_date:
+            validate_refetch_dates(start_date, end_date, refetch_start_date.date(), refetch_end_date.date())
+            refetch_dates_range = generate_dates_range(refetch_start_date.date(), refetch_end_date.date())
 
         tp_file_path = validate_file_path(tp_csv_path, config, file_path_key='tp_file_path')
         tc_file_path = validate_file_path(tc_csv_path, config, file_path_key='tc_file_path')
@@ -411,12 +411,12 @@ def exchange_rates(ctx, start_date, end_date, refetch_from, refetch_to, config, 
     type=click.DateTime(formats=['%d/%m/%Y']),
 )
 @click.option(
-    '--refetch-from',
+    '--refetch-start-date',
     default=None,
     type=click.DateTime(formats=['%d/%m/%Y']),
     )
 @click.option(
-    '--refetch-to',
+    '--refetch-end-date',
     default=None,
     type=click.DateTime(formats=['%d/%m/%Y']),
     )
@@ -451,7 +451,7 @@ def exchange_rates(ctx, start_date, end_date, refetch_from, refetch_to, config, 
     help=('Use este flag para no volver a visitar las últimas fechas que no tengan datos')
 )
 @click.pass_context
-def sml(ctx, config, start_date, end_date, refetch_from, refetch_to, skip_intermediate_panel_data, uruguayo_csv_path,
+def sml(ctx, config, start_date, end_date, refetch_start_date, refetch_end_date, skip_intermediate_panel_data, uruguayo_csv_path,
         real_csv_path, intermediate_panel_path, skip_clean_last_dates):
 
     try:
@@ -466,9 +466,9 @@ def sml(ctx, config, start_date, end_date, refetch_from, refetch_to, skip_interm
         start_date = start_date.date()
         end_date = end_date.date()
         refetch_dates_range = []
-        if refetch_from and refetch_to:
-            validate_refetch_dates(start_date, end_date, refetch_from.date(), refetch_to.date())
-            refetch_dates_range = generate_dates_range(refetch_from.date(), refetch_to.date())
+        if refetch_start_date and refetch_end_date:
+            validate_refetch_dates(start_date, end_date, refetch_start_date.date(), refetch_end_date.date())
+            refetch_dates_range = generate_dates_range(refetch_start_date.date(), refetch_end_date.date())
 
         peso_uruguayo_file_path = validate_file_path(uruguayo_csv_path, config, file_path_key='peso_uruguayo_file_path')
         real_file_path = validate_file_path(real_csv_path, config, file_path_key='real_file_path')
@@ -541,12 +541,12 @@ def sml(ctx, config, start_date, end_date, refetch_from, refetch_to, skip_interm
     type=click.DateTime(formats=['%d/%m/%Y']),
     )
 @click.option(
-    '--refetch-from',
+    '--refetch-start-date',
     default=None,
     type=click.DateTime(formats=['%d/%m/%Y']),
     )
 @click.option(
-    '--refetch-to',
+    '--refetch-end-date',
     default=None,
     type=click.DateTime(formats=['%d/%m/%Y']),
     )
@@ -581,7 +581,7 @@ def sml(ctx, config, start_date, end_date, refetch_from, refetch_to, skip_interm
     help=('Use este flag para no volver a visitar las últimas fechas que no tengan datos')
 )
 @click.pass_context
-def tce(ctx, config, start_date, end_date, refetch_from, refetch_to, skip_intermediate_panel_data, dolar_csv_path,
+def tce(ctx, config, start_date, end_date, refetch_start_date, refetch_end_date, skip_intermediate_panel_data, dolar_csv_path,
         euro_csv_path, intermediate_panel_path, skip_clean_last_dates):
 
     try:
@@ -598,9 +598,9 @@ def tce(ctx, config, start_date, end_date, refetch_from, refetch_to, skip_interm
         start_date = start_date.date()
         end_date = end_date.date()
         refetch_dates_range = []
-        if refetch_from and refetch_to:
-            validate_refetch_dates(start_date, end_date, refetch_from.date(), refetch_to.date())
-            refetch_dates_range = generate_dates_range(refetch_from.date(), refetch_to.date())
+        if refetch_start_date and refetch_end_date:
+            validate_refetch_dates(start_date, end_date, refetch_start_date.date(), refetch_end_date.date())
+            refetch_dates_range = generate_dates_range(refetch_start_date.date(), refetch_end_date.date())
 
         dolar_file_path = validate_file_path(dolar_csv_path, config, file_path_key='dolar_file_path')
         euro_file_path = validate_file_path(euro_csv_path, config, file_path_key='euro_file_path')
