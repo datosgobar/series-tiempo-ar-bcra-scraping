@@ -122,11 +122,8 @@ class BCRATCEScraper(BCRAScraper):
         y devuelve el booleano correspondiente.
         """
         in_fetched_contents = False
-        for coin in ['dolar', 'euro']:
-            data = fetched_contents.get(coin, None)
-            if data:
-                if single_date in data:
-                    in_fetched_contents = True
+        while single_date in fetched_contents['dolar'] or fetched_contents['euro']:
+            in_fetched_contents = True
         return in_fetched_contents
 
 
