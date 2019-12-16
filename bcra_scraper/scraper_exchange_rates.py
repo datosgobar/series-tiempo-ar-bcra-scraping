@@ -80,7 +80,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
         end_date : date
             fecha de fin que va a tomar como referencia el scraper
         """
-        content = {'tc_local': {}, 'tp_usd': {}}
+        contents = {'tc_local': {}, 'tp_usd': {}}
         day_count = (end_date - start_date).days + 1
         if day_count < 0:
             day_count = 0
@@ -96,15 +96,15 @@ class BCRAExchangeRateScraper(BCRAScraper):
                     for k, v in self.coins.items():
                         fetched = self.fetch_content(start_date, v)
                         if fetched:
-                            content['tc_local'][single_date] = fetched
-                            content['tp_usd'][single_date] = fetched
+                            contents['tc_local'][single_date] = fetched
+                            contents['tp_usd'][single_date] = fetched
             else:
                 logging.warning(f'La fecha {single_date} fue descargada en el primer ciclo.')
             cont += 1
             bar.update(cont)
         bar.finish()
 
-        return content
+        return contents
 
     def day_in_fetched_contents(self, fetched_contents, single_date):
         """
