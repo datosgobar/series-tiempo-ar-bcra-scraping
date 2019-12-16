@@ -47,10 +47,10 @@ libor_local:
 	bcra_scraper libor --start-date=03/01/2001
 
 sml_local:
-	bcra_scraper sml --start-date=01/01/2016
+	bcra_scraper sml --start-date=01/01/2014
 
 tce_local:
-	bcra_scraper tce --start-date=01/01/2016
+	bcra_scraper tce --start-date=01/01/2014
 
 exchange_rates_local:
 	bcra_scraper exchange-rates --start-date=01/08/2019
@@ -62,11 +62,11 @@ libor:
 
 sml:
 # 	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper sml --start-date=03/10/2008
-	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper sml --start-date=01/01/2016
+	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper sml --start-date=01/01/2014
 
 tce:
 # 	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper tce --start-date=10/03/2010
-	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper tce --start-date=01/01/2016
+	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper tce --start-date=01/01/2014
 
 exchange_rates:
 # 	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper exchange-rates --start-date=31/01/1935
