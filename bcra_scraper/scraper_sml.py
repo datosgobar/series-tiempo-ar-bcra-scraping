@@ -109,11 +109,8 @@ class BCRASMLScraper(BCRAScraper):
         y devuelve el booleano correspondiente.
         """
         in_fetched_contents = False
-        for coin in ['peso_uruguayo', 'real']:
-            data = fetched_contents.get(coin, None)
-            if data:
-                if single_date in data:
-                    in_fetched_contents = True
+        while single_date in fetched_contents['peso_uruguayo'] or fetched_contents['real']:
+            in_fetched_contents = True
         return in_fetched_contents
 
     def day_content_in_panel(self, intermediate_panel_data, single_date):
