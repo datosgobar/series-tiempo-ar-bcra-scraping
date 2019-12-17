@@ -478,9 +478,9 @@ class BCRATCEScraper(BCRAScraper):
                 return parsed_contents
 
             for k, v in entities.items():
-                if body.find('td', text=re.compile(v.get('name'))):
+                if body.find('td', text=re.compile(re.escape(v.get('name')))): 
                     row = body.find(
-                        'td', text=re.compile(v.get('name'))).parent
+                        'td', text=re.compile(re.escape(v.get('name')))).parent
                     cols = row.find_all('td')
                     parsed[
                         'indice_tiempo'
