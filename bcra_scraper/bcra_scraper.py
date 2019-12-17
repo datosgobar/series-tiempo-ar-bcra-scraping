@@ -226,6 +226,8 @@ def libor(ctx, start_date, end_date, refetch_start_date, refetch_end_date, confi
         if refetch_start_date and refetch_end_date:
             validate_refetch_dates(start_date, end_date, refetch_start_date.date(), refetch_end_date.date())
             refetch_dates_range = generate_dates_range(refetch_start_date.date(), refetch_end_date.date())
+        elif refetch_start_date or refetch_end_date:
+            logging.warning('No se encontró fecha para refetch_start_date o refetch_end_date, no se hará refetch.')
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         logging.basicConfig(level=logging.WARNING)
         config = read_config(file_path=config, command=ctx.command.name)
@@ -346,6 +348,8 @@ def exchange_rates(ctx, start_date, end_date, refetch_start_date, refetch_end_da
         if refetch_start_date and refetch_end_date:
             validate_refetch_dates(start_date, end_date, refetch_start_date.date(), refetch_end_date.date())
             refetch_dates_range = generate_dates_range(refetch_start_date.date(), refetch_end_date.date())
+        elif refetch_start_date or refetch_end_date:
+            logging.warning('No se encontró fecha para refetch_start_date o refetch_end_date, no se hará refetch.')
 
         tp_file_path = validate_file_path(tp_csv_path, config, file_path_key='tp_file_path')
         tc_file_path = validate_file_path(tc_csv_path, config, file_path_key='tc_file_path')
@@ -469,6 +473,8 @@ def sml(ctx, config, start_date, end_date, refetch_start_date, refetch_end_date,
         if refetch_start_date and refetch_end_date:
             validate_refetch_dates(start_date, end_date, refetch_start_date.date(), refetch_end_date.date())
             refetch_dates_range = generate_dates_range(refetch_start_date.date(), refetch_end_date.date())
+        elif refetch_start_date or refetch_end_date:
+            logging.warning('No se encontró fecha para refetch_start_date o refetch_end_date, no se hará refetch.')
 
         peso_uruguayo_file_path = validate_file_path(uruguayo_csv_path, config, file_path_key='peso_uruguayo_file_path')
         real_file_path = validate_file_path(real_csv_path, config, file_path_key='real_file_path')
@@ -601,6 +607,8 @@ def tce(ctx, config, start_date, end_date, refetch_start_date, refetch_end_date,
         if refetch_start_date and refetch_end_date:
             validate_refetch_dates(start_date, end_date, refetch_start_date.date(), refetch_end_date.date())
             refetch_dates_range = generate_dates_range(refetch_start_date.date(), refetch_end_date.date())
+        elif refetch_start_date or refetch_end_date:
+            logging.warning('No se encontró fecha para refetch_start_date o refetch_end_date, no se hará refetch.')
 
         dolar_file_path = validate_file_path(dolar_csv_path, config, file_path_key='dolar_file_path')
         euro_file_path = validate_file_path(euro_csv_path, config, file_path_key='euro_file_path')
