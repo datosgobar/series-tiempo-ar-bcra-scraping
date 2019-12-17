@@ -159,12 +159,16 @@ class BCRAScraper:
             if in_panel:
                 if not self.check_empty_date(parsed):
                     intermediate_panel_data = self.delete_date_from_panel(intermediate_panel_data, single_date)
-                    if refetch_end_date == single_date:
-                        refetch_end_date = refetch_end_date - timedelta(days=1)
+                    refetch_end_date = self.update_refetch_end_date(refetch_end_date, single_date)
                 else:
                     endure = False
             single_date = single_date - timedelta(days=1)
         return intermediate_panel_data, refetch_end_date
+
+    def update_refetch_end_date(self, refetch_end_date, single_date):
+        if refetch_end_date == single_date:
+            refetch_end_date = refetch_end_date - timedelta(days=1)
+        return refetch_end_date
 
     def run(self, start_date, end_date, refetch_dates_range):
         """
