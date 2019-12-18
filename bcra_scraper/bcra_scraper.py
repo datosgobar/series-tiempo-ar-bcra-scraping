@@ -223,7 +223,6 @@ def libor(ctx, start_date, end_date, refetch_start_date, refetch_end_date, confi
           intermediate_panel_path, skip_clean_last_dates, *args, **kwargs):
     try:
         execution_start_hour = time.time()
-        logging.basicConfig(level=logging.WARNING)
 
         validate_dates(start_date, end_date)
         start_date = start_date.date()
@@ -284,7 +283,6 @@ def libor(ctx, start_date, end_date, refetch_start_date, refetch_end_date, confi
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         logging.info(f"Fin de tiempo de ejecución: {execution_end_time}")
-        Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='libor')
 
         execution_end_hour = time.time()
         hours, rem = divmod(execution_end_hour - execution_start_hour, 3600)
@@ -353,7 +351,6 @@ def exchange_rates(ctx, start_date, end_date, refetch_start_date, refetch_end_da
 
     try:
         execution_start_hour = time.time()
-        logging.basicConfig(level=logging.WARNING)
 
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -425,7 +422,6 @@ def exchange_rates(ctx, start_date, end_date, refetch_start_date, refetch_end_da
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         logging.info(f"Fin de tiempo de ejecución: {execution_end_time}")
-        Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='exchange-rates')
 
         execution_end_hour = time.time()
         hours, rem = divmod(execution_end_hour - execution_start_hour, 3600)
@@ -494,7 +490,6 @@ def sml(ctx, config, start_date, end_date, refetch_start_date, refetch_end_date,
 
     try:
         execution_start_hour = time.time()
-        logging.basicConfig(level=logging.WARNING)
 
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -573,7 +568,6 @@ def sml(ctx, config, start_date, end_date, refetch_start_date, refetch_end_date,
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         logging.info(f"Fin de tiempo de ejecución: {execution_end_time}")
-        Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='sml')
 
         execution_end_hour = time.time()
         hours, rem = divmod(execution_end_hour - execution_start_hour, 3600)
@@ -642,7 +636,6 @@ def tce(ctx, config, start_date, end_date, refetch_start_date, refetch_end_date,
 
     try:
         execution_start_hour = time.time()
-        logging.basicConfig(level=logging.WARNING)
 
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -719,7 +712,6 @@ def tce(ctx, config, start_date, end_date, refetch_start_date, refetch_end_date,
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         logging.info(f"Fin de tiempo de ejecución: {execution_end_time}")
-        Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='tce')
 
         execution_end_hour = time.time()
         hours, rem = divmod(execution_end_hour - execution_start_hour, 3600)
