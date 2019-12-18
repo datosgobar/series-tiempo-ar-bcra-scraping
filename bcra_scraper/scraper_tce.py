@@ -74,7 +74,7 @@ class BCRATCEScraper(BCRAScraper):
         super(BCRATCEScraper, self)\
             .__init__(url, *args, **kwargs)
 
-    def fetch_contents(self, start_date, end_date, intermediate_panel_data):
+    def fetch_contents(self, start_date, end_date, intermediate_panel_data, fetched_contents):
         """
         Recorre rango de fechas y verifica que la fecha corresponda
         a un día habil. Devuelve una lista de diccionarios para cada moneda
@@ -89,7 +89,7 @@ class BCRATCEScraper(BCRAScraper):
         coins : Dict
             Diccionario que contiene los nombres de las monedas
         """
-        contents = []
+        contents = {'dolar': {}, 'euro': {}}
         day_count = (end_date - start_date).days + 1
         cont = 0
         bar = progressbar.ProgressBar(max_value=day_count, redirect_stdout=True,
@@ -97,19 +97,33 @@ class BCRATCEScraper(BCRAScraper):
         bar.start()
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
-            in_panel, day_content = self.day_content_in_panel(intermediate_panel_data, single_date)
-            if not in_panel:
-                for k, v in self.coins.items():
-                    content = {}
-                    fetched = self.fetch_content(single_date, v)
-                    if fetched:
-                        content[k] = fetched
-                    contents.append(content)
+            if not self.day_in_fetched_contents(fetched_contents, single_date):
+                in_panel, day_content = self.day_content_in_panel(intermediate_panel_data, single_date)
+                if not in_panel:
+                    for k, v in self.coins.items():
+                        fetched = self.fetch_content(single_date, v)
+                        if fetched:
+                            contents[k][single_date] = fetched
+            else:
+                logging.warning(f'La fecha {single_date} fue descargada en el primer ciclo.')
             cont += 1
             bar.update(cont)
         bar.finish()
 
         return contents
+
+    def empty_fetched_contents(self):
+        return {'dolar': {}, 'euro': {}}
+
+    def day_in_fetched_contents(self, fetched_contents, single_date):
+        """
+        Chequea si la fecha se encuentra en los contenidos
+        descargados en el primer ciclo,
+        y devuelve el booleano correspondiente.
+        """
+        in_fetched_contents = any([single_date in fetched_contents[coin] for coin in self.coins.keys()])
+        return in_fetched_contents
+
 
     def day_content_in_panel(self, intermediate_panel_data, single_date):
         """
@@ -149,7 +163,6 @@ class BCRATCEScraper(BCRAScraper):
         coin : String
             String que contiene el nombre de la moneda
         """
-        content_dict = {}
         content = ''
         counter = 1
         tries = self.tries
@@ -178,8 +191,6 @@ class BCRATCEScraper(BCRAScraper):
                         'btn-primary')
                     submit_button.click()
                     content = browser_driver.page_source
-                    content_dict['indice_tiempo'] = f'{single_date.strftime("%Y-%m-%d")}'
-                    content_dict['content'] = content
 
             except NoSuchElementException:
                 raise InvalidConfigurationError(
@@ -201,7 +212,7 @@ class BCRATCEScraper(BCRAScraper):
 
             break
 
-        return content_dict
+        return content
 
     def get_intermediate_panel_data_from_parsed(self, parsed):
         """
@@ -410,32 +421,27 @@ class BCRATCEScraper(BCRAScraper):
         entities : Dict
             Diccionario que contiene el nombre de los bancos
         """
-        parsed_contents = []
-        parsed_contents = {'dolar': [], 'euro': []}
+        parsed_contents = {'dolar': {}, 'euro': {}}
         day_count = (end_date - start_date).days + 1
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
             in_panel, parsed = self.day_content_in_panel(intermediate_panel_data, single_date)
             if in_panel:
-                parsed_contents['dolar'].append(parsed['dolar'])
-                parsed_contents['euro'].append(parsed['euro'])
+                parsed_contents['dolar'][single_date] = parsed['dolar']
+                parsed_contents['euro'][single_date] = parsed['euro']
             else:
-                for content in contents:
-                    for k, v in content.items():
-                        content_date = content[k].get('indice_tiempo')
-                        if single_date.strftime("%Y-%m-%d") == content_date:
-                            day_content = content[k].get('content')
-                            parsed = self.parse_content(
-                                day_content, single_date, k, self.entities)
-                            if parsed:
-                                for p in parsed:
-                                    for coin in ['dolar', 'euro']:
-                                        if k == coin:
-                                            preprocess_dict = {}
-                                            preprocess_dict = self.preprocess_rows([p])
-                                            for d in preprocess_dict:
-                                                parsed_contents[coin].append(d)
-                                                intermediate_panel_data[coin][single_date] = d
+                for k in self.coins:
+                    if contents[k]:
+                        day_content = contents[k][single_date]
+                        parsed = self.parse_content(
+                            day_content, single_date, k, self.entities)
+                        if parsed:
+                            for p in parsed:
+                                preprocess_dict = {}
+                                preprocess_dict = self.preprocess_rows([p])
+                                for d in preprocess_dict:
+                                    parsed_contents[k][single_date] = d
+                                    intermediate_panel_data[k][single_date] = d
         return parsed_contents, intermediate_panel_data
 
     def parse_content(self, content, single_date, coin, entities):
@@ -478,9 +484,9 @@ class BCRATCEScraper(BCRAScraper):
                 return parsed_contents
 
             for k, v in entities.items():
-                if body.find('td', text=re.compile(v.get('name'))):
+                if body.find('td', text=re.compile(re.escape(v.get('name')))): 
                     row = body.find(
-                        'td', text=re.compile(v.get('name'))).parent
+                        'td', text=re.compile(re.escape(v.get('name')))).parent
                     cols = row.find_all('td')
                     parsed[
                         'indice_tiempo'
@@ -633,3 +639,12 @@ class BCRATCEScraper(BCRAScraper):
             return is_empty
 
         return any(parsed_coin_is_empty(p) for p in parsed.values())
+
+    def empty_refetch_data(self):
+        return {'dolar': {}, 'euro': {}}
+
+    def merge_parsed(self, parsed, refetched_parsed):
+        merged_parsed = {'dolar': {}, 'euro': {}}
+        for coin in ['dolar', 'euro']:
+            merged_parsed[coin] = {**parsed[coin], **refetched_parsed[coin]}
+        return merged_parsed

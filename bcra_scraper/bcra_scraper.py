@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from csv import DictWriter
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from email.utils import formatdate
 from json import JSONDecodeError
 import json
@@ -10,6 +10,7 @@ import logging
 import os
 
 import click
+from pyfiglet import Figlet
 
 from bcra_scraper.exceptions import InvalidConfigurationError
 from bcra_scraper.mails import Email
@@ -101,6 +102,16 @@ def validate_dates(start_date, end_date):
             "La fecha de fin no puede ser mayor a la fecha actual"
         )
 
+def validate_refetch_dates(start_date, end_date, refetch_start_date, refetch_end_date):
+    if refetch_start_date < start_date:
+        raise InvalidConfigurationError(
+            "La fecha de refetch_start_date no debe ser menor a la fecha de inicio"
+        )
+    elif refetch_end_date > end_date:
+        raise InvalidConfigurationError(
+            "La fecha de refetch_end_date no puede ser mayor a la fecha de fin"
+        )
+
 
 def validate_entities_key_config(config):
     if 'entities' not in config:
@@ -126,10 +137,10 @@ def validate_file_path(file_path, config, file_path_key):
     return file_path
 
 def filter_parsed(parsed, csv_header):
-    for r in parsed:
-        for k in list(r.keys()):
-            if k not in csv_header:
-                r.pop(k)
+    for v in list(parsed.values()):
+        for r in list(v):
+            if r not in csv_header:
+                v.pop(r)
     return parsed
 
 def get_csv_header(coin, config):
@@ -143,6 +154,13 @@ def get_csv_header(coin, config):
                             f'tc_ars_{coin}_{k}_{channel}_{flow}_{hour}hs'
                         )
     return csv_header
+
+def generate_dates_range(first_date, last_date):
+    delta = last_date - first_date
+    dates_range = []
+    for i in range(delta.days + 1):
+        dates_range.append(first_date + timedelta(days=i))
+    return dates_range
 
 
 @click.group()
@@ -160,6 +178,16 @@ def cli(ctx):
 @click.option(
     '--end-date',
     default=get_default_end_date,
+    type=click.DateTime(formats=['%d/%m/%Y']),
+    )
+@click.option(
+    '--refetch-start-date',
+    default=None,
+    type=click.DateTime(formats=['%d/%m/%Y']),
+    )
+@click.option(
+    '--refetch-end-date',
+    default=None,
     type=click.DateTime(formats=['%d/%m/%Y']),
     )
 @click.option(
@@ -189,15 +217,22 @@ def cli(ctx):
     help=('Use este flag para no volver a visitar las últimas fechas que no tengan datos')
 )
 @click.pass_context
-def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor_csv_path,
+def libor(ctx, start_date, end_date, refetch_start_date, refetch_end_date, config, skip_intermediate_panel_data, libor_csv_path,
           intermediate_panel_path, skip_clean_last_dates, *args, **kwargs):
-    validate_dates(start_date, end_date)
-    start_date = start_date.date()
-    end_date = end_date.date()
-
     try:
+        validate_dates(start_date, end_date)
+        start_date = start_date.date()
+        end_date = end_date.date()
+        refetch_dates_range = []
+        if refetch_start_date and refetch_end_date:
+            validate_refetch_dates(start_date, end_date, refetch_start_date.date(), refetch_end_date.date())
+            refetch_dates_range = generate_dates_range(refetch_start_date.date(), refetch_end_date.date())
+        elif refetch_start_date or refetch_end_date:
+            logging.warning('No se encontró fecha para refetch_start_date o refetch_end_date, no se hará refetch.')
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        logging.basicConfig(level=logging.WARNING)
+        logging.basicConfig(format='%(message)s', level=logging.INFO)
+        logging.info(Figlet(font='standard').renderText('scraper libor'))
+        logging.info(f"Inicio de tiempo de ejecución: {execution_start_time}")
         config = read_config(file_path=config, command=ctx.command.name)
         libor_file_path = validate_file_path(libor_csv_path, config, file_path_key='libor_file_path')
         intermediate_panel_path = validate_file_path(intermediate_panel_path, config, file_path_key='intermediate_panel_path')
@@ -233,12 +268,14 @@ def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor
             skip_clean_last_dates=skip_clean_last_dates
         )
 
-        parsed = scraper.run(start_date, end_date)
+        parsed = scraper.run(start_date, end_date, refetch_dates_range)
 
         processed_header = scraper.preprocess_header(scraper.rates)
-        write_file(processed_header, parsed, libor_file_path)
+
+        write_file(processed_header, parsed.values(), libor_file_path)
 
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        logging.info(f"Fin de tiempo de ejecución: {execution_end_time}")
         Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='libor')
 
     except InvalidConfigurationError as err:
@@ -254,6 +291,16 @@ def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor
 @click.option(
     '--end-date',
     default=get_default_end_date,
+    type=click.DateTime(formats=['%d/%m/%Y']),
+    )
+@click.option(
+    '--refetch-start-date',
+    default=None,
+    type=click.DateTime(formats=['%d/%m/%Y']),
+    )
+@click.option(
+    '--refetch-end-date',
+    default=None,
     type=click.DateTime(formats=['%d/%m/%Y']),
     )
 @click.option(
@@ -287,12 +334,15 @@ def libor(ctx, start_date, end_date, config, skip_intermediate_panel_data, libor
     help=('Use este flag para no volver a visitar las últimas fechas que no tengan datos')
 )
 @click.pass_context
-def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_data,
+def exchange_rates(ctx, start_date, end_date, refetch_start_date, refetch_end_date, config, skip_intermediate_panel_data,
                    tp_csv_path, tc_csv_path, intermediate_panel_path, skip_clean_last_dates):
 
     try:
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        logging.basicConfig(level=logging.WARNING)
+        logging.basicConfig(format='%(message)s', level=logging.INFO)
+        logging.info(Figlet(font='standard').renderText('scraper'))
+        logging.info(Figlet(font='standard').renderText('exchange rates'))
+        logging.info(f"Inicio de tiempo de ejecución: {execution_start_time}")
         config = read_config(file_path=config, command=ctx.command.name)
         validate_url_config(config)
         validate_url_has_value(config)
@@ -301,6 +351,12 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
         validate_dates(start_date, end_date)
         start_date = start_date.date()
         end_date = end_date.date()
+        refetch_dates_range = []
+        if refetch_start_date and refetch_end_date:
+            validate_refetch_dates(start_date, end_date, refetch_start_date.date(), refetch_end_date.date())
+            refetch_dates_range = generate_dates_range(refetch_start_date.date(), refetch_end_date.date())
+        elif refetch_start_date or refetch_end_date:
+            logging.warning('No se encontró fecha para refetch_start_date o refetch_end_date, no se hará refetch.')
 
         tp_file_path = validate_file_path(tp_csv_path, config, file_path_key='tp_file_path')
         tc_file_path = validate_file_path(tc_csv_path, config, file_path_key='tc_file_path')
@@ -335,19 +391,20 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
             intermediate_panel_path=intermediate_panel_path,
             skip_clean_last_dates=skip_clean_last_dates
         )
-        parsed = scraper.run(start_date, end_date)
+        parsed = scraper.run(start_date, end_date, refetch_dates_range)
 
         if parsed:
             coins = config.get('coins')
             csv_header = ['indice_tiempo']
             csv_header.extend([v for v in coins.keys()])
-            write_file(csv_header, parsed['tp_usd'], tp_file_path)
 
-            write_file(csv_header, parsed['tc_local'], tc_file_path)
+            write_file(csv_header, parsed['tp_usd'].values(), tp_file_path)
+            write_file(csv_header, parsed['tc_local'].values(), tc_file_path)
 
         else:
             click.echo("No se encontraron resultados")
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        logging.info(f"Fin de tiempo de ejecución: {execution_end_time}")
         Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='exchange-rates')
 
     except InvalidConfigurationError as err:
@@ -365,6 +422,16 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
     default=get_default_end_date,
     type=click.DateTime(formats=['%d/%m/%Y']),
 )
+@click.option(
+    '--refetch-start-date',
+    default=None,
+    type=click.DateTime(formats=['%d/%m/%Y']),
+    )
+@click.option(
+    '--refetch-end-date',
+    default=None,
+    type=click.DateTime(formats=['%d/%m/%Y']),
+    )
 @click.option(
     '--config',
     default='config_general.json',
@@ -396,12 +463,14 @@ def exchange_rates(ctx, start_date, end_date, config, skip_intermediate_panel_da
     help=('Use este flag para no volver a visitar las últimas fechas que no tengan datos')
 )
 @click.pass_context
-def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguayo_csv_path,
+def sml(ctx, config, start_date, end_date, refetch_start_date, refetch_end_date, skip_intermediate_panel_data, uruguayo_csv_path,
         real_csv_path, intermediate_panel_path, skip_clean_last_dates):
 
     try:
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        logging.basicConfig(level=logging.WARNING)
+        logging.basicConfig(format='%(message)s', level=logging.INFO)
+        logging.info(Figlet(font='standard').renderText('scraper sml'))
+        logging.info(f"Inicio de tiempo de ejecución: {execution_start_time}")
         config = read_config(file_path=config, command=ctx.command.name)
         validate_url_config(config)
         validate_url_has_value(config)
@@ -410,6 +479,12 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
         validate_dates(start_date, end_date)
         start_date = start_date.date()
         end_date = end_date.date()
+        refetch_dates_range = []
+        if refetch_start_date and refetch_end_date:
+            validate_refetch_dates(start_date, end_date, refetch_start_date.date(), refetch_end_date.date())
+            refetch_dates_range = generate_dates_range(refetch_start_date.date(), refetch_end_date.date())
+        elif refetch_start_date or refetch_end_date:
+            logging.warning('No se encontró fecha para refetch_start_date o refetch_end_date, no se hará refetch.')
 
         peso_uruguayo_file_path = validate_file_path(uruguayo_csv_path, config, file_path_key='peso_uruguayo_file_path')
         real_file_path = validate_file_path(real_csv_path, config, file_path_key='real_file_path')
@@ -446,26 +521,26 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
             skip_clean_last_dates=skip_clean_last_dates
         )
 
-        parsed = scraper.run(start_date, end_date)
+        parsed = scraper.run(start_date, end_date, refetch_dates_range)
 
         if parsed:
             for k  in parsed.keys():
                 if k == 'peso_uruguayo':
                     csv_header = ['indice_tiempo']
                     csv_header.extend(config['types']['peso_uruguayo'].values())
-
-                    write_file(csv_header, parsed['peso_uruguayo'], peso_uruguayo_file_path)
+                    write_file(csv_header, parsed['peso_uruguayo'].values(), peso_uruguayo_file_path)
 
 
                 elif k == 'real':
                     csv_header = ['indice_tiempo']
                     csv_header.extend(config['types']['real'].values())
 
-                    write_file(csv_header, parsed['real'], real_file_path)
+                    write_file(csv_header, parsed['real'].values(), real_file_path)
 
         else:
             click.echo("No se encontraron resultados")
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        logging.info(f"Fin de tiempo de ejecución: {execution_end_time}")
         Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='sml')
     except InvalidConfigurationError as err:
         click.echo(err)
@@ -480,6 +555,16 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
 @click.option(
     '--end-date',
     default=get_default_end_date,
+    type=click.DateTime(formats=['%d/%m/%Y']),
+    )
+@click.option(
+    '--refetch-start-date',
+    default=None,
+    type=click.DateTime(formats=['%d/%m/%Y']),
+    )
+@click.option(
+    '--refetch-end-date',
+    default=None,
     type=click.DateTime(formats=['%d/%m/%Y']),
     )
 @click.option(
@@ -513,12 +598,14 @@ def sml(ctx, config, start_date, end_date, skip_intermediate_panel_data, uruguay
     help=('Use este flag para no volver a visitar las últimas fechas que no tengan datos')
 )
 @click.pass_context
-def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_csv_path,
+def tce(ctx, config, start_date, end_date, refetch_start_date, refetch_end_date, skip_intermediate_panel_data, dolar_csv_path,
         euro_csv_path, intermediate_panel_path, skip_clean_last_dates):
 
     try:
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        logging.basicConfig(level=logging.WARNING)
+        logging.basicConfig(format='%(message)s', level=logging.INFO)
+        logging.info(Figlet(font='standard').renderText('scraper tce'))
+        logging.info(f"Inicio de tiempo de ejecución: {execution_start_time}")
         config = read_config(file_path=config, command=ctx.command.name)
         validate_url_config(config)
         validate_url_has_value(config)
@@ -529,6 +616,12 @@ def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_c
         validate_entities_key_has_values(config)
         start_date = start_date.date()
         end_date = end_date.date()
+        refetch_dates_range = []
+        if refetch_start_date and refetch_end_date:
+            validate_refetch_dates(start_date, end_date, refetch_start_date.date(), refetch_end_date.date())
+            refetch_dates_range = generate_dates_range(refetch_start_date.date(), refetch_end_date.date())
+        elif refetch_start_date or refetch_end_date:
+            logging.warning('No se encontró fecha para refetch_start_date o refetch_end_date, no se hará refetch.')
 
         dolar_file_path = validate_file_path(dolar_csv_path, config, file_path_key='dolar_file_path')
         euro_file_path = validate_file_path(euro_csv_path, config, file_path_key='euro_file_path')
@@ -564,7 +657,7 @@ def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_c
             intermediate_panel_path=intermediate_panel_path,
             skip_clean_last_dates=skip_clean_last_dates
         )
-        parsed = scraper.run(start_date, end_date)
+        parsed = scraper.run(start_date, end_date, refetch_dates_range)
 
         if parsed:
             for coin in ['dolar', 'euro']:
@@ -575,11 +668,12 @@ def tce(ctx, config, start_date, end_date, skip_intermediate_panel_data, dolar_c
                     csv_name = euro_file_path
 
                 filtered_parsed = filter_parsed(parsed[coin], csv_header)
-                write_file(csv_header, filtered_parsed, csv_name)
+                write_file(csv_header, filtered_parsed.values(), csv_name)
 
         else:
             click.echo("No se encontraron resultados")
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        logging.info(f"Fin de tiempo de ejecución: {execution_end_time}")
         Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='tce')
 
     except InvalidConfigurationError as err:
