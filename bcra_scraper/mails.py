@@ -41,13 +41,13 @@ class Email:
         except Exception as e:
             logging.info(f'Error al enviar mail: {repr(e)}')
 
-    def send_validation_group_email(self, execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier):
+    def send_validation_group_email(self, execution_start_time, execution_end_time, execution_total_time, start_date, end_date, skip_intermediate_panel_data, identifier):
         config_mail = self.read_config_mail()
         mailer_config = self.get_mailer(config_mail)
 
         try:
             subject = self.generate_subject(identifier)
-            message = self.generate_message(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data)
+            message = self.generate_message(execution_start_time, execution_end_time, execution_total_time, start_date, end_date, skip_intermediate_panel_data)
 
             recipients = config_mail.get('destinatarios', [])
             if recipients:
@@ -82,17 +82,16 @@ class Email:
         subject = self._get_mail_subject(identifier)
         return subject
 
-    def generate_message(self, execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data):
+    def generate_message(self, execution_start_time, execution_end_time, execution_total_time, start_date, end_date, skip_intermediate_panel_data):
         message = (
             f"Corrida del scraper con los siguientes parámetros: \n"
             f"Fecha de inicio: {start_date}\n"
             f"Fecha de fin: {end_date}\n"
             f"Saltear panel intermedio: {self.get_skip_intermediate_panel_data(skip_intermediate_panel_data)}\n"
-            "Tiempo transcurrido de corrida: \n"
+            f"Tiempo transcurrido de corrida: {execution_total_time}\n"
             f"Horario de inicio de corrida: {execution_start_time} \n"
             f"Horario de fin de corrida: {execution_end_time}"
         )
-
         return message
 
     def get_skip_intermediate_panel_data(self, skip_intermediate_panel_data):

@@ -8,6 +8,7 @@ from json import JSONDecodeError
 import json
 import logging
 import os
+import time
 
 import click
 from pyfiglet import Figlet
@@ -101,6 +102,7 @@ def validate_dates(start_date, end_date):
         raise InvalidConfigurationError(
             "La fecha de fin no puede ser mayor a la fecha actual"
         )
+
 
 def validate_refetch_dates(start_date, end_date, refetch_start_date, refetch_end_date):
     if refetch_start_date < start_date:
@@ -220,6 +222,9 @@ def cli(ctx):
 def libor(ctx, start_date, end_date, refetch_start_date, refetch_end_date, config, skip_intermediate_panel_data, libor_csv_path,
           intermediate_panel_path, skip_clean_last_dates, *args, **kwargs):
     try:
+        execution_start_hour = time.time()
+        logging.basicConfig(level=logging.WARNING)
+
         validate_dates(start_date, end_date)
         start_date = start_date.date()
         end_date = end_date.date()
@@ -230,9 +235,11 @@ def libor(ctx, start_date, end_date, refetch_start_date, refetch_end_date, confi
         elif refetch_start_date or refetch_end_date:
             logging.warning('No se encontró fecha para refetch_start_date o refetch_end_date, no se hará refetch.')
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         logging.basicConfig(format='%(message)s', level=logging.INFO)
         logging.info(Figlet(font='standard').renderText('scraper libor'))
         logging.info(f"Inicio de tiempo de ejecución: {execution_start_time}")
+
         config = read_config(file_path=config, command=ctx.command.name)
         libor_file_path = validate_file_path(libor_csv_path, config, file_path_key='libor_file_path')
         intermediate_panel_path = validate_file_path(intermediate_panel_path, config, file_path_key='intermediate_panel_path')
@@ -275,8 +282,15 @@ def libor(ctx, start_date, end_date, refetch_start_date, refetch_end_date, confi
         write_file(processed_header, parsed.values(), libor_file_path)
 
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         logging.info(f"Fin de tiempo de ejecución: {execution_end_time}")
         Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='libor')
+
+        execution_end_hour = time.time()
+        hours, rem = divmod(execution_end_hour - execution_start_hour, 3600)
+        minutes, seconds = divmod(rem, 60)
+        execution_total_time = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
+        Email().send_validation_group_email(execution_start_time, execution_end_time, execution_total_time, start_date, end_date, skip_intermediate_panel_data, identifier='libor')
 
     except InvalidConfigurationError as err:
         click.echo(err)
@@ -338,11 +352,16 @@ def exchange_rates(ctx, start_date, end_date, refetch_start_date, refetch_end_da
                    tp_csv_path, tc_csv_path, intermediate_panel_path, skip_clean_last_dates):
 
     try:
+        execution_start_hour = time.time()
+        logging.basicConfig(level=logging.WARNING)
+
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         logging.basicConfig(format='%(message)s', level=logging.INFO)
         logging.info(Figlet(font='standard').renderText('scraper'))
         logging.info(Figlet(font='standard').renderText('exchange rates'))
         logging.info(f"Inicio de tiempo de ejecución: {execution_start_time}")
+
         config = read_config(file_path=config, command=ctx.command.name)
         validate_url_config(config)
         validate_url_has_value(config)
@@ -404,8 +423,15 @@ def exchange_rates(ctx, start_date, end_date, refetch_start_date, refetch_end_da
         else:
             click.echo("No se encontraron resultados")
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         logging.info(f"Fin de tiempo de ejecución: {execution_end_time}")
         Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='exchange-rates')
+
+        execution_end_hour = time.time()
+        hours, rem = divmod(execution_end_hour - execution_start_hour, 3600)
+        minutes, seconds = divmod(rem, 60)
+        execution_total_time = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
+        Email().send_validation_group_email(execution_start_time, execution_end_time, execution_total_time, start_date, end_date, skip_intermediate_panel_data, identifier='exchange-rates')
 
     except InvalidConfigurationError as err:
         click.echo(err)
@@ -467,10 +493,15 @@ def sml(ctx, config, start_date, end_date, refetch_start_date, refetch_end_date,
         real_csv_path, intermediate_panel_path, skip_clean_last_dates):
 
     try:
+        execution_start_hour = time.time()
+        logging.basicConfig(level=logging.WARNING)
+
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         logging.basicConfig(format='%(message)s', level=logging.INFO)
         logging.info(Figlet(font='standard').renderText('scraper sml'))
         logging.info(f"Inicio de tiempo de ejecución: {execution_start_time}")
+
         config = read_config(file_path=config, command=ctx.command.name)
         validate_url_config(config)
         validate_url_has_value(config)
@@ -540,8 +571,16 @@ def sml(ctx, config, start_date, end_date, refetch_start_date, refetch_end_date,
         else:
             click.echo("No se encontraron resultados")
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         logging.info(f"Fin de tiempo de ejecución: {execution_end_time}")
         Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='sml')
+
+        execution_end_hour = time.time()
+        hours, rem = divmod(execution_end_hour - execution_start_hour, 3600)
+        minutes, seconds = divmod(rem, 60)
+        execution_total_time = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
+
+        Email().send_validation_group_email(execution_start_time, execution_end_time, execution_total_time, start_date, end_date, skip_intermediate_panel_data, identifier='sml')
     except InvalidConfigurationError as err:
         click.echo(err)
 
@@ -602,10 +641,15 @@ def tce(ctx, config, start_date, end_date, refetch_start_date, refetch_end_date,
         euro_csv_path, intermediate_panel_path, skip_clean_last_dates):
 
     try:
+        execution_start_hour = time.time()
+        logging.basicConfig(level=logging.WARNING)
+
         execution_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         logging.basicConfig(format='%(message)s', level=logging.INFO)
         logging.info(Figlet(font='standard').renderText('scraper tce'))
         logging.info(f"Inicio de tiempo de ejecución: {execution_start_time}")
+
         config = read_config(file_path=config, command=ctx.command.name)
         validate_url_config(config)
         validate_url_has_value(config)
@@ -673,8 +717,15 @@ def tce(ctx, config, start_date, end_date, refetch_start_date, refetch_end_date,
         else:
             click.echo("No se encontraron resultados")
         execution_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         logging.info(f"Fin de tiempo de ejecución: {execution_end_time}")
         Email().send_validation_group_email(execution_start_time, execution_end_time, start_date, end_date, skip_intermediate_panel_data, identifier='tce')
+
+        execution_end_hour = time.time()
+        hours, rem = divmod(execution_end_hour - execution_start_hour, 3600)
+        minutes, seconds = divmod(rem, 60)
+        execution_total_time = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
+        Email().send_validation_group_email(execution_start_time, execution_end_time, execution_total_time, start_date, end_date, skip_intermediate_panel_data, identifier='tce')
 
     except InvalidConfigurationError as err:
         click.echo(err)
