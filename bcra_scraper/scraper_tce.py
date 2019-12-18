@@ -121,9 +121,7 @@ class BCRATCEScraper(BCRAScraper):
         descargados en el primer ciclo,
         y devuelve el booleano correspondiente.
         """
-        in_fetched_contents = False
-        while single_date in fetched_contents['dolar'] or fetched_contents['euro']:
-            in_fetched_contents = True
+        in_fetched_contents = any([single_date in fetched_contents[coin] for coin in self.coins.keys()])
         return in_fetched_contents
 
 
