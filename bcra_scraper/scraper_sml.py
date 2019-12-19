@@ -503,7 +503,12 @@ class BCRASMLScraper(BCRAScraper):
 
     def delete_date_from_panel(self, intermediate_panel_data, single_date):
         for coin in ['peso_uruguayo', 'real']:
-            del intermediate_panel_data[coin][single_date]
+            try:
+                del intermediate_panel_data[coin][single_date]
+            except:
+                logging.warning(f'No se pudo eliminar la información de la moneda {coin}' +
+                f' para la fecha {single_date} porque no se encontró en el panel.')
+                continue
         return intermediate_panel_data
 
     def check_empty_date(self, parsed):
