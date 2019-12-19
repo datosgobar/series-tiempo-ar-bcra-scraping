@@ -16,11 +16,12 @@ pylint = "*"
 click = "*"
 selenium = "*"
 bs4 = "*"
-bcra-scraper = {path = ".",editable = true}
+bcra-scraper = {editable = true,path = "."}
 pandas = "*"
 requests = "*"
 pyyaml = "*"
 progressbar2 = "*"
+pyfiglet = "*"
 
 [requires]
 python_version = "3.7"
