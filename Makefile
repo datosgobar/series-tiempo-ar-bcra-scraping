@@ -66,7 +66,7 @@ sml:
 
 tce:
 # 	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper tce --start-date=10/03/2010
-	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper tce --start-date=01/01/2018
+	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper tce --start-date=01/01/2017
 
 exchange_rates:
 # 	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper exchange-rates --start-date=31/01/1935
