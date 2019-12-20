@@ -12,7 +12,8 @@ clean:
 	rm -rf .pytest_cache
 
 all_local: libor_local sml_local tce_local exchange_rates_local
-all: libor sml tce exchange_rates
+# all: libor sml tce exchange_rates
+all: libor tce exchange_rates
 
 install_anaconda:
 	wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
