@@ -93,8 +93,8 @@ class BCRASMLScraper(BCRAScraper):
                 if not in_panel:
                     for k, v in self.coins.items():
                         fetched = self.fetch_content(v)
-                        if fetched:
-                            contents[k][single_date] = fetched
+                        fetched = ''
+                        contents[k][single_date] = fetched
             else:
                 logging.warning(f'La fecha {single_date} fue descargada en el primer ciclo.')
             cont += 1
@@ -151,7 +151,7 @@ class BCRASMLScraper(BCRAScraper):
         counter = 1
         tries = self.tries
 
-        while counter <= tries:
+        while counter <= tries and not content:
             try:
                 browser_driver = self.get_browser_driver()
                 browser_driver.get(self.url)
@@ -167,9 +167,10 @@ class BCRASMLScraper(BCRAScraper):
                     content = browser_driver.page_source
 
             except NoSuchElementException:
-                raise InvalidConfigurationError(
-                    f'La conexion de internet ha fallado para la moneda {coin}'
+                logging.warning(
+                    f'No se encontró la moneda: {coin}. Reintentando...'
                 )
+                counter = counter + 1
             except (TimeoutException, WebDriverException):
                 if counter < tries:
                     logging.warning(
@@ -178,14 +179,9 @@ class BCRASMLScraper(BCRAScraper):
                     counter = counter + 1
                 else:
                     logging.warning(
-                        f'La conexion de internet ha fallado para la moneda {coin}'
+                        f'Cantidad máxima de intentos alcanzada para la moneda {coin}'
                     )
-                    raise InvalidConfigurationError(
-                        f'La conexion de internet ha fallado para la moneda {coin}'
-                    )
-
-            break
-
+                    return content
         return content
 
     def parse_contents(self, contents, start_date, end_date, intermediate_panel_data):
@@ -206,7 +202,6 @@ class BCRASMLScraper(BCRAScraper):
         """
         parsed_contents = {'peso_uruguayo': {}, 'real': {}}
         day_count = (end_date - start_date).days + 1
-
         for single_date in (start_date + timedelta(n)
                             for n in range(day_count)):
             in_panel, parsed = self.day_content_in_panel(intermediate_panel_data, single_date)
@@ -218,21 +213,19 @@ class BCRASMLScraper(BCRAScraper):
                 for coin in self.coins.keys():
                     if contents[coin]:
                         parsed = self.parse_content(contents[coin][single_date], coin, single_date)
-                        if parsed:
-                            for p in parsed:
-                                preprocess_dict = {}
-                                preprocess_dict = self.preprocess_rows([p])
-                                for d in preprocess_dict:
-                                    for k, v in self.types[d['coin']].items():
-                                        if d['indice_tiempo'] not in parsed_contents[coin].keys():
-                                            parsed_contents[coin][d['indice_tiempo']] = {}
-                                        parsed_contents[coin][d['indice_tiempo']][v] = d[k]
-                                        parsed_contents[coin][d['indice_tiempo']]['indice_tiempo'] = d['indice_tiempo']
+                        preprocess_dict = {}
+                        preprocess_dict = self.preprocess_rows([parsed])
+                        for d in preprocess_dict:
+                            for k, v in self.types[d['coin']].items():
+                                if d['indice_tiempo'] not in parsed_contents[coin].keys():
+                                    parsed_contents[coin][d['indice_tiempo']] = {}
+                                parsed_contents[coin][d['indice_tiempo']][v] = d[k]
+                                parsed_contents[coin][d['indice_tiempo']]['indice_tiempo'] = d['indice_tiempo']
 
-                                        if d['indice_tiempo'] not in intermediate_panel_data[coin].keys():
-                                            intermediate_panel_data[coin][d['indice_tiempo']] = {}
-                                        intermediate_panel_data[coin][d['indice_tiempo']][v] = d[k]
-                                        intermediate_panel_data[coin][d['indice_tiempo']]['indice_tiempo'] = d['indice_tiempo']
+                                if d['indice_tiempo'] not in intermediate_panel_data[coin].keys():
+                                    intermediate_panel_data[coin][d['indice_tiempo']] = {}
+                                intermediate_panel_data[coin][d['indice_tiempo']][v] = d[k]
+                                intermediate_panel_data[coin][d['indice_tiempo']]['indice_tiempo'] = d['indice_tiempo']
 
         return parsed_contents, intermediate_panel_data
 
@@ -254,35 +247,28 @@ class BCRASMLScraper(BCRAScraper):
             fecha de fin que va a tomar como referencia el scraper
         """
         soup = BeautifulSoup(content, "html.parser")
+        parsed = self.empty_parsed_contents(single_date, coin)
         try:
             table = soup.find('table')
 
             if not table:
-                return []
+                return empty_parsed_contents
 
             head = table.find('thead')
 
             if not head:
-                return []
+                return empty_parsed_contents
 
             body = table.find('tbody')
 
             if not body:
-                return []
+                return empty_parsed_contents
 
             head_rows = head.find_all('tr')
-            parsed_content = []
 
             day = single_date.strftime("%d/%m/%Y")
             for header in head_rows:
                 headers = header.find_all('th')
-                parsed = {}
-                parsed['coin'] = coin
-                parsed['indice_tiempo'] = single_date
-                parsed[headers[1].text] = ''
-                parsed[headers[2].text] = ''
-                parsed[headers[3].text] = ''
-                parsed[headers[4].text] = ''
 
                 if body.find('td', text=day):
                     row = body.find('td', text=day).parent
@@ -293,12 +279,19 @@ class BCRASMLScraper(BCRAScraper):
                     parsed[headers[2].text] = cols[2].text.strip()
                     parsed[headers[3].text] = cols[3].text.strip()
                     parsed[headers[4].text] = cols[4].text.strip()
-                parsed_content.append(parsed)
 
-            return parsed_content
+            return parsed
         except:
-            return []
+            return parsed
 
+    def empty_parsed_contents(self, single_date, coin):
+        parsed = {}
+        parsed['coin'] = coin
+        parsed['indice_tiempo'] = single_date
+        for k in self.types.get(coin).keys():
+            parsed[k] = ''
+        return parsed
+        
     def _preprocess_rows(self, parsed):
         parsed['peso_uruguayo'] = self.preprocess_rows(
             parsed['peso_uruguayo']
