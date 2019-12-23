@@ -523,12 +523,12 @@ class BCRAExchangeRateScraper(BCRAScraper):
 
                 if not start_date.strftime("%d/%m/%Y") in elem.text:
                     logging.warning(f'La fecha {start_date.strftime("%d/%m/%Y")} no existe')
-                    if start_date <= end_date:
+                    if start_date < end_date:
                         start_date = start_date + timedelta(days=1)
                         logging.warning(f'La nueva fecha de inicio es {start_date}')
                     else:
-                        logging.warning('La fecha de inicio no puede ser mayor a la fecha de fin')
-                        return start_date
+                        raise InvalidConfigurationError('La fecha de inicio no puede ser mayor a la fecha de fin')
+                return start_date
 
             except (TimeoutException, WebDriverException):
                 if counter <= tries:
@@ -536,7 +536,6 @@ class BCRAExchangeRateScraper(BCRAScraper):
                         f'La conexion de internet ha fallado para la fecha {start_date}. Reintentando...'
                     )
                     counter = counter + 1
-        return start_date
 
     def delete_date_from_panel(self, intermediate_panel_data, single_date):
         for coin in ['tc_local', 'tp_usd']:
