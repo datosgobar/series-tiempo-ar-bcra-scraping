@@ -95,9 +95,8 @@ class BCRAExchangeRateScraper(BCRAScraper):
                 if not in_panel:
                     for k, v in self.coins.items():
                         fetched = self.fetch_content(start_date, v)
-                        if fetched:
-                            contents['tc_local'][single_date] = fetched
-                            contents['tp_usd'][single_date] = fetched
+                        contents['tc_local'][single_date] = fetched
+                        contents['tp_usd'][single_date] = fetched
             else:
                 logging.warning(f'La fecha {single_date} fue descargada en el primer ciclo.')
             cont += 1
@@ -163,7 +162,7 @@ class BCRAExchangeRateScraper(BCRAScraper):
         counter = 1
         tries = self.tries
 
-        while counter <= tries:
+        while counter <= tries and not content:
             try:
                 browser_driver = self.get_browser_driver()
                 browser_driver.get(self.url)
@@ -185,24 +184,21 @@ class BCRAExchangeRateScraper(BCRAScraper):
                     content = browser_driver.page_source
 
             except NoSuchElementException:
-                raise InvalidConfigurationError(
-                    f'La conexion de internet ha fallado...'
+                logging.warning(
+                    f'No se encontró la moneda: {coin}. Reintentando...'
                 )
+                counter = counter + 1
             except (TimeoutException, WebDriverException):
                 if counter < tries:
                     logging.warning(
-                        f'La conexion de internet ha fallado. Reintentando...'
+                        f'La conexion de internet ha fallado para la moneda {coin}. Reintentando...'
                     )
                     counter = counter + 1
                 else:
                     logging.warning(
-                        f'La conexion de internet ha fallado...'
+                        f'Cantidad máxima de intentos alcanzada para la moneda {coin}'
                     )
-                    raise InvalidConfigurationError(
-                        f'La conexion de internet ha fallado...'
-                    )
-
-            break
+                    return content
         return content
 
     def parse_contents(self, contents, start_date, end_date, intermediate_panel_data):
@@ -234,22 +230,20 @@ class BCRAExchangeRateScraper(BCRAScraper):
                     if contents[exchange_type]:
                         for k in self.coins.keys():
                             parsed = self.parse_coin(contents[exchange_type][single_date], single_date, k)
-                            if parsed:
-                                for p in parsed:
-                                    preprocess_dict = {}
-                                    preprocess_dict = self.preprocess_rows([p])
-                                    for d in preprocess_dict:
-                                        if d['indice_tiempo'] not in parsed_contents[exchange_type].keys():
-                                            parsed_contents[exchange_type][d['indice_tiempo']] = {}
-                                        parsed_contents[exchange_type][d['indice_tiempo']][d['moneda']] =\
-                                            d[exchange_type]
-                                        parsed_contents[exchange_type][d['indice_tiempo']]['indice_tiempo'] = d['indice_tiempo']
+                            preprocess_dict = {}
+                            preprocess_dict = self.preprocess_rows([parsed])
+                            for d in preprocess_dict:
+                                if d['indice_tiempo'] not in parsed_contents[exchange_type].keys():
+                                    parsed_contents[exchange_type][d['indice_tiempo']] = {}
+                                parsed_contents[exchange_type][d['indice_tiempo']][d['moneda']] =\
+                                    d[exchange_type]
+                                parsed_contents[exchange_type][d['indice_tiempo']]['indice_tiempo'] = d['indice_tiempo']
 
-                                        if d['indice_tiempo'] not in intermediate_panel_data[exchange_type].keys():
-                                            intermediate_panel_data[exchange_type][d['indice_tiempo']] = {}
-                                        intermediate_panel_data[exchange_type][d['indice_tiempo']][d['moneda']] =\
-                                            d[exchange_type]
-                                        intermediate_panel_data[exchange_type][d['indice_tiempo']]['indice_tiempo'] = d['indice_tiempo']
+                                if d['indice_tiempo'] not in intermediate_panel_data[exchange_type].keys():
+                                    intermediate_panel_data[exchange_type][d['indice_tiempo']] = {}
+                                intermediate_panel_data[exchange_type][d['indice_tiempo']][d['moneda']] =\
+                                    d[exchange_type]
+                                intermediate_panel_data[exchange_type][d['indice_tiempo']]['indice_tiempo'] = d['indice_tiempo']
 
         return parsed_contents, intermediate_panel_data
 
@@ -271,30 +265,28 @@ class BCRAExchangeRateScraper(BCRAScraper):
         """
 
         soup = BeautifulSoup(content, "html.parser")
+        parsed = {}
+        parsed['moneda'] = coin
+        parsed['indice_tiempo'] = single_date
+        parsed['tp_usd'] = ''
+        parsed['tc_local'] = ''
         try:
             table = soup.find('table')
 
             if not table:
-                return []
+                return parsed
 
             head = table.find('thead')
 
             if not head:
-                return []
+                return parsed
 
             body = table.find('tbody')
 
             if not body:
-                return []
-
-            parsed_contents = []
+                return parsed
 
             day = single_date.strftime("%d/%m/%Y")
-            parsed = {}
-            parsed['moneda'] = coin
-            parsed['indice_tiempo'] = single_date
-            parsed['tp_usd'] = ''
-            parsed['tc_local'] = ''
 
             if body.find('td', text=re.compile(day)):
                 if day == body.find('td', text=re.compile(day)).text.strip():
@@ -304,11 +296,10 @@ class BCRAExchangeRateScraper(BCRAScraper):
                     parsed['indice_tiempo'] = single_date
                     parsed['tp_usd'] = cols[1].text[5:].strip()
                     parsed['tc_local'] = cols[2].text[5:].strip()
-            parsed_contents.append(parsed)
 
-            return parsed_contents
+            return parsed
         except:
-            return parsed_contents
+            return parsed
 
     def _preprocess_rows(self, parsed):
         parsed['tc_local'] = self.preprocess_rows(parsed['tc_local'])
@@ -538,15 +529,14 @@ class BCRAExchangeRateScraper(BCRAScraper):
                     else:
                         logging.warning('La fecha de inicio no puede ser mayor a la fecha de fin')
                         return start_date
-                else:
-                    return start_date
 
             except (TimeoutException, WebDriverException):
-                if counter < tries:
+                if counter <= tries:
                     logging.warning(
                         f'La conexion de internet ha fallado para la fecha {start_date}. Reintentando...'
                     )
                     counter = counter + 1
+        return start_date
 
     def delete_date_from_panel(self, intermediate_panel_data, single_date):
         for coin in ['tc_local', 'tp_usd']:
