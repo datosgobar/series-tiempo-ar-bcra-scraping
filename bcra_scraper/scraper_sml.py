@@ -252,17 +252,17 @@ class BCRASMLScraper(BCRAScraper):
             table = soup.find('table')
 
             if not table:
-                return empty_parsed_contents
+                return parsed
 
             head = table.find('thead')
 
             if not head:
-                return empty_parsed_contents
+                return parsed
 
             body = table.find('tbody')
 
             if not body:
-                return empty_parsed_contents
+                return parsed
 
             head_rows = head.find_all('tr')
 
