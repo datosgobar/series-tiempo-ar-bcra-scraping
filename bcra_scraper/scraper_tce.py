@@ -102,8 +102,7 @@ class BCRATCEScraper(BCRAScraper):
                 if not in_panel:
                     for k, v in self.coins.items():
                         fetched = self.fetch_content(single_date, v)
-                        if fetched:
-                            contents[k][single_date] = fetched
+                        contents[k][single_date] = fetched
             else:
                 logging.warning(f'La fecha {single_date} fue descargada en el primer ciclo.')
             cont += 1
@@ -167,7 +166,7 @@ class BCRATCEScraper(BCRAScraper):
         counter = 1
         tries = self.tries
 
-        while counter <= tries:
+        while counter <= tries and not content:
             try:
                 browser_driver = self.get_browser_driver()
                 browser_driver.get(self.url)
@@ -193,25 +192,21 @@ class BCRATCEScraper(BCRAScraper):
                     content = browser_driver.page_source
 
             except NoSuchElementException:
-                raise InvalidConfigurationError(
-                    f'La conexion de internet ha fallado para la fecha {single_date}'
+                logging.warning(
+                    f'No se encontró la moneda: {coin}. Reintentando...'
                 )
+                counter = counter + 1
             except (TimeoutException, WebDriverException):
                 if counter < tries:
                     logging.warning(
-                        f'La conexion de internet ha fallado para la fecha {single_date}. Reintentando...'
+                        f'La conexion de internet ha fallado para la moneda {coin}. Reintentando...'
                     )
                     counter = counter + 1
                 else:
                     logging.warning(
-                        f'La conexion de internet ha fallado para la fecha {single_date}'
+                        f'Cantidad máxima de intentos alcanzada para la moneda {coin}'
                     )
-                    raise InvalidConfigurationError(
-                        f'La conexion de internet ha fallado para la fecha {single_date}'
-                    )
-
-            break
-
+                    return content
         return content
 
     def get_intermediate_panel_data_from_parsed(self, parsed):
@@ -435,13 +430,11 @@ class BCRATCEScraper(BCRAScraper):
                         day_content = contents[k][single_date]
                         parsed = self.parse_content(
                             day_content, single_date, k, self.entities)
-                        if parsed:
-                            for p in parsed:
-                                preprocess_dict = {}
-                                preprocess_dict = self.preprocess_rows([p])
-                                for d in preprocess_dict:
-                                    parsed_contents[k][single_date] = d
-                                    intermediate_panel_data[k][single_date] = d
+                        preprocess_dict = {}
+                        preprocess_dict = self.preprocess_rows([parsed])
+                        for d in preprocess_dict:
+                            parsed_contents[k][single_date] = d
+                            intermediate_panel_data[k][single_date] = d
         return parsed_contents, intermediate_panel_data
 
     def parse_content(self, content, single_date, coin, entities):
@@ -463,9 +456,6 @@ class BCRATCEScraper(BCRAScraper):
             Diccionario que contiene el nombre de los bancos
         """
         soup = BeautifulSoup(content, "html.parser")
-
-        parsed_contents = []
-        result = {}
         parsed = self.get_parsed(single_date, coin, entities)
         try:
             table = soup.find(
@@ -474,14 +464,12 @@ class BCRATCEScraper(BCRAScraper):
             )
 
             if not table:
-                parsed_contents.append(parsed)
-                return parsed_contents
+                return parsed
 
             body = table.find('tbody')
 
             if not body:
-                parsed_contents.append(parsed)
-                return parsed_contents
+                return parsed
 
             for k, v in entities.items():
                 if body.find('td', text=re.compile(re.escape(v.get('name')))): 
@@ -494,12 +482,9 @@ class BCRATCEScraper(BCRAScraper):
                     for hour in ['11', '13', '15']:
                         parsed = self.parse_hour(
                             v, k, hour, coin, parsed, cols)
-                result.update(parsed)
-            parsed_contents.append(result)
-            return parsed_contents
+            return parsed
         except:
-            parsed_contents.append(parsed)
-            return parsed_contents
+            return parsed
 
     def parse_hour(self, config, entity, hour, coin, parsed, cols):
         mapping_values = {

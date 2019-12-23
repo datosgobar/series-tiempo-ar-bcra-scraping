@@ -142,7 +142,7 @@ class BCRALiborScraper(BCRAScraper):
         counter = 1
         tries = self.tries
 
-        while counter <= tries:
+        while counter <= tries and not content:
             try:
                 browser_driver = self.get_browser_driver()
                 browser_driver.get(self.url)
@@ -154,9 +154,10 @@ class BCRALiborScraper(BCRAScraper):
                 content = browser_driver.page_source
             
             except NoSuchElementException:
-                raise InvalidConfigurationError(
-                    f'La conexion de internet ha fallado para la fecha {single_date}'
+                logging.warning(
+                    f'No se encontró la fecha {single_date}. Reintentando...'
                 )
+                counter = counter + 1
             except (TimeoutException, WebDriverException):
                 if counter < tries:
                     logging.warning(
@@ -165,14 +166,9 @@ class BCRALiborScraper(BCRAScraper):
                     counter = counter + 1
                 else:
                     logging.warning(
-                        f'La conexion de internet ha fallado para la fecha {single_date}'
+                        f'Cantidad máxima de intentos alcanzada para la fecha {single_date}'
                     )
-                    raise InvalidConfigurationError(
-                        f'La conexion de internet ha fallado para la fecha {single_date}'
-                    )
-
-            break
-
+                    return content
         return content
 
     def parse_contents(self, contents, start_date, end_date, intermediate_panel_data):
@@ -196,10 +192,9 @@ class BCRALiborScraper(BCRAScraper):
             else:
                 if single_date in contents:
                     parsed = self.parse_day_content(single_date, contents[single_date])
-                    if parsed:
-                        _parsed = self._preprocess_rows(parsed)
-                        parsed_contents[single_date] = _parsed
-                        intermediate_panel_data[single_date] = _parsed
+                    _parsed = self._preprocess_rows(parsed)
+                    parsed_contents[single_date] = _parsed
+                    intermediate_panel_data[single_date] = _parsed
         return parsed_contents, intermediate_panel_data
 
     def parse_day_content(self, single_date, content):
