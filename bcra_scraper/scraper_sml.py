@@ -92,8 +92,7 @@ class BCRASMLScraper(BCRAScraper):
                 in_panel, day_content = self.day_content_in_panel(intermediate_panel_data, single_date)
                 if not in_panel:
                     for k, v in self.coins.items():
-                        fetched = self.fetch_content(v)
-                        contents[k][single_date] = fetched
+                        contents[k][single_date] = self.fetch_content(v)
             else:
                 logging.warning(f'La fecha {single_date} fue descargada en el primer ciclo.')
             cont += 1
