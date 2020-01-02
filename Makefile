@@ -12,8 +12,7 @@ clean:
 	rm -rf .pytest_cache
 
 all_local: libor_local sml_local tce_local exchange_rates_local
-# all: libor sml tce exchange_rates
-all: libor tce exchange_rates
+all: libor sml tce exchange_rates
 
 install_anaconda:
 	wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -63,7 +62,7 @@ libor:
 
 sml:
 # 	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper sml --start-date=03/10/2008
-	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper sml --start-date=01/01/2018
+	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper sml --start-date=01/01/2017
 
 tce:
 # 	source $(ACTIVATE) $(CONDA_ENV); bcra_scraper tce --start-date=10/03/2010
